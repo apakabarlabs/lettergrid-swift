@@ -6,6 +6,7 @@ import WordGrid
 struct LevelPlanTests {
   private let yaml = """
     seconds_per_level: 60
+    intro_seconds_per_letter: 0.3
     show_word_list: true
     directions: [right, down]
     columns: {first: 5, step: 1, every: 2, last: 7}

@@ -9,6 +9,7 @@ public struct GameConfiguration: Decodable, Sendable {
   }
 
   public let secondsPerLevel: Int
+  public let introSecondsPerLetter: Double
   public let showWordList: Bool
   public let directions: [Direction]
   public let columns: Ramp
@@ -36,6 +37,7 @@ public struct GameConfiguration: Decodable, Sendable {
     ] {
       guard value > 0 else { throw Failure.notPositive(name) }
     }
+    guard introSecondsPerLetter > 0 else { throw Failure.notPositive("intro_seconds_per_letter") }
     for (name, ramp) in [("columns", columns), ("rows", rows), ("words_per_level", wordsPerLevel)] {
       guard ramp.isValid, ramp.first > 0, ramp.last > 0 else { throw Failure.invalidRamp(name) }
     }
@@ -44,6 +46,7 @@ public struct GameConfiguration: Decodable, Sendable {
 
   private enum CodingKeys: String, CodingKey {
     case secondsPerLevel = "seconds_per_level"
+    case introSecondsPerLetter = "intro_seconds_per_letter"
     case showWordList = "show_word_list"
     case directions
     case columns
