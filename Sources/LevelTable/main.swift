@@ -33,7 +33,7 @@ for level in plan.levels {
     grid.padding(toLength: 7, withPad: " ", startingAt: 0),
     String(level.words.count).padding(toLength: 7, withPad: " ", startingAt: 0),
     span.padding(toLength: 12, withPad: " ", startingAt: 0),
-    board,
+    board.padding(toLength: 9, withPad: " ", startingAt: 0),
     level.words.map(\.word).joined(separator: " "),
   ]
   print(line.joined())
