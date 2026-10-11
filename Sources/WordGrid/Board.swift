@@ -56,6 +56,31 @@ public struct Board: Equatable, Sendable {
     return found
   }
 
+  public func strayWords(of dictionary: Set<String>, along directions: [Direction]) -> [String] {
+    var stray: [String] = []
+    for row in 0..<rows {
+      for column in 0..<columns {
+        for direction in directions {
+          var cells: [Cell] = []
+          var cell = Cell(row: row, column: column)
+          while contains(cell) {
+            cells.append(cell)
+            let text = self.text(along: cells)
+            if dictionary.contains(text) && !lies(cells, insideAPlacementAlong: direction) {
+              stray.append(text)
+            }
+            cell = cell.moved(direction, by: 1)
+          }
+        }
+      }
+    }
+    return stray
+  }
+
+  private func lies(_ cells: [Cell], insideAPlacementAlong direction: Direction) -> Bool {
+    placements.contains { $0.direction == direction && Set($0.cells).isSuperset(of: cells) }
+  }
+
   public func selection(from start: Cell, toward end: Cell, along ways: [Direction]) -> [Cell] {
     guard contains(start) else { return [] }
     let reach = ways.map { way in

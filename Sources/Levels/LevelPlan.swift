@@ -18,11 +18,14 @@ public struct LevelPlan: Sendable {
   public let levels: [Level]
   public let seed: UInt64
   private let filler: LetterWeights
+  private let dictionary: Set<String>
 
   public init(configuration: GameConfiguration, words: [WordEntry], seed: UInt64) throws {
     self.configuration = configuration
     self.seed = seed
     self.filler = try configuration.filler()
+    self.dictionary = Set(
+      words.filter { $0.isOneWord && $0.word.count >= configuration.minWordLength }.map(\.spelling))
     self.levels = Sequencer(configuration: configuration).levels(of: words, seed: seed)
   }
 
@@ -35,7 +38,8 @@ public struct LevelPlan: Sendable {
       columns: level.columns,
       rows: level.rows,
       directions: configuration.directions,
-      filler: filler
+      filler: filler,
+      dictionary: dictionary
     )
     return try generator.board(
       for: level.words.map(\.word), seed: seed &+ UInt64(level.number) &* 0x9E37_79B9)

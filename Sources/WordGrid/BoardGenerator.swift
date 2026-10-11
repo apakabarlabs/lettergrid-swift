@@ -7,16 +7,21 @@ public struct BoardGenerator: Sendable {
   public let rows: Int
   public let directions: [Direction]
   public let filler: LetterWeights
+  public let dictionary: Set<String>
   public let attempts: Int
+  public let fillsPerAttempt: Int
 
   public init(
-    columns: Int, rows: Int, directions: [Direction], filler: LetterWeights, attempts: Int = 200
+    columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
+    dictionary: Set<String> = [], attempts: Int = 200, fillsPerAttempt: Int = 20
   ) {
     self.columns = columns
     self.rows = rows
     self.directions = directions
     self.filler = filler
+    self.dictionary = Set(dictionary.map { $0.uppercased() })
     self.attempts = attempts
+    self.fillsPerAttempt = fillsPerAttempt
   }
 
   public func board(for words: [String], seed: UInt64) throws -> Board {
@@ -24,12 +29,19 @@ public struct BoardGenerator: Sendable {
     var random = SeededRandom(seed: seed)
     for _ in 0..<attempts {
       guard let placements = place(words, using: &random) else { continue }
-      let board = Board(letters: filled(placements, by: &random), placements: placements)
-      if words.allSatisfy({ board.occurrences(of: $0, along: directions) == 1 }) {
-        return board
+      for _ in 0..<fillsPerAttempt {
+        let board = Board(letters: filled(placements, by: &random), placements: placements)
+        if isClean(board, hiding: words) {
+          return board
+        }
       }
     }
     throw Failure.noRoom(words: words, columns: columns, rows: rows)
+  }
+
+  private func isClean(_ board: Board, hiding words: [String]) -> Bool {
+    words.allSatisfy { board.occurrences(of: $0, along: directions) == 1 }
+      && board.strayWords(of: dictionary, along: directions).isEmpty
   }
 
   private func place(_ words: [String], using random: inout SeededRandom) -> [Placement]? {
