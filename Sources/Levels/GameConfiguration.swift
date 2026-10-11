@@ -27,6 +27,7 @@ public struct GameConfiguration: Decodable, Sendable {
 
   public let steps: [GridStep]
   public let directions: [Direction]
+  public let maxVerticalWords: Int
   public let minWordLength: Int
   public let clusterSize: Int
   public let letters: [String: Double]
@@ -39,6 +40,7 @@ public struct GameConfiguration: Decodable, Sendable {
   public init(
     steps: [GridStep],
     directions: [Direction],
+    maxVerticalWords: Int,
     minWordLength: Int,
     clusterSize: Int,
     letters: [String: Double],
@@ -50,6 +52,7 @@ public struct GameConfiguration: Decodable, Sendable {
   ) throws {
     self.steps = steps
     self.directions = directions
+    self.maxVerticalWords = maxVerticalWords
     self.minWordLength = minWordLength
     self.clusterSize = clusterSize
     self.letters = letters
@@ -101,8 +104,10 @@ public struct GameConfiguration: Decodable, Sendable {
     ] where value <= 0 {
       throw Failure.notPositive(name)
     }
-    for (name, value) in [("hint_cost", hintCost), ("hints_per_level", hintsPerLevel)]
-    where value < 0 {
+    for (name, value) in [
+      ("hint_cost", hintCost), ("hints_per_level", hintsPerLevel),
+      ("max_vertical_words", maxVerticalWords),
+    ] where value < 0 {
       throw Failure.notPositive(name)
     }
     for (name, value) in [
@@ -116,6 +121,7 @@ public struct GameConfiguration: Decodable, Sendable {
   private enum CodingKeys: String, CodingKey {
     case steps
     case directions
+    case maxVerticalWords = "max_vertical_words"
     case minWordLength = "min_word_length"
     case clusterSize = "cluster_size"
     case letters

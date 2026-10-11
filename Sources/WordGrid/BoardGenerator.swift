@@ -8,18 +8,21 @@ public struct BoardGenerator: Sendable {
   public let directions: [Direction]
   public let filler: LetterWeights
   public let dictionary: Set<String>
+  public let limits: [Direction: Int]
   public let attempts: Int
   public let fillsPerAttempt: Int
 
   public init(
     columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
-    dictionary: Set<String> = [], attempts: Int = 200, fillsPerAttempt: Int = 20
+    dictionary: Set<String> = [], limits: [Direction: Int] = [:], attempts: Int = 200,
+    fillsPerAttempt: Int = 20
   ) {
     self.columns = columns
     self.rows = rows
     self.directions = directions
     self.filler = filler
     self.dictionary = Set(dictionary.map { $0.uppercased() })
+    self.limits = limits
     self.attempts = attempts
     self.fillsPerAttempt = fillsPerAttempt
   }
@@ -47,16 +50,19 @@ public struct BoardGenerator: Sendable {
   private func place(_ words: [String], using random: inout SeededRandom) -> [Placement]? {
     var taken: [Cell: Character] = [:]
     var placements: [Placement] = []
+    var used: [Direction: Int] = [:]
     for word in words.sorted(by: { $0.count > $1.count }) {
       let fitting = candidates(for: word).filter { placement in
-        zip(placement.cells, word).allSatisfy { cell, letter in
-          taken[cell].map { $0 == letter } ?? true
-        }
+        used[placement.direction, default: 0] < limits[placement.direction, default: Int.max]
+          && zip(placement.cells, word).allSatisfy { cell, letter in
+            taken[cell].map { $0 == letter } ?? true
+          }
       }
       guard let placement = fitting.randomElement(using: &random) else { return nil }
       for (cell, letter) in zip(placement.cells, word) {
         taken[cell] = letter
       }
+      used[placement.direction, default: 0] += 1
       placements.append(placement)
     }
     let order = Dictionary(uniqueKeysWithValues: words.enumerated().map { ($1, $0) })

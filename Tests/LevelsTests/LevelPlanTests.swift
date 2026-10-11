@@ -14,12 +14,13 @@ struct LevelPlanTests {
     GridStep(columns: 7, rows: 7, words: 4, levels: nil),
   ]
 
-  private func configuration(steps: [GridStep]? = nil, clusterSize: Int = 1) throws
-    -> GameConfiguration
-  {
+  private func configuration(
+    steps: [GridStep]? = nil, clusterSize: Int = 1, maxVerticalWords: Int = 1
+  ) throws -> GameConfiguration {
     try GameConfiguration(
       steps: steps ?? growingSteps,
       directions: [.right, .down],
+      maxVerticalWords: maxVerticalWords,
       minWordLength: 3,
       clusterSize: clusterSize,
       letters: ["a": 1, "e": 1, "x": 1],
@@ -95,7 +96,40 @@ struct LevelPlanTests {
       levels.allSatisfy { level in
         level.words.allSatisfy { $0.word.count <= max(level.columns, level.rows) }
       })
-    #expect(!levels.flatMap(\.words).contains { $0.word == "ELEPHANT" })
+  }
+
+  @Test func aWordWiderThanTheGridStretchesItsLevelDown() throws {
+    let levels = try plan().levels
+    let level = try #require(levels.first { $0.words.contains { $0.word == "ELEPHANT" } })
+
+    let step = try configuration().step(at: level.number)
+    #expect(level.columns == step?.columns)
+    #expect(level.rows == 8)
+    #expect(levels.filter { $0 != level }.allSatisfy { $0.rows == $0.columns })
+  }
+
+  @Test func aLevelHoldsNoMoreWordsWiderThanTheGridThanMayStandDown() throws {
+    let long = ["elephants", "umbrellas", "computers", "telephone", "breakfast", "chocolate"]
+    let words = (long + ["cat", "dog", "sun", "map", "pen", "box", "hat", "cup", "bed", "car"])
+      .map { WordEntry(word: $0) }
+    let steps = [GridStep(columns: 5, rows: 5, words: 4, levels: nil)]
+    let levels = try LevelPlan(
+      configuration: configuration(steps: steps, maxVerticalWords: 2), words: words, seed: 1
+    ).levels
+
+    #expect(levels.flatMap(\.words).filter { $0.word.count > 5 }.count == long.count)
+    #expect(levels.allSatisfy { level in level.words.filter { $0.word.count > 5 }.count <= 2 })
+  }
+
+  @Test func aBoardStandsNoMoreWordsDownThanAllowed() throws {
+    let steps = [GridStep(columns: 7, rows: 7, words: 4, levels: nil)]
+    let plan = try LevelPlan(
+      configuration: configuration(steps: steps, maxVerticalWords: 1), words: words, seed: 5)
+
+    for level in plan.levels {
+      let board = try plan.board(for: level)
+      #expect(board.placements.filter { $0.direction == .down }.count <= 1)
+    }
   }
 
   @Test func wordsAreShuffledOnlyWithinTheirCluster() throws {
@@ -160,6 +194,7 @@ struct LevelPlanTests {
       - {columns: 4, rows: 4, words: 2, levels: 1}
       - {columns: 7, rows: 8, words: 5, seconds: 60}
       directions: [right, down]
+      max_vertical_words: 2
       min_word_length: 3
       cluster_size: 50
       letters: {a: 8.2, b: 1.5}
@@ -176,6 +211,7 @@ struct LevelPlanTests {
         GridStep(columns: 7, rows: 8, words: 5, levels: nil, seconds: 60),
       ])
     #expect(configuration.directions == [.right, .down])
+    #expect(configuration.maxVerticalWords == 2)
     #expect(configuration.minWordLength == 3)
     #expect(configuration.clusterSize == 50)
     #expect(configuration.letters == ["a": 8.2, "b": 1.5])
@@ -193,6 +229,7 @@ struct LevelPlanTests {
         steps:
         - {columns: 4, rows: 4, words: 2}
         directions: []
+        max_vertical_words: 2
         min_word_length: 3
         cluster_size: 50
         letters: {a: 1}

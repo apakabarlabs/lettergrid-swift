@@ -16,6 +16,7 @@ struct GameTests {
     try GameConfiguration(
       steps: [GridStep(columns: 6, rows: 6, words: 2, levels: nil, seconds: seconds)],
       directions: [.right, .down],
+      maxVerticalWords: 2,
       minWordLength: 3,
       clusterSize: 1,
       letters: ["q": 1, "x": 1, "z": 1],

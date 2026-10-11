@@ -39,7 +39,8 @@ public struct LevelPlan: Sendable {
       rows: level.rows,
       directions: configuration.directions,
       filler: filler,
-      dictionary: dictionary
+      dictionary: dictionary,
+      limits: [.down: configuration.maxVerticalWords]
     )
     return try generator.board(
       for: level.words.map(\.word), seed: seed &+ UInt64(level.number) &* 0x9E37_79B9)
@@ -56,14 +57,21 @@ private struct Sequencer {
     var levels: [Level] = []
     while let step = configuration.step(at: levels.count + 1) {
       let number = levels.count + 1
-      let longest =
-        configuration.directions.map { $0 == .right ? step.columns : step.rows }.max() ?? 0
       let wanted = step.words
       var chosen: [RankedWord] = []
+      var acrossOnly: [RankedWord] = []
+      var downOnly: [RankedWord] = []
       var skipped: [RankedWord] = []
       while chosen.count < wanted, let next = deferred.popFirst() ?? queue.popFirst() {
-        if next.word.count <= longest, !chosen.contains(where: { overlaps($0.word, next.word) }) {
+        let room = step.columns - downOnly.count
+        let across = configuration.directions.contains(.right) && next.word.count <= room
+        let down =
+          !across && configuration.directions.contains(.down)
+          && downOnly.count < configuration.maxVerticalWords
+          && acrossOnly.allSatisfy { $0.word.count < room }
+        if across || down, !chosen.contains(where: { overlaps($0.word, next.word) }) {
           chosen.append(next)
+          if across { acrossOnly.append(next) } else { downOnly.append(next) }
         } else {
           skipped.append(next)
         }
@@ -74,7 +82,7 @@ private struct Sequencer {
         Level(
           number: number,
           columns: step.columns,
-          rows: step.rows,
+          rows: max(step.rows, downOnly.map(\.word.count).max() ?? 0),
           seconds: step.seconds,
           words: chosen
         )
