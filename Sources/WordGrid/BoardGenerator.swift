@@ -8,32 +8,40 @@ public struct BoardGenerator: Sendable {
   public let directions: [Direction]
   public let filler: LetterWeights
   public let dictionary: Set<String>
-  public let limits: [Direction: ClosedRange<Int>]
+  public let downWords: ClosedRange<Int>
+  public let layoutsPerAttempt: Int
   public let attempts: Int
   public let fillsPerAttempt: Int
 
   public init(
     columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
-    dictionary: Set<String> = [], limits: [Direction: ClosedRange<Int>] = [:],
-    attempts: Int = 200, fillsPerAttempt: Int = 20
+    dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
+    layoutsPerAttempt: Int = 40, attempts: Int = 200, fillsPerAttempt: Int = 20
   ) {
     self.columns = columns
     self.rows = rows
     self.directions = directions
     self.filler = filler
     self.dictionary = Set(dictionary.map { $0.uppercased() })
-    self.limits = limits
+    self.downWords = downWords
+    self.layoutsPerAttempt = layoutsPerAttempt
     self.attempts = attempts
     self.fillsPerAttempt = fillsPerAttempt
   }
 
   public func board(for words: [String], seed: UInt64) throws -> Board {
     let words = words.map { $0.uppercased() }
+    let builder = LayoutBuilder(
+      columns: columns, minimumRows: rows, directions: directions, downWords: downWords)
     var random = SeededRandom(seed: seed)
     for _ in 0..<attempts {
-      guard let placements = place(words, using: &random) else { continue }
+      guard
+        let layout = builder.lowestLayout(
+          for: words, tries: layoutsPerAttempt, using: &random)
+      else { break }
       for _ in 0..<fillsPerAttempt {
-        let board = Board(letters: filled(placements, by: &random), placements: placements)
+        let board = Board(
+          letters: filled(layout, by: &random), placements: layout.placements)
         if isClean(board, hiding: words) {
           return board
         }
@@ -47,50 +55,11 @@ public struct BoardGenerator: Sendable {
       && board.strayWords(of: dictionary, along: directions).isEmpty
   }
 
-  private func place(_ words: [String], using random: inout SeededRandom) -> [Placement]? {
-    var taken: [Cell: Character] = [:]
-    var placements: [Placement] = []
-    var used: [Direction: Int] = [:]
-    for (index, word) in words.sorted(by: { $0.count > $1.count }).enumerated() {
-      let remaining = words.count - index
-      let owed = directions.filter { direction in
-        (limits[direction]?.lowerBound ?? 0) - used[direction, default: 0] >= remaining
-      }
-      let fitting = candidates(for: word).filter { placement in
-        (owed.isEmpty || owed.contains(placement.direction))
-          && used[placement.direction, default: 0]
-            < limits[placement.direction]?.upperBound ?? Int.max
-          && zip(placement.cells, word).allSatisfy { cell, letter in
-            taken[cell].map { $0 == letter } ?? true
-          }
-      }
-      guard let placement = fitting.randomElement(using: &random) else { return nil }
-      for (cell, letter) in zip(placement.cells, word) {
-        taken[cell] = letter
-      }
-      used[placement.direction, default: 0] += 1
-      placements.append(placement)
+  private func filled(_ layout: Layout, by random: inout SeededRandom) -> [[Character]] {
+    var letters = (0..<layout.rows).map { _ in
+      (0..<columns).map { _ in filler.letter(using: &random) }
     }
-    let order = Dictionary(uniqueKeysWithValues: words.enumerated().map { ($1, $0) })
-    return placements.sorted { order[$0.word, default: 0] < order[$1.word, default: 0] }
-  }
-
-  private func candidates(for word: String) -> [Placement] {
-    directions.flatMap { direction in
-      let lastRow = rows - 1 - (word.count - 1) * direction.rowStep
-      let lastColumn = columns - 1 - (word.count - 1) * direction.columnStep
-      guard lastRow >= 0, lastColumn >= 0 else { return [Placement]() }
-      return (0...lastRow).flatMap { row in
-        (0...lastColumn).map { column in
-          Placement(word: word, start: Cell(row: row, column: column), direction: direction)
-        }
-      }
-    }
-  }
-
-  private func filled(_ placements: [Placement], by random: inout SeededRandom) -> [[Character]] {
-    var letters = (0..<rows).map { _ in (0..<columns).map { _ in filler.letter(using: &random) } }
-    for placement in placements {
+    for placement in layout.placements {
       for (cell, letter) in zip(placement.cells, placement.word) {
         letters[cell.row][cell.column] = letter
       }

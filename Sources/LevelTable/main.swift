@@ -16,17 +16,24 @@ let plan = try LevelPlan(configuration: configuration, words: words, seed: seed)
 
 print("level  grid   words  clock  ranks       board")
 var unplaceable = 0
+var crossed = 0
+var standing: [Int: Int] = [:]
 for level in plan.levels {
   let ranks = level.words.map(\.rank)
   let board: String
+  var grid = "\(level.columns)x\(level.rows)"
   do {
-    _ = try plan.board(for: level)
-    board = "ok"
+    let built = try plan.board(for: level)
+    let cells = built.placements.flatMap(\.cells)
+    let down = built.placements.filter { $0.direction == .down }.count
+    standing[down, default: 0] += 1
+    if Set(cells).count < cells.count { crossed += 1 }
+    grid = "\(built.columns)x\(built.rows)"
+    board = "ok \(down)v"
   } catch {
     unplaceable += 1
     board = "NO ROOM"
   }
-  let grid = "\(level.columns)x\(level.rows)"
   let span = "\(ranks.min() ?? 0)-\(ranks.max() ?? 0)"
   let line = [
     String(level.number).padding(toLength: 7, withPad: " ", startingAt: 0),
@@ -41,6 +48,11 @@ for level in plan.levels {
 }
 let used = plan.levels.reduce(0) { $0 + $1.words.count }
 print("\(plan.levels.count) levels, \(used) of \(words.count) words, \(unplaceable) without room")
+let spread = standing.keys.sorted().map { "\($0) down: \(standing[$0] ?? 0)" }
+print("\(crossed) boards with a crossing; \(spread.joined(separator: ", "))")
 let placed = Set(plan.levels.flatMap(\.words).map(\.word))
 let left = plan.playable.filter { !placed.contains($0) }
 print("\(left.count) playable words on no level: \(left.joined(separator: " "))")
+if unplaceable > 0 || !left.isEmpty {
+  exit(1)
+}

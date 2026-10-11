@@ -45,7 +45,7 @@ public struct LevelPlan: Sendable {
       directions: configuration.directions,
       filler: filler,
       dictionary: dictionary,
-      limits: [.down: configuration.minVerticalWords...configuration.maxVerticalWords]
+      downWords: configuration.minVerticalWords...configuration.maxVerticalWords
     )
     return try generator.board(
       for: level.words.map(\.word), seed: seed &+ UInt64(level.number) &* 0x9E37_79B9)
@@ -64,36 +64,23 @@ private struct Sequencer {
       let number = levels.count + 1
       let wanted = step.words
       var chosen: [RankedWord] = []
-      var acrossOnly: [RankedWord] = []
-      var downOnly: [RankedWord] = []
       var skipped: [RankedWord] = []
       while chosen.count < wanted, let next = deferred.popFirst() ?? queue.popFirst() {
-        let shortest = step.columns - configuration.minVerticalWords
-        let shortAcross = acrossOnly.filter { $0.word.count <= shortest }.count
-        let owedShort = configuration.minVerticalWords - downOnly.count - shortAcross
-        let mustBeShort = owedShort >= wanted - chosen.count
-        let across =
-          configuration.directions.contains(.right)
-          && next.word.count <= step.columns - downOnly.count
-          && (!mustBeShort || next.word.count <= shortest)
-        let down =
-          !across && configuration.directions.contains(.down)
-          && downOnly.count < configuration.maxVerticalWords
-          && acrossOnly.allSatisfy { $0.word.count < step.columns - downOnly.count }
-        if across || down, !chosen.contains(where: { overlaps($0.word, next.word) }) {
+        let standing = chosen.filter { !liesAcross($0.word, in: step) }.count
+        let fits = liesAcross(next.word, in: step) || standing < configuration.maxVerticalWords
+        if fits, !chosen.contains(where: { overlaps($0.word, next.word) }) {
           chosen.append(next)
-          if across { acrossOnly.append(next) } else { downOnly.append(next) }
         } else {
           skipped.append(next)
         }
       }
       deferred = skipped[...] + deferred
-      guard chosen.count == wanted else { return levels }
+      guard !chosen.isEmpty else { return levels }
       levels.append(
         Level(
           number: number,
           columns: step.columns,
-          rows: max(step.rows, downOnly.map(\.word.count).max() ?? 0),
+          rows: step.rows,
           seconds: step.seconds,
           words: chosen
         )
@@ -112,6 +99,10 @@ private struct Sequencer {
     return stride(from: 0, to: ranked.count, by: configuration.clusterSize).flatMap { start in
       ranked[start..<min(start + configuration.clusterSize, ranked.count)].shuffled(using: &random)
     }
+  }
+
+  private func liesAcross(_ word: String, in step: GridStep) -> Bool {
+    configuration.directions.contains(.right) && word.count <= step.columns
   }
 
   private func overlaps(_ first: String, _ second: String) -> Bool {

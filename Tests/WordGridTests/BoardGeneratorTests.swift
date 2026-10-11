@@ -67,35 +67,55 @@ struct BoardGeneratorTests {
     #expect(board.strayWords(of: ["CAT"], along: [.right, .down]) == ["CAT"])
   }
 
-  @Test func aWordLongerThanTheBoardHasNoRoom() {
+  @Test func moreWordsWiderThanTheBoardThanMayStandDownHaveNoRoom() {
+    let generator = BoardGenerator(
+      columns: 4, rows: 4, directions: [.right, .down], filler: filler, downWords: 0...1)
+
     #expect(throws: BoardGenerator.Failure.self) {
-      try generator(columns: 4, rows: 4).board(for: ["elephant"], seed: 1)
+      try generator.board(for: ["elephant", "umbrella"], seed: 1)
     }
   }
 
-  @Test func noMoreWordsGoAlongADirectionThanItsLimit() throws {
-    let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, limits: [.down: 0...1])
-
-    for seed in UInt64(1)...20 {
-      let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
-      #expect(board.placements.filter { $0.direction == .down }.count <= 1)
+  @Test func theWordsStandingDownStayWithinTheirRange() throws {
+    for range in [0...1, 2...3, 3...5] {
+      let generator = BoardGenerator(
+        columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: range)
+      for seed in UInt64(1)...20 {
+        let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
+        #expect(range.contains(board.placements.filter { $0.direction == .down }.count))
+      }
     }
   }
 
-  @Test func noFewerWordsGoAlongADirectionThanItsLimit() throws {
-    let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, limits: [.down: 3...5])
-
-    for seed in UInt64(1)...20 {
-      let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
-      #expect(board.placements.filter { $0.direction == .down }.count >= 3)
-    }
-  }
-
-  @Test func aWordWiderThanTheBoardStandsDown() throws {
-    let board = try generator(columns: 4, rows: 8).board(for: ["elephant", "cat"], seed: 1)
+  @Test func aWordWiderThanTheBoardStandsDownAndStretchesIt() throws {
+    let board = try generator(columns: 4, rows: 4).board(for: ["elephant", "cat"], seed: 1)
 
     #expect(board.placements.first { $0.word == "ELEPHANT" }?.direction == .down)
+    #expect(board.rows >= 8)
+    #expect(board.columns == 4)
+  }
+
+  @Test func wordsTooWideToLieBesideTheStandingOnesGetRowsOfTheirOwn() throws {
+    let generator = BoardGenerator(
+      columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: 2...2)
+    let words = ["breakfast", "telephone", "kitchen", "freedom", "weather"]
+
+    for seed in UInt64(1)...10 {
+      let board = try generator.board(for: words, seed: seed)
+      #expect(board.placements.count == words.count)
+      #expect(board.placements.filter { $0.direction == .down }.count == 2)
+    }
+  }
+
+  @Test func aWordLyingAcrossOftenCrossesOneStandingDown() throws {
+    let generator = BoardGenerator(
+      columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: 2...2)
+    let crossed = try (UInt64(1)...20).filter { seed in
+      let cells = try generator.board(for: ["stone", "notes", "tones", "onset"], seed: seed)
+        .placements.flatMap(\.cells)
+      return Set(cells).count < cells.count
+    }
+
+    #expect(!crossed.isEmpty)
   }
 }

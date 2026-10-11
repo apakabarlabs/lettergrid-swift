@@ -76,8 +76,8 @@ struct LevelPlanTests {
     ]
     let placed = try plan(words: words).levels.flatMap(\.words)
 
-    #expect(placed.map(\.word) == ["BANK", "MAY"])
-    #expect(placed.map(\.rank) == [6, 8])
+    #expect(placed.map(\.word) == ["BANK", "MAY", "CAT"])
+    #expect(placed.map(\.rank) == [6, 8, 10])
   }
 
   @Test func aWordInsideAnotherWaitsForALaterLevel() throws {
@@ -91,23 +91,29 @@ struct LevelPlanTests {
     #expect(levels.flatMap(\.words).contains { $0.word == "THERE" })
   }
 
-  @Test func everyWordFitsTheGridOfItsLevel() throws {
-    let levels = try plan().levels
+  @Test func aWordWiderThanTheGridStretchesItsBoardDown() throws {
+    let plan = try plan()
+    let level = try #require(plan.levels.first { $0.words.contains { $0.word == "ELEPHANT" } })
+    let board = try plan.board(for: level)
 
-    #expect(
-      levels.allSatisfy { level in
-        level.words.allSatisfy { $0.word.count <= max(level.columns, level.rows) }
-      })
+    #expect(board.columns == level.columns)
+    #expect(board.rows >= 8)
   }
 
-  @Test func aWordWiderThanTheGridStretchesItsLevelDown() throws {
-    let levels = try plan().levels
-    let level = try #require(levels.first { $0.words.contains { $0.word == "ELEPHANT" } })
+  @Test func everyPlayableWordLandsOnExactlyOneLevel() throws {
+    let long = ["elephants", "umbrellas", "computers", "telephone", "breakfast", "chocolate"]
+    let short = ["cat", "dog", "sun", "map", "pen", "box", "hat"]
+    let words = (short + long).map { WordEntry(word: $0) }
+    let steps = [GridStep(columns: 7, rows: 7, words: 5, levels: nil)]
+    let plan = try LevelPlan(
+      configuration: configuration(steps: steps, minVerticalWords: 2, maxVerticalWords: 3),
+      words: words, seed: 2)
+    let placed = plan.levels.flatMap(\.words).map(\.word)
 
-    let step = try configuration().step(at: level.number)
-    #expect(level.columns == step?.columns)
-    #expect(level.rows == 8)
-    #expect(levels.filter { $0 != level }.allSatisfy { $0.rows == $0.columns })
+    #expect(placed.sorted() == plan.playable.sorted())
+    for level in plan.levels {
+      #expect(try plan.board(for: level).placements.count == level.words.count)
+    }
   }
 
   @Test func aLevelHoldsNoMoreWordsWiderThanTheGridThanMayStandDown() throws {
@@ -157,13 +163,12 @@ struct LevelPlanTests {
     #expect(Set(orders).count > 1)
   }
 
-  @Test func thePlanEndsWhenALevelCannotBeFilled() throws {
+  @Test func onlyTheLastLevelsHoldFewerWordsThanTheirStep() throws {
     let configuration = try configuration()
     let levels = try plan().levels
-    let used = levels.flatMap(\.words).map(\.word)
+    let short = levels.filter { $0.words.count < configuration.step(at: $0.number)?.words ?? 0 }
 
-    #expect(Set(used).count == used.count)
-    #expect(levels.allSatisfy { $0.words.count == configuration.step(at: $0.number)?.words })
+    #expect(short.allSatisfy { $0.number > levels.count - configuration.maxVerticalWords - 1 })
   }
 
   @Test func everyLevelGetsABoard() throws {
