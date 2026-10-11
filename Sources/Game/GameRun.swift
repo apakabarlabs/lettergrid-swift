@@ -43,8 +43,8 @@ public final class GameRun: Identifiable {
   public private(set) var known: Set<String>
   public private(set) var hintsUsed: Int
   public let configuration: GameConfiguration
+  public var record: (ScoreEvent) -> Void
   private var plan: LevelPlan
-  private let record: (ScoreEvent) -> Void
 
   public init(
     plan: LevelPlan, snapshot: GameSnapshot, known: Set<String> = [],
