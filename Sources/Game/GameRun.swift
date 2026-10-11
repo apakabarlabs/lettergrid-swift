@@ -22,8 +22,6 @@ public final class GameRun: Identifiable {
     open(levelNumber: 1)
   }
 
-  public var showsWordList: Bool { plan.configuration.showWordList }
-
   public func roundEnded() {
     guard let round, ending == nil else { return }
     switch round.phase {

@@ -10,7 +10,6 @@ public struct GameConfiguration: Decodable, Sendable {
 
   public let secondsPerLevel: Int
   public let introSecondsPerLetter: Double
-  public let showWordList: Bool
   public let directions: [Direction]
   public let columns: Ramp
   public let rows: Ramp
@@ -18,6 +17,29 @@ public struct GameConfiguration: Decodable, Sendable {
   public let minWordLength: Int
   public let clusterSize: Int
   public let letters: [String: Double]
+
+  public init(
+    secondsPerLevel: Int,
+    introSecondsPerLetter: Double,
+    directions: [Direction],
+    columns: Ramp,
+    rows: Ramp,
+    wordsPerLevel: Ramp,
+    minWordLength: Int,
+    clusterSize: Int,
+    letters: [String: Double]
+  ) throws {
+    self.secondsPerLevel = secondsPerLevel
+    self.introSecondsPerLetter = introSecondsPerLetter
+    self.directions = directions
+    self.columns = columns
+    self.rows = rows
+    self.wordsPerLevel = wordsPerLevel
+    self.minWordLength = minWordLength
+    self.clusterSize = clusterSize
+    self.letters = letters
+    try validate()
+  }
 
   public static func decode(_ yaml: String) throws -> GameConfiguration {
     let configuration = try YAMLDecoder().decode(GameConfiguration.self, from: yaml)
@@ -47,7 +69,6 @@ public struct GameConfiguration: Decodable, Sendable {
   private enum CodingKeys: String, CodingKey {
     case secondsPerLevel = "seconds_per_level"
     case introSecondsPerLetter = "intro_seconds_per_letter"
-    case showWordList = "show_word_list"
     case directions
     case columns
     case rows

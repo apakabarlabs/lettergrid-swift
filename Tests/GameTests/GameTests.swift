@@ -6,21 +6,18 @@ import WordGrid
 
 @MainActor
 struct GameTests {
-  private let yaml = """
-    seconds_per_level: 5
-    intro_seconds_per_letter: 0.3
-    show_word_list: true
-    directions: [right, down]
-    columns: {first: 6, step: 0, every: 1, last: 6}
-    rows: {first: 6, step: 0, every: 1, last: 6}
-    words_per_level: {first: 2, step: 0, every: 1, last: 2}
-    min_word_length: 3
-    cluster_size: 1
-    letters: {q: 1, x: 1, z: 1}
-    """
-
   private func run(words: [String] = ["cat", "dog", "sun", "map", "pen", "box"]) throws -> GameRun {
-    let configuration = try GameConfiguration.decode(yaml)
+    let configuration = try GameConfiguration(
+      secondsPerLevel: 5,
+      introSecondsPerLetter: 0.3,
+      directions: [.right, .down],
+      columns: Ramp(first: 6),
+      rows: Ramp(first: 6),
+      wordsPerLevel: Ramp(first: 2),
+      minWordLength: 3,
+      clusterSize: 1,
+      letters: ["q": 1, "x": 1, "z": 1]
+    )
     return GameRun(plan: try LevelPlan(configuration: configuration, words: words, seed: 7))
   }
 

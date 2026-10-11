@@ -4,26 +4,24 @@ import WordGrid
 @testable import Levels
 
 struct LevelPlanTests {
-  private let yaml = """
-    seconds_per_level: 60
-    intro_seconds_per_letter: 0.3
-    show_word_list: true
-    directions: [right, down]
-    columns: {first: 5, step: 1, every: 2, last: 7}
-    rows: {first: 5, step: 1, every: 2, last: 7}
-    words_per_level: {first: 2, step: 1, every: 3, last: 4}
-    min_word_length: 3
-    cluster_size: 1
-    letters: {a: 1, e: 1, x: 1}
-    """
-
   private let words = [
     "the", "there", "cat", "elephant", "dog", "house", "sun", "tree", "map", "pen", "ink", "box",
   ]
 
-  private func configuration(clusterSize: Int = 1) throws -> GameConfiguration {
-    try GameConfiguration.decode(
-      yaml.replacingOccurrences(of: "cluster_size: 1", with: "cluster_size: \(clusterSize)"))
+  private func configuration(clusterSize: Int = 1, columns: Ramp? = nil) throws
+    -> GameConfiguration
+  {
+    try GameConfiguration(
+      secondsPerLevel: 60,
+      introSecondsPerLetter: 0.3,
+      directions: [.right, .down],
+      columns: columns ?? Ramp(first: 5, step: 1, every: 2, last: 7),
+      rows: Ramp(first: 5, step: 1, every: 2, last: 7),
+      wordsPerLevel: Ramp(first: 2, step: 1, every: 3, last: 4),
+      minWordLength: 3,
+      clusterSize: clusterSize,
+      letters: ["a": 1, "e": 1, "x": 1]
+    )
   }
 
   private func plan(clusterSize: Int = 1, seed: UInt64 = 3) throws -> LevelPlan {
@@ -107,11 +105,49 @@ struct LevelPlanTests {
 
   @Test func aBrokenConfigurationIsRefused() {
     #expect(throws: GameConfiguration.Failure.invalidRamp("columns")) {
+      try configuration(columns: Ramp(first: 5, step: 1, every: 0, last: 7))
+    }
+  }
+
+  @Test func theYAMLKeysFillEveryField() throws {
+    let configuration = try GameConfiguration.decode(
+      """
+      seconds_per_level: 60
+      intro_seconds_per_letter: 0.35
+      directions: [right, down]
+      columns: {first: 7, step: 1, every: 10, last: 9}
+      rows: {first: 8, step: 0, every: 1, last: 8}
+      words_per_level: {first: 5, step: 1, every: 20, last: 8}
+      min_word_length: 3
+      cluster_size: 50
+      letters: {a: 8.2, b: 1.5}
+      """)
+
+    #expect(configuration.secondsPerLevel == 60)
+    #expect(configuration.introSecondsPerLetter == 0.35)
+    #expect(configuration.directions == [.right, .down])
+    #expect(configuration.columns == Ramp(first: 7, step: 1, every: 10, last: 9))
+    #expect(configuration.rows == Ramp(first: 8))
+    #expect(configuration.wordsPerLevel == Ramp(first: 5, step: 1, every: 20, last: 8))
+    #expect(configuration.minWordLength == 3)
+    #expect(configuration.clusterSize == 50)
+    #expect(configuration.letters == ["a": 8.2, "b": 1.5])
+  }
+
+  @Test func aDecodedConfigurationIsCheckedLikeABuiltOne() {
+    #expect(throws: GameConfiguration.Failure.noDirections) {
       try GameConfiguration.decode(
-        yaml.replacingOccurrences(
-          of: "columns: {first: 5, step: 1, every: 2, last: 7}",
-          with: "columns: {first: 5, step: 1, every: 0, last: 7}")
-      )
+        """
+        seconds_per_level: 60
+        intro_seconds_per_letter: 0.35
+        directions: []
+        columns: {first: 7, step: 0, every: 1, last: 7}
+        rows: {first: 7, step: 0, every: 1, last: 7}
+        words_per_level: {first: 5, step: 0, every: 1, last: 5}
+        min_word_length: 3
+        cluster_size: 50
+        letters: {a: 1}
+        """)
     }
   }
 }
