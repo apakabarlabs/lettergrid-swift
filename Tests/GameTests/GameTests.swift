@@ -40,9 +40,9 @@ struct GameTests {
     snapshot: GameSnapshot? = nil, events: EventLog = EventLog()
   ) throws -> GameRun {
     let plan = try plan(words: words, seconds: seconds, hintsPerLevel: hintsPerLevel)
-    return GameRun(plan: plan, snapshot: snapshot ?? GameSnapshot(seed: plan.seed)) {
-      events.entries.append($0)
-    }
+    return GameRun(
+      plan: plan, snapshot: snapshot ?? GameSnapshot(seed: plan.seed),
+      record: { events.entries.append($0) }, changed: { events.changes += 1 })
   }
 
   private func find(_ placement: Placement, in game: GameRun) {
@@ -215,6 +215,72 @@ struct GameTests {
     #expect(events.entries.last == .newGame)
   }
 
+  @Test func theNewGameIsRecordedOnceTheFirstLevelOfTheNewPlanIsOpen() throws {
+    let game = try game()
+    introduce(game)
+    find(try #require(game.round).board.placements[1], in: game)
+    game.nextLevel()
+    var snapshotAtNewGame: GameSnapshot?
+    game.record = { event in
+      if event == .newGame { snapshotAtNewGame = game.snapshot }
+    }
+
+    game.startOver(with: try plan(seed: 99))
+
+    #expect(snapshotAtNewGame == GameSnapshot(seed: 99))
+  }
+
+  @Test func aSnapshotKeepsTheSecondsLeft() throws {
+    let game = try game(seconds: 5)
+    introduce(game)
+    for _ in 1...2 { game.secondPassed() }
+
+    let resumed = try self.game(seconds: 5, snapshot: game.snapshot)
+
+    #expect(resumed.round?.secondsLeft == 3)
+    #expect(resumed.round?.phase == .playing)
+  }
+
+  @Test func aLostLevelStaysLostAfterResuming() throws {
+    let game = try game(seconds: 5)
+    introduce(game)
+    for _ in 1...5 { game.secondPassed() }
+
+    let resumed = try self.game(seconds: 5, snapshot: game.snapshot)
+
+    #expect(resumed.round?.phase == .lost)
+    #expect(resumed.ending == .timeUp)
+  }
+
+  @Test func onlyWhatTheSnapshotHoldsCountsAsAChange() throws {
+    let events = EventLog()
+    let game = try game(events: events)
+    introduce(game)
+    let afterIntroduction = events.changes
+    let round = try #require(game.round)
+    let wrong = Array(round.board.placements[1].cells.dropLast())
+
+    game.touch(wrong[0])
+    game.drag(to: wrong[wrong.count - 1])
+    game.release()
+    game.secondPassed()
+    #expect(events.changes == afterIntroduction)
+
+    find(round.board.placements[1], in: game)
+    #expect(events.changes == afterIntroduction + 1)
+  }
+
+  @Test func eachSecondOfAClockIsAChange() throws {
+    let events = EventLog()
+    let game = try game(seconds: 5, events: events)
+    introduce(game)
+    let afterIntroduction = events.changes
+
+    game.secondPassed()
+
+    #expect(events.changes == afterIntroduction + 1)
+  }
+
   @Test func aSnapshotResumesTheLevelWithItsFoundWordsAndHints() throws {
     let game = try game()
     introduce(game)
@@ -263,4 +329,5 @@ struct GameTests {
 @MainActor
 final class EventLog {
   var entries: [ScoreEvent] = []
+  var changes = 0
 }

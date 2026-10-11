@@ -8,7 +8,7 @@ public enum ScoreEvent: Equatable, Sendable {
   case newGame
 }
 
-public struct GameSnapshot: Codable, Equatable, Sendable {
+public struct GameSnapshot: Equatable, Sendable {
   public var seed: UInt64
   public var levelNumber: Int
   public var score: Int
@@ -44,11 +44,12 @@ public final class GameRun: Identifiable {
   public private(set) var hintsUsed: Int
   public let configuration: GameConfiguration
   public var record: (ScoreEvent) -> Void
+  public var changed: () -> Void
   private var plan: LevelPlan
 
   public init(
     plan: LevelPlan, snapshot: GameSnapshot, known: Set<String> = [],
-    record: @escaping (ScoreEvent) -> Void = { _ in }
+    record: @escaping (ScoreEvent) -> Void = { _ in }, changed: @escaping () -> Void = {}
   ) {
     self.plan = plan
     self.configuration = plan.configuration
@@ -56,6 +57,7 @@ public final class GameRun: Identifiable {
     self.hintsUsed = snapshot.hintsUsed
     self.known = known
     self.record = record
+    self.changed = changed
     open(levelNumber: snapshot.levelNumber, progress: snapshot.progress)
   }
 
@@ -75,13 +77,14 @@ public final class GameRun: Identifiable {
   public func introduceNextLetter() {
     guard let placement = round?.introduceNextLetter() else { return }
     award(placement)
+    changed()
   }
 
   public func secondPassed() {
+    guard round?.secondsLeft != nil else { return }
     round?.secondPassed()
-    if round?.phase == .lost {
-      ending = .timeUp
-    }
+    noteLoss()
+    changed()
   }
 
   public func touch(_ cell: Cell) {
@@ -95,6 +98,7 @@ public final class GameRun: Identifiable {
   public func release() {
     guard let placement = round?.release() else { return }
     award(placement)
+    changed()
   }
 
   public func clearRejection() {
@@ -106,12 +110,14 @@ public final class GameRun: Identifiable {
     hintsUsed += 1
     score -= configuration.hintCost
     record(.hint(points: -configuration.hintCost))
+    changed()
   }
 
   public func nextLevel() {
     guard let round, round.phase == .won, ending == nil else { return }
     hintsUsed = 0
     open(levelNumber: round.level.number + 1, progress: RoundProgress())
+    changed()
   }
 
   public func startOver(with plan: LevelPlan) {
@@ -120,8 +126,9 @@ public final class GameRun: Identifiable {
     hintsUsed = 0
     ending = nil
     failure = nil
-    record(.newGame)
     open(levelNumber: 1, progress: RoundProgress())
+    record(.newGame)
+    changed()
   }
 
   private func award(_ placement: Placement) {
@@ -129,6 +136,12 @@ public final class GameRun: Identifiable {
     score += points
     known.insert(placement.word)
     record(.word(placement.word, points: points))
+  }
+
+  private func noteLoss() {
+    if round?.phase == .lost {
+      ending = .timeUp
+    }
   }
 
   private func open(levelNumber: Int, progress: RoundProgress) {
@@ -145,6 +158,7 @@ public final class GameRun: Identifiable {
         introduces: levelNumber == 1,
         progress: progress
       )
+      noteLoss()
     } catch {
       round = nil
       failure = error

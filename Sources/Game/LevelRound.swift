@@ -2,13 +2,20 @@ import Levels
 import Observation
 import WordGrid
 
-public struct RoundProgress: Codable, Equatable, Sendable {
+public struct RoundProgress: Equatable, Sendable {
   public var found: [String]
   public var revealed: [String: Int]
+  public var secondsLeft: Int?
+  public var isLost: Bool
 
-  public init(found: [String] = [], revealed: [String: Int] = [:]) {
+  public init(
+    found: [String] = [], revealed: [String: Int] = [:], secondsLeft: Int? = nil,
+    isLost: Bool = false
+  ) {
     self.found = found
     self.revealed = revealed
+    self.secondsLeft = secondsLeft
+    self.isLost = isLost
   }
 }
 
@@ -40,7 +47,7 @@ public final class LevelRound {
     self.level = level
     self.board = board
     self.directions = directions
-    self.secondsLeft = level.seconds
+    self.secondsLeft = level.seconds.map { progress.secondsLeft ?? $0 }
     let byWord = Dictionary(
       board.placements.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.found = Set(progress.found.compactMap { byWord[$0] })
@@ -51,6 +58,8 @@ public final class LevelRound {
     self.phase = startsWithIntroduction ? .introducing : .playing
     if found.count == board.placements.count, !board.placements.isEmpty {
       phase = .won
+    } else if progress.isLost {
+      phase = .lost
     }
   }
 
@@ -59,7 +68,9 @@ public final class LevelRound {
   public var progress: RoundProgress {
     RoundProgress(
       found: board.placements.filter(found.contains).map(\.word),
-      revealed: Dictionary(uniqueKeysWithValues: revealed.map { ($0.key.word, $0.value) }))
+      revealed: Dictionary(uniqueKeysWithValues: revealed.map { ($0.key.word, $0.value) }),
+      secondsLeft: secondsLeft,
+      isLost: phase == .lost)
   }
 
   public var hintTarget: Placement? {
