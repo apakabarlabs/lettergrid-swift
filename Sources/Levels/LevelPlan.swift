@@ -81,17 +81,12 @@ private struct Sequencer {
 
   private func order(_ words: [String], seed: UInt64) -> [RankedWord] {
     var random = SeededRandom(seed: seed)
-    let jitter = configuration.rankJitter
-    return words.enumerated()
-      .filter { $0.element.count >= configuration.minWordLength }
-      .map {
-        (
-          RankedWord(word: $0.element, rank: $0.offset + 1),
-          $0.offset + Int.random(in: -jitter...jitter, using: &random)
-        )
-      }
-      .sorted { ($0.1, $0.0.rank) < ($1.1, $1.0.rank) }
-      .map(\.0)
+    let ranked = words.enumerated()
+      .map { RankedWord(word: $0.element, rank: $0.offset + 1) }
+      .filter { $0.word.count >= configuration.minWordLength }
+    return stride(from: 0, to: ranked.count, by: configuration.clusterSize).flatMap { start in
+      ranked[start..<min(start + configuration.clusterSize, ranked.count)].shuffled(using: &random)
+    }
   }
 
   private func overlaps(_ first: String, _ second: String) -> Bool {

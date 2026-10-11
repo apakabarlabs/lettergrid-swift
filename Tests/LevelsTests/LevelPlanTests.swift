@@ -12,7 +12,7 @@ struct LevelPlanTests {
     rows: {first: 5, step: 1, every: 2, last: 7}
     words_per_level: {first: 2, step: 1, every: 3, last: 4}
     min_word_length: 3
-    rank_jitter: 0
+    cluster_size: 1
     letters: {a: 1, e: 1, x: 1}
     """
 
@@ -20,11 +20,13 @@ struct LevelPlanTests {
     "the", "there", "cat", "elephant", "dog", "house", "sun", "tree", "map", "pen", "ink", "box",
   ]
 
-  private func plan(jitter: String? = nil) throws -> LevelPlan {
-    let text =
-      jitter.map { yaml.replacingOccurrences(of: "rank_jitter: 0", with: "rank_jitter: \($0)") }
-      ?? yaml
-    return try LevelPlan(configuration: GameConfiguration.decode(text), words: words, seed: 3)
+  private func configuration(clusterSize: Int = 1) throws -> GameConfiguration {
+    try GameConfiguration.decode(
+      yaml.replacingOccurrences(of: "cluster_size: 1", with: "cluster_size: \(clusterSize)"))
+  }
+
+  private func plan(clusterSize: Int = 1, seed: UInt64 = 3) throws -> LevelPlan {
+    try LevelPlan(configuration: configuration(clusterSize: clusterSize), words: words, seed: seed)
   }
 
   @Test func rampsGrowEveryFewLevelsUpToTheLast() {
@@ -62,24 +64,28 @@ struct LevelPlanTests {
     #expect(!levels.flatMap(\.words).contains { $0.word == "elephant" })
   }
 
-  @Test func wordsComeInRankOrderAcrossLevels() throws {
-    let words = ["house", "cat", "water", "dog", "sun", "map", "pen"]
-    let plan = try LevelPlan(configuration: GameConfiguration.decode(yaml), words: words, seed: 3)
-    let water = try #require(plan.levels.first { $0.words.contains { $0.word == "water" } })
+  @Test func wordsAreShuffledOnlyWithinTheirCluster() throws {
+    let words = (1...40).map { "w\($0 < 10 ? "0" : "")\($0)" }
+    let orders = try (1...5).map { seed in
+      try LevelPlan(configuration: configuration(clusterSize: 10), words: words, seed: seed)
+        .levels.flatMap(\.words).map(\.rank)
+    }
 
-    #expect(plan.level(1)?.words.map(\.word) == ["house", "cat"])
-    #expect(water.number == 2)
+    for order in orders {
+      let clusters = order.map { ($0 - 1) / 10 }
+      #expect(clusters == clusters.sorted())
+    }
+    #expect(Set(orders).count > 1)
   }
 
   @Test func thePlanEndsWhenALevelCannotBeFilled() throws {
+    let configuration = try configuration()
     let levels = try plan().levels
     let used = levels.flatMap(\.words).map(\.word)
 
     #expect(Set(used).count == used.count)
     #expect(
-      levels.allSatisfy {
-        $0.words.count == GameConfiguration.decodedWordsPerLevel(yaml, at: $0.number)
-      })
+      levels.allSatisfy { $0.words.count == configuration.wordsPerLevel.value(at: $0.number) })
   }
 
   @Test func everyLevelGetsABoard() throws {
@@ -92,8 +98,8 @@ struct LevelPlanTests {
   }
 
   @Test func theSameSeedGivesTheSameLevels() throws {
-    let first = try plan(jitter: "3").levels
-    let second = try plan(jitter: "3").levels
+    let first = try plan(clusterSize: 4).levels
+    let second = try plan(clusterSize: 4).levels
 
     #expect(first == second)
   }
@@ -106,11 +112,5 @@ struct LevelPlanTests {
           with: "columns: {first: 5, step: 1, every: 0, last: 7}")
       )
     }
-  }
-}
-
-extension GameConfiguration {
-  fileprivate static func decodedWordsPerLevel(_ yaml: String, at level: Int) -> Int {
-    (try? decode(yaml).wordsPerLevel.value(at: level)) ?? 0
   }
 }

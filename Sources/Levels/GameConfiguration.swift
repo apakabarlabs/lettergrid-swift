@@ -15,7 +15,7 @@ public struct GameConfiguration: Decodable, Sendable {
   public let rows: Ramp
   public let wordsPerLevel: Ramp
   public let minWordLength: Int
-  public let rankJitter: Int
+  public let clusterSize: Int
   public let letters: [String: Double]
 
   public static func decode(_ yaml: String) throws -> GameConfiguration {
@@ -32,10 +32,10 @@ public struct GameConfiguration: Decodable, Sendable {
     guard !directions.isEmpty else { throw Failure.noDirections }
     for (name, value) in [
       ("seconds_per_level", secondsPerLevel), ("min_word_length", minWordLength),
+      ("cluster_size", clusterSize),
     ] {
       guard value > 0 else { throw Failure.notPositive(name) }
     }
-    guard rankJitter >= 0 else { throw Failure.notPositive("rank_jitter") }
     for (name, ramp) in [("columns", columns), ("rows", rows), ("words_per_level", wordsPerLevel)] {
       guard ramp.isValid, ramp.first > 0, ramp.last > 0 else { throw Failure.invalidRamp(name) }
     }
@@ -50,7 +50,7 @@ public struct GameConfiguration: Decodable, Sendable {
     case rows
     case wordsPerLevel = "words_per_level"
     case minWordLength = "min_word_length"
-    case rankJitter = "rank_jitter"
+    case clusterSize = "cluster_size"
     case letters
   }
 }
