@@ -8,6 +8,7 @@ let package = Package(
   products: [
     .library(name: "WordGrid", targets: ["WordGrid"]),
     .library(name: "Levels", targets: ["Levels"]),
+    .library(name: "Game", targets: ["Game"]),
     .executable(name: "level-table", targets: ["LevelTable"]),
   ],
   dependencies: [
@@ -16,7 +17,9 @@ let package = Package(
   targets: [
     .target(name: "WordGrid"),
     .target(name: "Levels", dependencies: ["WordGrid", "Yams"]),
+    .target(name: "Game", dependencies: ["Levels", "WordGrid"]),
     .executableTarget(name: "LevelTable", dependencies: ["Levels"]),
+    .testTarget(name: "GameTests", dependencies: ["Game"]),
     .testTarget(name: "WordGridTests", dependencies: ["WordGrid"]),
     .testTarget(name: "LevelsTests", dependencies: ["Levels"]),
   ]
