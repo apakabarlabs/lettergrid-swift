@@ -14,7 +14,7 @@ let words = try WordList.decode(String(contentsOfFile: arguments[2], encoding: .
 let seed = arguments.count > 3 ? UInt64(arguments[3]) ?? 1 : 1
 let plan = try LevelPlan(configuration: configuration, words: words, seed: seed)
 
-print("level  grid   words  ranks       board")
+print("level  grid   words  clock  ranks       board")
 var unplaceable = 0
 for level in plan.levels {
   let ranks = level.words.map(\.rank)
@@ -32,6 +32,7 @@ for level in plan.levels {
     String(level.number).padding(toLength: 7, withPad: " ", startingAt: 0),
     grid.padding(toLength: 7, withPad: " ", startingAt: 0),
     String(level.words.count).padding(toLength: 7, withPad: " ", startingAt: 0),
+    (level.seconds.map { "\($0)s" } ?? "-").padding(toLength: 7, withPad: " ", startingAt: 0),
     span.padding(toLength: 12, withPad: " ", startingAt: 0),
     board.padding(toLength: 9, withPad: " ", startingAt: 0),
     level.words.map(\.word).joined(separator: " "),

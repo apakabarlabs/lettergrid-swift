@@ -1,43 +1,63 @@
 import WordGrid
 import Yams
 
+public struct GridStep: Decodable, Equatable, Sendable {
+  public let columns: Int
+  public let rows: Int
+  public let words: Int
+  public let levels: Int?
+  public let seconds: Int?
+
+  public init(columns: Int, rows: Int, words: Int, levels: Int?, seconds: Int? = nil) {
+    self.columns = columns
+    self.rows = rows
+    self.words = words
+    self.levels = levels
+    self.seconds = seconds
+  }
+}
+
 public struct GameConfiguration: Decodable, Sendable {
   public enum Failure: Error, Equatable {
     case notPositive(String)
-    case invalidRamp(String)
+    case noSteps
+    case endlessStepBeforeTheLast
     case noDirections
   }
 
-  public let secondsPerLevel: Int
-  public let introSecondsPerLetter: Double
+  public let steps: [GridStep]
   public let directions: [Direction]
-  public let columns: Ramp
-  public let rows: Ramp
-  public let wordsPerLevel: Ramp
   public let minWordLength: Int
   public let clusterSize: Int
   public let letters: [String: Double]
+  public let introSecondsPerLetter: Double
+  public let pointsPerLetter: Int
+  public let hintCost: Int
+  public let hintsPerLevel: Int
+  public let rejectionSeconds: Double
 
   public init(
-    secondsPerLevel: Int,
-    introSecondsPerLetter: Double,
+    steps: [GridStep],
     directions: [Direction],
-    columns: Ramp,
-    rows: Ramp,
-    wordsPerLevel: Ramp,
     minWordLength: Int,
     clusterSize: Int,
-    letters: [String: Double]
+    letters: [String: Double],
+    introSecondsPerLetter: Double,
+    pointsPerLetter: Int,
+    hintCost: Int,
+    hintsPerLevel: Int,
+    rejectionSeconds: Double
   ) throws {
-    self.secondsPerLevel = secondsPerLevel
-    self.introSecondsPerLetter = introSecondsPerLetter
+    self.steps = steps
     self.directions = directions
-    self.columns = columns
-    self.rows = rows
-    self.wordsPerLevel = wordsPerLevel
     self.minWordLength = minWordLength
     self.clusterSize = clusterSize
     self.letters = letters
+    self.introSecondsPerLetter = introSecondsPerLetter
+    self.pointsPerLetter = pointsPerLetter
+    self.hintCost = hintCost
+    self.hintsPerLevel = hintsPerLevel
+    self.rejectionSeconds = rejectionSeconds
     try validate()
   }
 
@@ -51,36 +71,85 @@ public struct GameConfiguration: Decodable, Sendable {
     try LetterWeights(letters)
   }
 
-  private func validate() throws {
-    guard !directions.isEmpty else { throw Failure.noDirections }
-    for (name, value) in [
-      ("seconds_per_level", secondsPerLevel), ("min_word_length", minWordLength),
-      ("cluster_size", clusterSize),
-    ] {
-      guard value > 0 else { throw Failure.notPositive(name) }
+  public func step(at level: Int) -> GridStep? {
+    var first = 1
+    for step in steps {
+      guard let levels = step.levels else { return step }
+      if level < first + levels { return step }
+      first += levels
     }
-    guard introSecondsPerLetter > 0 else { throw Failure.notPositive("intro_seconds_per_letter") }
-    for (name, ramp) in [("columns", columns), ("rows", rows), ("words_per_level", wordsPerLevel)] {
-      guard ramp.isValid, ramp.first > 0, ramp.last > 0 else { throw Failure.invalidRamp(name) }
+    return nil
+  }
+
+  private func validate() throws {
+    guard !steps.isEmpty else { throw Failure.noSteps }
+    guard steps.dropLast().allSatisfy({ $0.levels != nil }) else {
+      throw Failure.endlessStepBeforeTheLast
+    }
+    guard !directions.isEmpty else { throw Failure.noDirections }
+    for step in steps {
+      for (name, value) in [
+        ("columns", step.columns), ("rows", step.rows), ("words", step.words),
+        ("levels", step.levels ?? 1), ("seconds", step.seconds ?? 1),
+      ] where value <= 0 {
+        throw Failure.notPositive(name)
+      }
+    }
+    for (name, value) in [
+      ("min_word_length", minWordLength), ("cluster_size", clusterSize),
+      ("points_per_letter", pointsPerLetter),
+    ] where value <= 0 {
+      throw Failure.notPositive(name)
+    }
+    for (name, value) in [("hint_cost", hintCost), ("hints_per_level", hintsPerLevel)]
+    where value < 0 {
+      throw Failure.notPositive(name)
+    }
+    for (name, value) in [
+      ("intro_seconds_per_letter", introSecondsPerLetter), ("rejection_seconds", rejectionSeconds),
+    ] where value <= 0 {
+      throw Failure.notPositive(name)
     }
     _ = try filler()
   }
 
   private enum CodingKeys: String, CodingKey {
-    case secondsPerLevel = "seconds_per_level"
-    case introSecondsPerLetter = "intro_seconds_per_letter"
+    case steps
     case directions
-    case columns
-    case rows
-    case wordsPerLevel = "words_per_level"
     case minWordLength = "min_word_length"
     case clusterSize = "cluster_size"
     case letters
+    case introSecondsPerLetter = "intro_seconds_per_letter"
+    case pointsPerLetter = "points_per_letter"
+    case hintCost = "hint_cost"
+    case hintsPerLevel = "hints_per_level"
+    case rejectionSeconds = "rejection_seconds"
+  }
+}
+
+public struct WordEntry: Decodable, Equatable, Sendable {
+  public let word: String
+  public let sense: String?
+  public let grammar: String
+  public let level: String
+
+  public init(word: String, sense: String? = nil, grammar: String = "", level: String = "A1") {
+    self.word = word
+    self.sense = sense
+    self.grammar = grammar
+    self.level = level
+  }
+
+  public var spelling: String { word.uppercased() }
+
+  public var isOneWord: Bool {
+    !word.isEmpty
+      && word.unicodeScalars.allSatisfy { ("a"..."z").contains($0) || ("A"..."Z").contains($0) }
   }
 }
 
 public struct WordList: Decodable, Sendable {
-  public let words: [String]
+  public let words: [WordEntry]
 
   public static func decode(_ yaml: String) throws -> WordList {
     try YAMLDecoder().decode(WordList.self, from: yaml)

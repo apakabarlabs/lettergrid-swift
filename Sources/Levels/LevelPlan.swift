@@ -9,17 +9,17 @@ public struct Level: Equatable, Sendable {
   public let number: Int
   public let columns: Int
   public let rows: Int
-  public let seconds: Int
+  public let seconds: Int?
   public let words: [RankedWord]
 }
 
 public struct LevelPlan: Sendable {
   public let configuration: GameConfiguration
   public let levels: [Level]
-  private let seed: UInt64
+  public let seed: UInt64
   private let filler: LetterWeights
 
-  public init(configuration: GameConfiguration, words: [String], seed: UInt64) throws {
+  public init(configuration: GameConfiguration, words: [WordEntry], seed: UInt64) throws {
     self.configuration = configuration
     self.seed = seed
     self.filler = try configuration.filler()
@@ -46,16 +46,15 @@ public struct LevelPlan: Sendable {
 private struct Sequencer {
   let configuration: GameConfiguration
 
-  func levels(of words: [String], seed: UInt64) -> [Level] {
+  func levels(of words: [WordEntry], seed: UInt64) -> [Level] {
     var queue = order(words, seed: seed)[...]
     var deferred: ArraySlice<RankedWord> = []
     var levels: [Level] = []
-    while true {
+    while let step = configuration.step(at: levels.count + 1) {
       let number = levels.count + 1
-      let columns = configuration.columns.value(at: number)
-      let rows = configuration.rows.value(at: number)
-      let longest = configuration.directions.map { $0 == .right ? columns : rows }.max() ?? 0
-      let wanted = configuration.wordsPerLevel.value(at: number)
+      let longest =
+        configuration.directions.map { $0 == .right ? step.columns : step.rows }.max() ?? 0
+      let wanted = step.words
       var chosen: [RankedWord] = []
       var skipped: [RankedWord] = []
       while chosen.count < wanted, let next = deferred.popFirst() ?? queue.popFirst() {
@@ -70,20 +69,23 @@ private struct Sequencer {
       levels.append(
         Level(
           number: number,
-          columns: columns,
-          rows: rows,
-          seconds: configuration.secondsPerLevel,
+          columns: step.columns,
+          rows: step.rows,
+          seconds: step.seconds,
           words: chosen
         )
       )
     }
+    return levels
   }
 
-  private func order(_ words: [String], seed: UInt64) -> [RankedWord] {
+  private func order(_ words: [WordEntry], seed: UInt64) -> [RankedWord] {
     var random = SeededRandom(seed: seed)
+    var seen: Set<String> = []
     let ranked = words.enumerated()
-      .map { RankedWord(word: $0.element, rank: $0.offset + 1) }
-      .filter { $0.word.count >= configuration.minWordLength }
+      .filter { $0.element.isOneWord && $0.element.word.count >= configuration.minWordLength }
+      .filter { seen.insert($0.element.spelling).inserted }
+      .map { RankedWord(word: $0.element.spelling, rank: $0.offset + 1) }
     return stride(from: 0, to: ranked.count, by: configuration.clusterSize).flatMap { start in
       ranked[start..<min(start + configuration.clusterSize, ranked.count)].shuffled(using: &random)
     }

@@ -2,29 +2,34 @@
 public struct Countdown {
   public typealias Sleep = @Sendable (Duration) async throws -> Void
 
-  private let introPerLetter: Duration
   private let sleep: Sleep
 
-  public init(
-    introSecondsPerLetter: Double,
-    sleep: @escaping Sleep = { try await Task.sleep(for: $0) }
-  ) {
-    self.introPerLetter = .seconds(introSecondsPerLetter)
+  public init(sleep: @escaping Sleep = { try await Task.sleep(for: $0) }) {
     self.sleep = sleep
   }
 
-  public func run(_ round: LevelRound) async {
+  public func run(_ game: GameRun) async {
+    guard let round = game.round else { return }
     do {
       while round.phase == .introducing {
-        try await sleep(introPerLetter)
-        round.introduceNextLetter()
+        try await sleep(.seconds(game.configuration.introSecondsPerLetter))
+        game.introduceNextLetter()
       }
-      while round.phase == .playing {
+      while round.phase == .playing, round.secondsLeft != nil {
         try await sleep(.seconds(1))
-        round.secondPassed()
+        game.secondPassed()
       }
     } catch {
       return
     }
+  }
+
+  public func fadeRejection(of game: GameRun) async {
+    do {
+      try await sleep(.seconds(game.configuration.rejectionSeconds))
+    } catch {
+      return
+    }
+    game.clearRejection()
   }
 }
