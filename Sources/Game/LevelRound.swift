@@ -31,6 +31,7 @@ public final class LevelRound {
 
   public let level: Level
   public let board: Board
+  public let showsFirstWord: Bool
   public private(set) var phase: Phase
   public private(set) var secondsLeft: Int?
   public private(set) var found: Set<Placement>
@@ -47,6 +48,7 @@ public final class LevelRound {
     self.level = level
     self.board = board
     self.directions = directions
+    self.showsFirstWord = introduces && !board.placements.isEmpty
     self.secondsLeft = level.seconds.map { progress.secondsLeft ?? $0 }
     let byWord = Dictionary(
       board.placements.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })

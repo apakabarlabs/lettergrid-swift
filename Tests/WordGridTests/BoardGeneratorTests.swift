@@ -75,11 +75,21 @@ struct BoardGeneratorTests {
 
   @Test func noMoreWordsGoAlongADirectionThanItsLimit() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, limits: [.down: 1])
+      columns: 7, rows: 7, directions: [.right, .down], filler: filler, limits: [.down: 0...1])
 
     for seed in UInt64(1)...20 {
       let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
       #expect(board.placements.filter { $0.direction == .down }.count <= 1)
+    }
+  }
+
+  @Test func noFewerWordsGoAlongADirectionThanItsLimit() throws {
+    let generator = BoardGenerator(
+      columns: 7, rows: 7, directions: [.right, .down], filler: filler, limits: [.down: 3...5])
+
+    for seed in UInt64(1)...20 {
+      let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
+      #expect(board.placements.filter { $0.direction == .down }.count >= 3)
     }
   }
 

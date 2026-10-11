@@ -41,3 +41,6 @@ for level in plan.levels {
 }
 let used = plan.levels.reduce(0) { $0 + $1.words.count }
 print("\(plan.levels.count) levels, \(used) of \(words.count) words, \(unplaceable) without room")
+let placed = Set(plan.levels.flatMap(\.words).map(\.word))
+let left = plan.playable.filter { !placed.contains($0) }
+print("\(left.count) playable words on no level: \(left.joined(separator: " "))")

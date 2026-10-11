@@ -15,11 +15,13 @@ struct LevelPlanTests {
   ]
 
   private func configuration(
-    steps: [GridStep]? = nil, clusterSize: Int = 1, maxVerticalWords: Int = 1
+    steps: [GridStep]? = nil, clusterSize: Int = 1, minVerticalWords: Int = 0,
+    maxVerticalWords: Int = 1
   ) throws -> GameConfiguration {
     try GameConfiguration(
       steps: steps ?? growingSteps,
       directions: [.right, .down],
+      minVerticalWords: minVerticalWords,
       maxVerticalWords: maxVerticalWords,
       minWordLength: 3,
       clusterSize: clusterSize,
@@ -121,14 +123,22 @@ struct LevelPlanTests {
     #expect(levels.allSatisfy { level in level.words.filter { $0.word.count > 5 }.count <= 2 })
   }
 
-  @Test func aBoardStandsNoMoreWordsDownThanAllowed() throws {
-    let steps = [GridStep(columns: 7, rows: 7, words: 4, levels: nil)]
+  @Test func aBoardStandsDownBetweenTheFewestAndTheMostWordsAllowed() throws {
+    let steps = [GridStep(columns: 7, rows: 7, words: 5, levels: nil)]
     let plan = try LevelPlan(
-      configuration: configuration(steps: steps, maxVerticalWords: 1), words: words, seed: 5)
+      configuration: configuration(steps: steps, minVerticalWords: 2, maxVerticalWords: 3),
+      words: words, seed: 5)
 
+    #expect(!plan.levels.isEmpty)
     for level in plan.levels {
       let board = try plan.board(for: level)
-      #expect(board.placements.filter { $0.direction == .down }.count <= 1)
+      #expect((2...3).contains(board.placements.filter { $0.direction == .down }.count))
+    }
+  }
+
+  @Test func moreVerticalWordsRequiredThanAllowedIsRefused() {
+    #expect(throws: GameConfiguration.Failure.fewerAllowedThanRequired("vertical_words")) {
+      try configuration(minVerticalWords: 3, maxVerticalWords: 2)
     }
   }
 
@@ -194,6 +204,7 @@ struct LevelPlanTests {
       - {columns: 4, rows: 4, words: 2, levels: 1}
       - {columns: 7, rows: 8, words: 5, seconds: 60}
       directions: [right, down]
+      min_vertical_words: 1
       max_vertical_words: 2
       min_word_length: 3
       cluster_size: 50
@@ -211,6 +222,7 @@ struct LevelPlanTests {
         GridStep(columns: 7, rows: 8, words: 5, levels: nil, seconds: 60),
       ])
     #expect(configuration.directions == [.right, .down])
+    #expect(configuration.minVerticalWords == 1)
     #expect(configuration.maxVerticalWords == 2)
     #expect(configuration.minWordLength == 3)
     #expect(configuration.clusterSize == 50)
@@ -229,6 +241,7 @@ struct LevelPlanTests {
         steps:
         - {columns: 4, rows: 4, words: 2}
         directions: []
+        min_vertical_words: 0
         max_vertical_words: 2
         min_word_length: 3
         cluster_size: 50

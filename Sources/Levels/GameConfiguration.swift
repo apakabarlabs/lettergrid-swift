@@ -23,10 +23,12 @@ public struct GameConfiguration: Decodable, Sendable {
     case noSteps
     case endlessStepBeforeTheLast
     case noDirections
+    case fewerAllowedThanRequired(String)
   }
 
   public let steps: [GridStep]
   public let directions: [Direction]
+  public let minVerticalWords: Int
   public let maxVerticalWords: Int
   public let minWordLength: Int
   public let clusterSize: Int
@@ -40,6 +42,7 @@ public struct GameConfiguration: Decodable, Sendable {
   public init(
     steps: [GridStep],
     directions: [Direction],
+    minVerticalWords: Int,
     maxVerticalWords: Int,
     minWordLength: Int,
     clusterSize: Int,
@@ -52,6 +55,7 @@ public struct GameConfiguration: Decodable, Sendable {
   ) throws {
     self.steps = steps
     self.directions = directions
+    self.minVerticalWords = minVerticalWords
     self.maxVerticalWords = maxVerticalWords
     self.minWordLength = minWordLength
     self.clusterSize = clusterSize
@@ -106,9 +110,12 @@ public struct GameConfiguration: Decodable, Sendable {
     }
     for (name, value) in [
       ("hint_cost", hintCost), ("hints_per_level", hintsPerLevel),
-      ("max_vertical_words", maxVerticalWords),
+      ("min_vertical_words", minVerticalWords), ("max_vertical_words", maxVerticalWords),
     ] where value < 0 {
       throw Failure.notPositive(name)
+    }
+    guard minVerticalWords <= maxVerticalWords else {
+      throw Failure.fewerAllowedThanRequired("vertical_words")
     }
     for (name, value) in [
       ("intro_seconds_per_letter", introSecondsPerLetter), ("rejection_seconds", rejectionSeconds),
@@ -121,6 +128,7 @@ public struct GameConfiguration: Decodable, Sendable {
   private enum CodingKeys: String, CodingKey {
     case steps
     case directions
+    case minVerticalWords = "min_vertical_words"
     case maxVerticalWords = "max_vertical_words"
     case minWordLength = "min_word_length"
     case clusterSize = "cluster_size"

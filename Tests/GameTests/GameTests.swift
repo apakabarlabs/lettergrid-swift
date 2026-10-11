@@ -16,6 +16,7 @@ struct GameTests {
     try GameConfiguration(
       steps: [GridStep(columns: 6, rows: 6, words: 2, levels: nil, seconds: seconds)],
       directions: [.right, .down],
+      minVerticalWords: 0,
       maxVerticalWords: 2,
       minWordLength: 3,
       clusterSize: 1,
@@ -65,6 +66,7 @@ struct GameTests {
     let first = round.board.placements[0]
 
     #expect(round.phase == .introducing)
+    #expect(round.showsFirstWord)
     game.introduceNextLetter()
     #expect(round.introduced == [first.cells[0]])
     introduce(game)
@@ -84,6 +86,7 @@ struct GameTests {
 
     #expect(game.round?.level.number == 2)
     #expect(game.round?.phase == .playing)
+    #expect(game.round?.showsFirstWord == false)
   }
 
   @Test func aWordBringsAPointForEachOfItsLetters() throws {

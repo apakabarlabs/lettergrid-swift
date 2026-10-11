@@ -8,14 +8,14 @@ public struct BoardGenerator: Sendable {
   public let directions: [Direction]
   public let filler: LetterWeights
   public let dictionary: Set<String>
-  public let limits: [Direction: Int]
+  public let limits: [Direction: ClosedRange<Int>]
   public let attempts: Int
   public let fillsPerAttempt: Int
 
   public init(
     columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
-    dictionary: Set<String> = [], limits: [Direction: Int] = [:], attempts: Int = 200,
-    fillsPerAttempt: Int = 20
+    dictionary: Set<String> = [], limits: [Direction: ClosedRange<Int>] = [:],
+    attempts: Int = 200, fillsPerAttempt: Int = 20
   ) {
     self.columns = columns
     self.rows = rows
@@ -51,9 +51,15 @@ public struct BoardGenerator: Sendable {
     var taken: [Cell: Character] = [:]
     var placements: [Placement] = []
     var used: [Direction: Int] = [:]
-    for word in words.sorted(by: { $0.count > $1.count }) {
+    for (index, word) in words.sorted(by: { $0.count > $1.count }).enumerated() {
+      let remaining = words.count - index
+      let owed = directions.filter { direction in
+        (limits[direction]?.lowerBound ?? 0) - used[direction, default: 0] >= remaining
+      }
       let fitting = candidates(for: word).filter { placement in
-        used[placement.direction, default: 0] < limits[placement.direction, default: Int.max]
+        (owed.isEmpty || owed.contains(placement.direction))
+          && used[placement.direction, default: 0]
+            < limits[placement.direction]?.upperBound ?? Int.max
           && zip(placement.cells, word).allSatisfy { cell, letter in
             taken[cell].map { $0 == letter } ?? true
           }
