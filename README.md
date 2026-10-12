@@ -15,8 +15,6 @@ list and another a short exercise over the words of a lesson.
     make install-tools   # swiftlint, swift-format, commentcensor
     make build           # lint, tests, build
     make test            # the tests, on the host, no device
-    make levels CONFIG=<config.yaml> WORDS=<words.yaml> [SEED=n]
-                         # the level plan a game configuration and a word list give
 
 The SwiftUI part builds only where SwiftUI exists; everything else builds and is tested on
 Linux as well.

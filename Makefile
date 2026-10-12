@@ -2,7 +2,7 @@ SWIFT_SOURCES = Sources Tests Package.swift
 
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools format lint comments test-build test build levels
+.PHONY: install-tools format lint comments test-build test build
 
 install-tools:
 	brew install swiftlint swift-format
@@ -26,7 +26,3 @@ test:
 
 build: lint test
 	swift build
-
-levels:
-	@test -n '$(CONFIG)' -a -n '$(WORDS)' || { echo 'Pass CONFIG=<config.yaml> WORDS=<words.yaml> [SEED=n]'; exit 1; }
-	swift run --quiet level-table '$(abspath $(CONFIG))' '$(abspath $(WORDS))' $(SEED)

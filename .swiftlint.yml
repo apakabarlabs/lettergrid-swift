@@ -30,5 +30,3 @@ custom_rules:
     regex: "(^|\\s)print\\("
     message: "A library reports through its return values and errors, not the console."
     severity: error
-    excluded:
-      - Sources/LevelTable
