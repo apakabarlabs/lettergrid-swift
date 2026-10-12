@@ -12,17 +12,14 @@ public struct GameSnapshot: Equatable, Sendable {
   public var seed: UInt64
   public var levelNumber: Int
   public var score: Int
-  public var hintsUsed: Int
   public var progress: RoundProgress
 
   public init(
-    seed: UInt64, levelNumber: Int = 1, score: Int = 0, hintsUsed: Int = 0,
-    progress: RoundProgress = RoundProgress()
+    seed: UInt64, levelNumber: Int = 1, score: Int = 0, progress: RoundProgress = RoundProgress()
   ) {
     self.seed = seed
     self.levelNumber = levelNumber
     self.score = score
-    self.hintsUsed = hintsUsed
     self.progress = progress
   }
 }
@@ -41,7 +38,6 @@ public final class GameRun: Identifiable {
   public private(set) var ending: Ending?
   public private(set) var failure: (any Error)?
   public private(set) var known: Set<String>
-  public private(set) var hintsUsed: Int
   public let configuration: GameConfiguration
   public var record: (ScoreEvent) -> Void
   public var changed: () -> Void
@@ -54,7 +50,6 @@ public final class GameRun: Identifiable {
     self.plan = plan
     self.configuration = plan.configuration
     self.score = snapshot.score
-    self.hintsUsed = snapshot.hintsUsed
     self.known = known
     self.record = record
     self.changed = changed
@@ -63,15 +58,14 @@ public final class GameRun: Identifiable {
 
   public var snapshot: GameSnapshot {
     GameSnapshot(
-      seed: plan.seed, levelNumber: round?.level.number ?? 1, score: score, hintsUsed: hintsUsed,
+      seed: plan.seed, levelNumber: round?.level.number ?? 1, score: score,
       progress: round?.progress ?? RoundProgress())
   }
 
-  public var hintsLeft: Int { max(configuration.hintsPerLevel - hintsUsed, 0) }
+  public var hintsLeft: Int { max(score, 0) / configuration.hintCost }
 
   public var canUseHint: Bool {
-    hintsLeft > 0 && score >= configuration.hintCost && round?.phase == .playing
-      && round?.hintTarget != nil
+    hintsLeft > 0 && round?.phase == .playing && round?.hintTarget != nil
   }
 
   public func introduceNextLetter() {
@@ -107,7 +101,6 @@ public final class GameRun: Identifiable {
 
   public func useHint() {
     guard canUseHint, round?.reveal() != nil else { return }
-    hintsUsed += 1
     score -= configuration.hintCost
     record(.hint(points: -configuration.hintCost))
     changed()
@@ -115,7 +108,6 @@ public final class GameRun: Identifiable {
 
   public func nextLevel() {
     guard let round, round.phase == .won, ending == nil else { return }
-    hintsUsed = 0
     open(levelNumber: round.level.number + 1, progress: RoundProgress())
     changed()
   }
@@ -123,7 +115,6 @@ public final class GameRun: Identifiable {
   public func startOver(with plan: LevelPlan) {
     self.plan = plan
     score = 0
-    hintsUsed = 0
     ending = nil
     failure = nil
     open(levelNumber: 1, progress: RoundProgress())

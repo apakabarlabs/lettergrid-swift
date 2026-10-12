@@ -10,9 +10,7 @@ struct GameTests {
     WordEntry(word: $0)
   }
 
-  private func configuration(seconds: Int? = nil, hintsPerLevel: Int = 2) throws
-    -> GameConfiguration
-  {
+  private func configuration(seconds: Int? = nil) throws -> GameConfiguration {
     try GameConfiguration(
       steps: [GridStep(columns: 6, rows: 6, words: 2, levels: nil, seconds: seconds)],
       directions: [.right, .down],
@@ -24,24 +22,22 @@ struct GameTests {
       introSecondsPerLetter: 0.3,
       pointsPerLetter: 1,
       hintCost: 2,
-      hintsPerLevel: hintsPerLevel,
       rejectionSeconds: 2.5
     )
   }
 
-  private func plan(
-    words: [WordEntry]? = nil, seconds: Int? = nil, hintsPerLevel: Int = 2, seed: UInt64 = 7
-  ) throws -> LevelPlan {
+  private func plan(words: [WordEntry]? = nil, seconds: Int? = nil, seed: UInt64 = 7) throws
+    -> LevelPlan
+  {
     try LevelPlan(
-      configuration: configuration(seconds: seconds, hintsPerLevel: hintsPerLevel),
-      words: words ?? self.words, seed: seed)
+      configuration: configuration(seconds: seconds), words: words ?? self.words, seed: seed)
   }
 
   private func game(
-    words: [WordEntry]? = nil, seconds: Int? = nil, hintsPerLevel: Int = 2,
-    snapshot: GameSnapshot? = nil, events: EventLog = EventLog()
+    words: [WordEntry]? = nil, seconds: Int? = nil, snapshot: GameSnapshot? = nil,
+    events: EventLog = EventLog()
   ) throws -> GameRun {
-    let plan = try plan(words: words, seconds: seconds, hintsPerLevel: hintsPerLevel)
+    let plan = try plan(words: words, seconds: seconds)
     return GameRun(
       plan: plan, snapshot: snapshot ?? GameSnapshot(seed: plan.seed),
       record: { events.entries.append($0) }, changed: { events.changes += 1 })
@@ -155,7 +151,6 @@ struct GameTests {
 
     #expect(game.round?.revealed[second] == 1)
     #expect(game.score == 1)
-    #expect(game.hintsLeft == 1)
     #expect(events.entries.last == .hint(points: -2))
   }
 
@@ -169,17 +164,12 @@ struct GameTests {
     #expect(game.score == 1)
   }
 
-  @Test func hintsRunOutWithinALevelAndComeBackOnTheNext() throws {
-    let game = try game(hintsPerLevel: 1)
-    introduce(game)
-    let round = try #require(game.round)
+  @Test func theHintsLeftAreThePointsOverTheCostOfAHint() throws {
+    let game = try game(snapshot: GameSnapshot(seed: 7, levelNumber: 2, score: 96))
+
+    #expect(game.hintsLeft == 48)
     game.useHint()
-    #expect(game.hintsLeft == 0)
-
-    find(round.board.placements[1], in: game)
-    game.nextLevel()
-
-    #expect(game.hintsLeft == 1)
+    #expect(game.hintsLeft == 47)
   }
 
   @Test func withoutAClockALevelCannotBeLost() throws {

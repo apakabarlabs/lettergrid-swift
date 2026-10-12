@@ -36,7 +36,6 @@ public struct GameConfiguration: Decodable, Sendable {
   public let introSecondsPerLetter: Double
   public let pointsPerLetter: Int
   public let hintCost: Int
-  public let hintsPerLevel: Int
   public let rejectionSeconds: Double
 
   public init(
@@ -50,7 +49,6 @@ public struct GameConfiguration: Decodable, Sendable {
     introSecondsPerLetter: Double,
     pointsPerLetter: Int,
     hintCost: Int,
-    hintsPerLevel: Int,
     rejectionSeconds: Double
   ) throws {
     self.steps = steps
@@ -63,7 +61,6 @@ public struct GameConfiguration: Decodable, Sendable {
     self.introSecondsPerLetter = introSecondsPerLetter
     self.pointsPerLetter = pointsPerLetter
     self.hintCost = hintCost
-    self.hintsPerLevel = hintsPerLevel
     self.rejectionSeconds = rejectionSeconds
     try validate()
   }
@@ -104,12 +101,11 @@ public struct GameConfiguration: Decodable, Sendable {
     }
     for (name, value) in [
       ("min_word_length", minWordLength), ("cluster_size", clusterSize),
-      ("points_per_letter", pointsPerLetter),
+      ("points_per_letter", pointsPerLetter), ("hint_cost", hintCost),
     ] where value <= 0 {
       throw Failure.notPositive(name)
     }
     for (name, value) in [
-      ("hint_cost", hintCost), ("hints_per_level", hintsPerLevel),
       ("min_vertical_words", minVerticalWords), ("max_vertical_words", maxVerticalWords),
     ] where value < 0 {
       throw Failure.notPositive(name)
@@ -136,7 +132,6 @@ public struct GameConfiguration: Decodable, Sendable {
     case introSecondsPerLetter = "intro_seconds_per_letter"
     case pointsPerLetter = "points_per_letter"
     case hintCost = "hint_cost"
-    case hintsPerLevel = "hints_per_level"
     case rejectionSeconds = "rejection_seconds"
   }
 }

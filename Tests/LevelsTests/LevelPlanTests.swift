@@ -29,7 +29,6 @@ struct LevelPlanTests {
       introSecondsPerLetter: 0.3,
       pointsPerLetter: 1,
       hintCost: 2,
-      hintsPerLevel: 2,
       rejectionSeconds: 2.5
     )
   }
@@ -216,8 +215,7 @@ struct LevelPlanTests {
       letters: {a: 8.2, b: 1.5}
       intro_seconds_per_letter: 0.35
       points_per_letter: 1
-      hint_cost: 2
-      hints_per_level: 3
+      hint_cost: 3
       rejection_seconds: 2.5
       """)
 
@@ -234,8 +232,7 @@ struct LevelPlanTests {
     #expect(configuration.letters == ["a": 8.2, "b": 1.5])
     #expect(configuration.introSecondsPerLetter == 0.35)
     #expect(configuration.pointsPerLetter == 1)
-    #expect(configuration.hintCost == 2)
-    #expect(configuration.hintsPerLevel == 3)
+    #expect(configuration.hintCost == 3)
     #expect(configuration.rejectionSeconds == 2.5)
   }
 
@@ -254,7 +251,6 @@ struct LevelPlanTests {
         intro_seconds_per_letter: 0.35
         points_per_letter: 1
         hint_cost: 2
-        hints_per_level: 2
         rejection_seconds: 2.5
         """)
     }
