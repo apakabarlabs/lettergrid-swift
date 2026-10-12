@@ -8,28 +8,20 @@ public struct Countdown {
     self.sleep = sleep
   }
 
-  public func run(_ game: GameRun) async {
-    guard let round = game.round else { return }
+  public func run(
+    _ round: Round, secondsPerLetter: Double, introduce: () -> Void, tick: () -> Void
+  ) async {
     do {
       while round.phase == .introducing {
-        try await sleep(.seconds(game.configuration.introSecondsPerLetter))
-        game.introduceNextLetter()
+        try await sleep(.seconds(secondsPerLetter))
+        introduce()
       }
       while round.phase == .playing, round.secondsLeft != nil {
         try await sleep(.seconds(1))
-        game.secondPassed()
+        tick()
       }
     } catch {
       return
     }
-  }
-
-  public func fadeRejection(of game: GameRun) async {
-    do {
-      try await sleep(.seconds(game.configuration.rejectionSeconds))
-    } catch {
-      return
-    }
-    game.clearRejection()
   }
 }

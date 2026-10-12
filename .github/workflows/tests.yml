@@ -1,0 +1,25 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: swift:6.2
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install make
+      run: apt-get update -qq && apt-get install -y -qq make
+
+    - name: Run tests
+      run: make test

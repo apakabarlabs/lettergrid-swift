@@ -1,0 +1,34 @@
+included:
+  - Sources
+  - Tests
+
+disabled_rules:
+  - trailing_comma
+
+identifier_name:
+  excluded:
+    - id
+    - db
+    - ui
+    - i
+    - j
+    - k
+    - x
+    - y
+    - z
+    - a
+    - b
+
+custom_rules:
+  no_try_optional:
+    name: "try? is forbidden"
+    regex: "try\\?"
+    message: "try? swallows the error with no log, no crash and no screen. Handle it or let it throw."
+    severity: error
+  no_print:
+    name: "print() is forbidden"
+    regex: "(^|\\s)print\\("
+    message: "A library reports through its return values and errors, not the console."
+    severity: error
+    excluded:
+      - Sources/LevelTable

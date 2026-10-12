@@ -1,6 +1,4 @@
-import Levels
 import Observation
-import WordGrid
 
 public struct RoundProgress: Equatable, Sendable {
   public var found: [String]
@@ -19,9 +17,27 @@ public struct RoundProgress: Equatable, Sendable {
   }
 }
 
+public enum HintOrder: String, Sendable, Decodable {
+  case fromStart = "from_start"
+  case anyButFirst = "any_but_first"
+
+  func letterIndices(of word: String) -> [Int] {
+    switch self {
+    case .fromStart:
+      return Array(0..<word.count)
+    case .anyButFirst:
+      let seed = word.unicodeScalars.reduce(UInt64(0xCBF2_9CE4_8422_2325)) {
+        ($0 ^ UInt64($1.value)) &* 0x100_0000_01B3
+      }
+      var random = SeededRandom(seed: seed)
+      return Array(1..<max(word.count, 1)).shuffled(using: &random)
+    }
+  }
+}
+
 @MainActor
 @Observable
-public final class LevelRound {
+public final class Round {
   public enum Phase: Equatable, Sendable {
     case introducing
     case playing
@@ -29,9 +45,9 @@ public final class LevelRound {
     case lost
   }
 
-  public let level: Level
   public let board: Board
   public let showsFirstWord: Bool
+  public let hintOrder: HintOrder
   public private(set) var phase: Phase
   public private(set) var secondsLeft: Int?
   public private(set) var found: Set<Placement>
@@ -42,14 +58,14 @@ public final class LevelRound {
   private let directions: [Direction]
 
   public init(
-    level: Level, board: Board, directions: [Direction], introduces: Bool,
-    progress: RoundProgress = RoundProgress()
+    board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
+    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
   ) {
-    self.level = level
     self.board = board
     self.directions = directions
+    self.hintOrder = hintOrder
     self.showsFirstWord = introduces && !board.placements.isEmpty
-    self.secondsLeft = level.seconds.map { progress.secondsLeft ?? $0 }
+    self.secondsLeft = seconds.map { progress.secondsLeft ?? $0 }
     let byWord = Dictionary(
       board.placements.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.found = Set(progress.found.compactMap { byWord[$0] })
@@ -77,11 +93,24 @@ public final class LevelRound {
 
   public var hintTarget: Placement? {
     let open = board.placements.filter { !found.contains($0) }
-    return open.first { revealed[$0, default: 0] == 0 }
-      ?? open.first { revealed[$0, default: 0] < $0.word.count - 1 }
+    return open.first { revealed[$0, default: 0] == 0 && hintLimit(of: $0) > 0 }
+      ?? open.first { revealed[$0, default: 0] < hintLimit(of: $0) }
   }
 
-  func introduceNextLetter() -> Placement? {
+  public var hintedCells: [Cell] {
+    board.placements.filter { !found.contains($0) }.flatMap { placement in
+      revealedIndices(of: placement).map { placement.cells[$0] }
+    }
+  }
+
+  public func shownLetters(of placement: Placement) -> [Character?] {
+    let letters = Array(placement.word)
+    if found.contains(placement) { return letters }
+    let opened = Set(revealedIndices(of: placement))
+    return letters.indices.map { opened.contains($0) ? letters[$0] : nil }
+  }
+
+  public func introduceNextLetter() -> Placement? {
     guard phase == .introducing, let first = board.placements.first else { return nil }
     if introduced.count < first.cells.count {
       introduced = Array(first.cells.prefix(introduced.count + 1))
@@ -92,7 +121,7 @@ public final class LevelRound {
     return record(first)
   }
 
-  func secondPassed() {
+  public func secondPassed() {
     guard phase == .playing, let seconds = secondsLeft else { return }
     secondsLeft = max(seconds - 1, 0)
     if secondsLeft == 0 {
@@ -101,18 +130,18 @@ public final class LevelRound {
     }
   }
 
-  func touch(_ cell: Cell) {
+  public func touch(_ cell: Cell) {
     guard phase == .playing else { return }
     rejected = []
     selection = [cell]
   }
 
-  func drag(to cell: Cell) {
+  public func drag(to cell: Cell) {
     guard phase == .playing, let start = selection.first else { return }
     selection = board.selection(from: start, toward: cell, along: directions)
   }
 
-  func release() -> Placement? {
+  public func release() -> Placement? {
     let released = selection
     selection = []
     guard phase == .playing, released.count > 1 else { return nil }
@@ -125,14 +154,22 @@ public final class LevelRound {
     return record(placement)
   }
 
-  func reveal() -> Placement? {
+  public func reveal() -> Placement? {
     guard phase == .playing, let target = hintTarget else { return nil }
     revealed[target, default: 0] += 1
     return target
   }
 
-  func clearRejection() {
+  public func clearRejection() {
     rejected = []
+  }
+
+  private func hintLimit(of placement: Placement) -> Int {
+    max(hintOrder.letterIndices(of: placement.word).count - 1, 0)
+  }
+
+  private func revealedIndices(of placement: Placement) -> [Int] {
+    Array(hintOrder.letterIndices(of: placement.word).prefix(revealed[placement, default: 0]))
   }
 
   private func record(_ placement: Placement) -> Placement {

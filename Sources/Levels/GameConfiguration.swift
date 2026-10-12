@@ -1,4 +1,4 @@
-import WordGrid
+import LetterGrid
 import Yams
 
 public struct GridStep: Decodable, Equatable, Sendable {

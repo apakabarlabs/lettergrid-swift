@@ -1,10 +1,14 @@
 import Testing
 
-@testable import WordGrid
+@testable import LetterGrid
 
 struct BoardGeneratorTests {
-  private let filler = try! LetterWeights(["a": 8, "e": 12, "t": 9, "s": 6, "q": 0.1])
+  private let filler: LetterWeights
   private let words = ["house", "water", "cat", "tree", "plan"]
+
+  init() throws {
+    filler = try LetterWeights(["a": 8, "e": 12, "t": 9, "s": 6, "q": 0.1])
+  }
 
   private func generator(columns: Int = 7, rows: Int = 7) -> BoardGenerator {
     BoardGenerator(columns: columns, rows: rows, directions: [.right, .down], filler: filler)

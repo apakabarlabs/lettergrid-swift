@@ -1,6 +1,6 @@
+import LetterGrid
 import Levels
 import Testing
-import WordGrid
 
 @testable import Game
 
@@ -26,9 +26,9 @@ struct GameTests {
     )
   }
 
-  private func plan(words: [WordEntry]? = nil, seconds: Int? = nil, seed: UInt64 = 7) throws
-    -> LevelPlan
-  {
+  private func plan(
+    words: [WordEntry]? = nil, seconds: Int? = nil, seed: UInt64 = 7
+  ) throws -> LevelPlan {
     try LevelPlan(
       configuration: configuration(seconds: seconds), words: words ?? self.words, seed: seed)
   }
@@ -80,7 +80,7 @@ struct GameTests {
     find(try #require(game.round).board.placements[1], in: game)
     game.nextLevel()
 
-    #expect(game.round?.level.number == 2)
+    #expect(game.levelNumber == 2)
     #expect(game.round?.phase == .playing)
     #expect(game.round?.showsFirstWord == false)
   }
@@ -203,7 +203,7 @@ struct GameTests {
     game.startOver(with: try plan(seed: 99))
 
     #expect(game.score == 0)
-    #expect(game.round?.level.number == 1)
+    #expect(game.levelNumber == 1)
     #expect(game.round?.phase == .introducing)
     #expect(game.known == known)
     #expect(events.entries.last == .newGame)

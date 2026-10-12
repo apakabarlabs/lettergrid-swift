@@ -1,6 +1,6 @@
 import Testing
 
-@testable import WordGrid
+@testable import LetterGrid
 
 struct SelectionTests {
   private let board = Board(

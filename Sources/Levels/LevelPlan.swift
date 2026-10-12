@@ -1,4 +1,4 @@
-import WordGrid
+import LetterGrid
 
 public struct RankedWord: Equatable, Sendable {
   public let word: String

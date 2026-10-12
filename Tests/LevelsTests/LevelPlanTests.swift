@@ -1,5 +1,5 @@
+import LetterGrid
 import Testing
-import WordGrid
 
 @testable import Levels
 
@@ -33,9 +33,9 @@ struct LevelPlanTests {
     )
   }
 
-  private func plan(words: [WordEntry]? = nil, clusterSize: Int = 1, seed: UInt64 = 3) throws
-    -> LevelPlan
-  {
+  private func plan(
+    words: [WordEntry]? = nil, clusterSize: Int = 1, seed: UInt64 = 3
+  ) throws -> LevelPlan {
     try LevelPlan(
       configuration: configuration(clusterSize: clusterSize), words: words ?? self.words, seed: seed
     )

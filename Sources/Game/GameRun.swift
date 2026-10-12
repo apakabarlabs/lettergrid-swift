@@ -1,6 +1,6 @@
+import LetterGrid
 import Levels
 import Observation
-import WordGrid
 
 public enum ScoreEvent: Equatable, Sendable {
   case word(String, points: Int)
@@ -34,7 +34,8 @@ public final class GameRun: Identifiable {
   }
 
   public private(set) var score: Int
-  public private(set) var round: LevelRound?
+  public private(set) var levelNumber = 1
+  public private(set) var round: Round?
   public private(set) var ending: Ending?
   public private(set) var failure: (any Error)?
   public private(set) var known: Set<String>
@@ -58,7 +59,7 @@ public final class GameRun: Identifiable {
 
   public var snapshot: GameSnapshot {
     GameSnapshot(
-      seed: plan.seed, levelNumber: round?.level.number ?? 1, score: score,
+      seed: plan.seed, levelNumber: levelNumber, score: score,
       progress: round?.progress ?? RoundProgress())
   }
 
@@ -108,7 +109,7 @@ public final class GameRun: Identifiable {
 
   public func nextLevel() {
     guard let round, round.phase == .won, ending == nil else { return }
-    open(levelNumber: round.level.number + 1, progress: RoundProgress())
+    open(levelNumber: levelNumber + 1, progress: RoundProgress())
     changed()
   }
 
@@ -136,16 +137,17 @@ public final class GameRun: Identifiable {
   }
 
   private func open(levelNumber: Int, progress: RoundProgress) {
+    self.levelNumber = levelNumber
     guard let level = plan.level(levelNumber) else {
       round = nil
       ending = .everyLevelPlayed
       return
     }
     do {
-      round = LevelRound(
-        level: level,
+      round = Round(
         board: try plan.board(for: level),
         directions: configuration.directions,
+        seconds: level.seconds,
         introduces: levelNumber == 1,
         progress: progress
       )

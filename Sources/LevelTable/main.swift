@@ -11,7 +11,16 @@ guard arguments.count >= 3 else {
 let configuration = try GameConfiguration.decode(
   String(contentsOfFile: arguments[1], encoding: .utf8))
 let words = try WordList.decode(String(contentsOfFile: arguments[2], encoding: .utf8)).words
-let seed = arguments.count > 3 ? UInt64(arguments[3]) ?? 1 : 1
+let seed: UInt64
+if arguments.count > 3 {
+  guard let given = UInt64(arguments[3]) else {
+    FileHandle.standardError.write(Data("seed \(arguments[3]) is not a whole number\n".utf8))
+    exit(2)
+  }
+  seed = given
+} else {
+  seed = 1
+}
 let plan = try LevelPlan(configuration: configuration, words: words, seed: seed)
 
 print("level  grid   words  clock  ranks       board")
