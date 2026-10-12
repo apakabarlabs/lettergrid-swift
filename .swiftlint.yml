@@ -2,8 +2,8 @@ included:
   - Sources
   - Tests
 
-disabled_rules:
-  - trailing_comma
+trailing_comma:
+  mandatory_comma: true
 
 identifier_name:
   excluded:
