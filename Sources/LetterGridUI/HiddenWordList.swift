@@ -5,10 +5,12 @@
   public struct HiddenWordList: View {
     let round: Round
     let style: LetterGridStyle
-    let hiddenWordLabel: (Int) -> String
+    let hiddenWordLabel: @MainActor (Int) -> String
     @ScaledMetric(relativeTo: .title3) private var letterWidth = 22
 
-    public init(round: Round, style: LetterGridStyle, hiddenWordLabel: @escaping (Int) -> String) {
+    public init(
+      round: Round, style: LetterGridStyle, hiddenWordLabel: @escaping @MainActor (Int) -> String
+    ) {
       self.round = round
       self.style = style
       self.hiddenWordLabel = hiddenWordLabel

@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 public struct RoundProgress: Equatable, Sendable {
@@ -37,7 +38,7 @@ public enum HintOrder: String, Sendable, Decodable {
 
 @MainActor
 @Observable
-public final class Round {
+public final class Round: Identifiable {
   public enum Phase: Equatable, Sendable {
     case introducing
     case playing
@@ -45,6 +46,7 @@ public final class Round {
     case lost
   }
 
+  public nonisolated let id = UUID()
   public let board: Board
   public let showsFirstWord: Bool
   public let hintOrder: HintOrder

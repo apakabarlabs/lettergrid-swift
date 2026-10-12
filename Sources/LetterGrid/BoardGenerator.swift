@@ -1,6 +1,16 @@
+import Foundation
+
 public struct BoardGenerator: Sendable {
-  public enum Failure: Error, Equatable {
+  public enum Failure: LocalizedError, Equatable {
     case noRoom(words: [String], columns: Int, rows: Int)
+
+    public var errorDescription: String? {
+      switch self {
+      case .noRoom(let words, let columns, let rows):
+        "No clean grid \(columns) wide and at least \(rows) high holds "
+          + words.joined(separator: ", ")
+      }
+    }
   }
 
   public let columns: Int
