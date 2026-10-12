@@ -22,7 +22,7 @@
           HStack(spacing: 10) {
             Text("\(index + 1).")
               .foregroundStyle(.secondary)
-            word(placement, isShownByGame: isShownByGame(index))
+            word(placement)
           }
         }
       }
@@ -30,19 +30,12 @@
       .frame(maxWidth: .infinity)
     }
 
-    private func isShownByGame(_ index: Int) -> Bool {
-      round.showsFirstWord && index == 0 && round.phase != .introducing
-    }
-
     @ViewBuilder
-    private func word(_ placement: Placement, isShownByGame: Bool) -> some View {
+    private func word(_ placement: Placement) -> some View {
       let shown = round.shownLetters(of: placement)
-      if isShownByGame {
+      if round.found.contains(placement) {
         letters(shown)
-          .foregroundStyle(style.shownByGame)
-          .accessibilityLabel(placement.word)
-      } else if round.found.contains(placement) {
-        letters(shown)
+          .foregroundStyle(style.foundText)
           .accessibilityLabel(placement.word)
       } else {
         letters(shown)
