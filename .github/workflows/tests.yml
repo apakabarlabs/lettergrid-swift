@@ -23,3 +23,12 @@ jobs:
 
     - name: Run tests
       run: make test
+
+  apple:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Build with SwiftUI and run tests
+      run: swift build && make test

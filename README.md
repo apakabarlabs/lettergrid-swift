@@ -10,6 +10,15 @@ run in, how many stand upright, the letters the empty cells are filled with, the
 open letters in — is passed in by the app, so one app can play a timed game over a long word
 list and another a short exercise over the words of a lesson.
 
+## Installation
+
+```swift
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.1.0")
+```
+
+`LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
+SwiftUI.
+
 ## Build and test
 
     make install-tools   # swiftlint, swift-format, commentcensor
@@ -22,7 +31,7 @@ Linux as well.
 ### Lines of Code Over Time
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/loc-history-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset=".github/loc-history-light.svg">
-  <img src=".github/loc-history-light.svg" alt="Lines of code over time">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history-light.svg">
+  <img src="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history-light.svg" alt="Lines of code over time">
 </picture>
