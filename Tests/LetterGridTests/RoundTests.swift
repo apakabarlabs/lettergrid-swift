@@ -30,16 +30,14 @@ struct RoundTests {
     #expect(round.hintTarget == nil)
   }
 
-  @Test func aHintAnywhereButTheFirstLetterNeverOpensTheFirstAndKeepsOneMoreHidden() {
+  @Test func aHintAnywhereButTheFirstLetterOpensEveryOtherLetterAndNeverTheFirst() {
     let round = Round(board: board, directions: [.right, .down], hintOrder: .anyButFirst)
     let house = board.placements[0]
 
     revealAll(round)
 
-    let shown = round.shownLetters(of: house)
-    #expect(shown[0] == nil)
-    #expect(shown.filter { $0 == nil }.count == 2)
-    #expect(round.revealed[house] == 3)
+    #expect(round.shownLetters(of: house) == [nil, "O", "U", "S", "E"])
+    #expect(round.revealed[house] == 4)
   }
 
   @Test func theLettersAHintOpensAreTheSameEveryTime() {

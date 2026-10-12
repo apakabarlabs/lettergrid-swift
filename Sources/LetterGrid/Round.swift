@@ -167,7 +167,7 @@ public final class Round: Identifiable {
   }
 
   private func hintLimit(of placement: Placement) -> Int {
-    max(hintOrder.letterIndices(of: placement.word).count - 1, 0)
+    min(hintOrder.letterIndices(of: placement.word).count, placement.word.count - 1)
   }
 
   private func revealedIndices(of placement: Placement) -> [Int] {
