@@ -15,18 +15,21 @@ public struct Cell: Hashable, Sendable {
 public enum Direction: String, CaseIterable, Sendable, Decodable {
   case right
   case down
+  case downRight = "down_right"
+  case downLeft = "down_left"
 
-  var rowStep: Int {
+  public var rowStep: Int {
     switch self {
     case .right: 0
-    case .down: 1
+    case .down, .downRight, .downLeft: 1
     }
   }
 
-  var columnStep: Int {
+  public var columnStep: Int {
     switch self {
-    case .right: 1
+    case .right, .downRight: 1
     case .down: 0
+    case .downLeft: -1
     }
   }
 }

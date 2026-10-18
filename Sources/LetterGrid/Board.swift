@@ -1,3 +1,5 @@
+import Foundation
+
 public struct Placement: Hashable, Sendable {
   public let word: String
   public let start: Cell
@@ -83,12 +85,23 @@ public struct Board: Equatable, Sendable {
 
   public func selection(from start: Cell, toward end: Cell, along ways: [Direction]) -> [Cell] {
     guard contains(start) else { return [] }
+    let row = end.row - start.row
+    let column = end.column - start.column
     let reach = ways.map { way in
-      (way, way.rowStep == 0 ? end.column - start.column : end.row - start.row)
+      let length = Double(way.rowStep * way.rowStep + way.columnStep * way.columnStep)
+      let projection = Double(row * way.rowStep + column * way.columnStep)
+      return (way: way, alignment: projection / sqrt(length), distance: projection / length)
     }
-    guard let (direction, distance) = reach.filter({ $0.1 > 0 }).max(by: { $0.1 < $1.1 }) else {
+    guard let best = reach.filter({ $0.alignment > 0 }).max(by: { $0.alignment < $1.alignment })
+    else {
       return [start]
     }
+    let direction = best.way
+    if ways.contains(.downRight) || ways.contains(.downLeft) {
+      let travel = sqrt(Double(row * row + column * column))
+      guard best.alignment / travel >= cos(.pi / 8) else { return [start] }
+    }
+    let distance = Int(best.distance.rounded())
     return (0...distance).map { start.moved(direction, by: $0) }.prefix(while: contains).map { $0 }
   }
 }

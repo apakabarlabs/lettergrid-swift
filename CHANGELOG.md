@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0] - 2026-10-18
+
+### Added
+
+- Opt-in downward diagonals in both directions for placement, selection and SwiftUI
+  highlights. Orthogonal-only generators retain their existing layout algorithm.
+- `LetterHighlight` draws a path between two cell centres over custom grid content.
+
 ## [0.1.0] - 2026-10-12
 
 First release: a word search grid for Swift apps on iOS 17 and macOS 14 or later, added with

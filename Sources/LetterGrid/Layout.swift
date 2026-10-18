@@ -21,6 +21,11 @@ struct LayoutBuilder {
   }
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
+    if directions.contains(.downRight) || directions.contains(.downLeft) {
+      return DiagonalLayoutBuilder(
+        columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords
+      ).layout(for: words, using: &random)
+    }
     let across = directions.contains(.right)
     let down = directions.contains(.down)
     let indices = Array(words.indices)

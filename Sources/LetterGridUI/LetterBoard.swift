@@ -31,11 +31,15 @@
         let side = geometry.size.width / CGFloat(max(board.columns, 1))
         ZStack(alignment: .topLeading) {
           ForEach(bars.indices, id: \.self) { index in
-            HighlightBar(span: bars[index].span, side: side, color: bars[index].color)
+            LetterHighlight(
+              start: bars[index].span.first, end: bars[index].span.last,
+              cellSize: side, color: bars[index].color)
           }
           if let span = Span(round.rejected) {
-            HighlightBar(span: span, side: side, color: style.rejected)
-              .transition(.opacity)
+            LetterHighlight(
+              start: span.first, end: span.last, cellSize: side, color: style.rejected
+            )
+            .transition(.opacity)
           }
           letters(side: side)
         }
@@ -120,22 +124,4 @@
     }
   }
 
-  private struct HighlightBar: View {
-    let span: Span
-    let side: CGFloat
-    let color: Color
-
-    var body: some View {
-      let first = span.first
-      let last = span.last
-      let inset = side * 0.08
-      RoundedRectangle(cornerRadius: side / 2 - inset)
-        .fill(color)
-        .frame(
-          width: CGFloat(last.column - first.column + 1) * side - inset * 2,
-          height: CGFloat(last.row - first.row + 1) * side - inset * 2
-        )
-        .offset(x: CGFloat(first.column) * side + inset, y: CGFloat(first.row) * side + inset)
-    }
-  }
 #endif

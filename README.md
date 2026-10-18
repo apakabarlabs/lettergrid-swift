@@ -1,7 +1,8 @@
 # LetterGrid
 
-A grid of letters with words hidden in it, read left to right or top to bottom, for iOS apps
-written in Swift. It builds the grid so that every word sits there exactly once and no other
+A grid of letters with words hidden in it, read left to right, top to bottom, or diagonally
+down in either direction, for iOS apps written in Swift. It builds the grid so that every
+word sits there exactly once and no other
 word of a given dictionary turns up by chance, follows a finger drawn along a word, opens
 letters as hints, and draws the grid and the list of words to find in SwiftUI.
 
@@ -13,11 +14,19 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.1.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.2.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
 SwiftUI.
+
+Directions are opt-in: pass `.right` and `.down` for orthogonal words, and add `.downRight`
+and `.downLeft` for diagonals. YAML uses `down_right` and `down_left`. The vertical-word
+quota counts `.down` placements only. Selection snaps to the nearest allowed direction;
+backward and upward paths remain unavailable. With diagonals enabled, a gesture must be
+within 22.5 degrees of an allowed direction. Existing orthogonal layouts keep their
+generation algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
+app can show the same path geometry over its own grid content.
 
 ## Build and test
 

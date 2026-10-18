@@ -1,7 +1,7 @@
 # LetterGrid
 
 Before the first action read the whole wiki «Как мы пишем код»:
-https://wikilayer.org/smee-again/codestyle
+wikilayer://wikilayer.org/smee-again/codestyle
 
 ## Decisions that outlive the current code
 
