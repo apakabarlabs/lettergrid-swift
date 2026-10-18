@@ -39,10 +39,13 @@ public struct BoardGenerator: Sendable {
     self.fillsPerAttempt = fillsPerAttempt
   }
 
-  public func board(for words: [String], seed: UInt64) throws -> Board {
+  public func board(
+    for words: [String], seed: UInt64, firstDirection: Direction? = nil
+  ) throws -> Board {
     let words = words.map { $0.uppercased() }
     let builder = LayoutBuilder(
-      columns: columns, minimumRows: rows, directions: directions, downWords: downWords)
+      columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
+      firstDirection: firstDirection)
     var random = SeededRandom(seed: seed)
     for _ in 0..<attempts {
       guard

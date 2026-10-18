@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.2.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.2.1")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
@@ -27,6 +27,11 @@ backward and upward paths remain unavailable. With diagonals enabled, a gesture 
 within 22.5 degrees of an allowed direction. Existing orthogonal layouts keep their
 generation algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
 app can show the same path geometry over its own grid content.
+
+`board(for:seed:firstDirection:)` can require a direction for the first word, for example
+when introducing a new path. The direction must be enabled, the first word must fit it,
+and enough other words must remain to satisfy the vertical quota. Otherwise generation
+throws `BoardGenerator.Failure.noRoom`.
 
 ## Build and test
 

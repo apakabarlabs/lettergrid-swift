@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1] - 2026-10-18
+
+### Added
+
+- An optional required direction for the first word of a generated board, preserving
+  word order and the vertical-word quota. An impossible first-direction requirement
+  fails explicitly.
+
 ## [0.2.0] - 2026-10-18
 
 ### Added

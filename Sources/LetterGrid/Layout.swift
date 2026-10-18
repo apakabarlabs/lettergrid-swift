@@ -8,6 +8,7 @@ struct LayoutBuilder {
   let minimumRows: Int
   let directions: [Direction]
   let downWords: ClosedRange<Int>
+  var firstDirection: Direction?
 
   func lowestLayout(for words: [String], tries: Int, using random: inout SeededRandom) -> Layout? {
     var lowest: Layout?
@@ -21,9 +22,10 @@ struct LayoutBuilder {
   }
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
-    if directions.contains(.downRight) || directions.contains(.downLeft) {
+    if directions.contains(.downRight) || directions.contains(.downLeft) || firstDirection != nil {
       return DiagonalLayoutBuilder(
-        columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords
+        columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords,
+        firstDirection: firstDirection
       ).layout(for: words, using: &random)
     }
     let across = directions.contains(.right)

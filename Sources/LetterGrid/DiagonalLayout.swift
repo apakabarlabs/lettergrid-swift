@@ -3,30 +3,57 @@ struct DiagonalLayoutBuilder {
   let minimumRows: Int
   let directions: [Direction]
   let downWords: ClosedRange<Int>
+  var firstDirection: Direction?
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
+    guard let assigned = assignments(for: words, using: &random) else { return nil }
+    return place(words, directions: assigned, using: &random)
+  }
+
+  private func assignments(
+    for words: [String], using random: inout SeededRandom
+  ) -> [Int: Direction]? {
     let indices = Array(words.indices)
     let others = directions.filter { $0 != .down }
-    let forced = indices.filter { words[$0].count > columns || others.isEmpty }
+    if let firstDirection {
+      guard directions.contains(firstDirection), let first = words.first,
+        firstDirection == .down || first.count <= columns
+      else { return nil }
+    }
+    let forced = indices.filter {
+      words[$0].count > columns || others.isEmpty || ($0 == 0 && firstDirection == .down)
+    }
     let maximum = directions.contains(.down) ? min(downWords.upperBound, words.count, columns) : 0
     guard forced.count <= maximum else { return nil }
     let minimum = min(max(downWords.lowerBound, forced.count), maximum)
-    let optional = indices.filter { !forced.contains($0) }.shuffled(using: &random)
+    let optional = indices.filter {
+      !forced.contains($0) && !($0 == 0 && firstDirection != nil && firstDirection != .down)
+    }.shuffled(using: &random)
+    guard minimum <= forced.count + optional.count else { return nil }
+    let allowedMaximum = min(maximum, forced.count + optional.count)
     let vertical = Set(
-      forced + optional.prefix(Int.random(in: minimum...maximum, using: &random) - forced.count))
+      forced
+        + optional.prefix(Int.random(in: minimum...allowedMaximum, using: &random) - forced.count))
     var assigned: [Int: Direction] = [:]
     for index in indices {
       guard
-        let direction = vertical.contains(index)
-          ? Direction.down : others.randomElement(using: &random)
+        let direction = index == 0 && firstDirection != nil
+          ? firstDirection
+          : (vertical.contains(index) ? Direction.down : others.randomElement(using: &random))
       else {
         return nil
       }
       assigned[index] = direction
     }
+    return assigned
+  }
+
+  private func place(
+    _ words: [String], directions assigned: [Int: Direction], using random: inout SeededRandom
+  ) -> Layout {
     var rows = max(minimumRows, words.map(\.count).max() ?? 0)
     var placed: [Placement] = []
-    for index in indices.sorted(by: { words[$0].count > words[$1].count }) {
+    for index in words.indices.sorted(by: { words[$0].count > words[$1].count }) {
       guard let direction = assigned[index] else { fatalError("Every word needs a direction") }
       var choices = spots(for: words[index], direction: direction, rows: rows, beside: placed)
       while choices.isEmpty {
