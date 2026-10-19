@@ -22,6 +22,7 @@ public struct BoardGenerator: Sendable {
   public let layoutsPerAttempt: Int
   public let attempts: Int
   public let fillsPerAttempt: Int
+  private let wordIndex: WordIndex
 
   public init(
     columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
@@ -33,6 +34,7 @@ public struct BoardGenerator: Sendable {
     self.directions = directions
     self.filler = filler
     self.dictionary = Set(dictionary.map { $0.uppercased() })
+    self.wordIndex = WordIndex(self.dictionary)
     self.downWords = downWords
     self.layoutsPerAttempt = layoutsPerAttempt
     self.attempts = attempts
@@ -43,22 +45,26 @@ public struct BoardGenerator: Sendable {
     for words: [String], seed: UInt64, firstDirection: Direction? = nil
   ) throws -> Board {
     let words = words.map { $0.uppercased() }
+    guard Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }) else {
+      throw Failure.noRoom(words: words, columns: columns, rows: rows)
+    }
     let builder = LayoutBuilder(
       columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
       firstDirection: firstDirection)
     var random = SeededRandom(seed: seed)
+    let targets = WordIndex(Set(words))
     for _ in 0..<attempts {
       guard
         let layout = builder.lowestLayout(
           for: words, tries: layoutsPerAttempt, using: &random)
       else { break }
-      for _ in 0..<fillsPerAttempt {
-        let board = Board(
-          letters: filled(layout, by: &random), placements: layout.placements)
-        if isClean(board, hiding: words) {
-          return board
-        }
-      }
+      let filler = BoardFiller(
+        layout: layout, columns: columns, directions: directions,
+        dictionary: wordIndex, targets: targets)
+      guard
+        let board = filler.fill(with: self.filler, attempts: fillsPerAttempt, using: &random)
+      else { continue }
+      if isClean(board, hiding: words) { return board }
     }
     throw Failure.noRoom(words: words, columns: columns, rows: rows)
   }
@@ -66,17 +72,5 @@ public struct BoardGenerator: Sendable {
   private func isClean(_ board: Board, hiding words: [String]) -> Bool {
     words.allSatisfy { board.occurrences(of: $0, along: directions) == 1 }
       && board.strayWords(of: dictionary, along: directions).isEmpty
-  }
-
-  private func filled(_ layout: Layout, by random: inout SeededRandom) -> [[Character]] {
-    var letters = (0..<layout.rows).map { _ in
-      (0..<columns).map { _ in filler.letter(using: &random) }
-    }
-    for placement in layout.placements {
-      for (cell, letter) in zip(placement.cells, placement.word) {
-        letters[cell.row][cell.column] = letter
-      }
-    }
-    return letters
   }
 }

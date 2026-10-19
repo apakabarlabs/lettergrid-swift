@@ -25,13 +25,24 @@ and `.downLeft` for diagonals. YAML uses `down_right` and `down_left`. The verti
 quota counts `.down` placements only. Selection snaps to the nearest allowed direction;
 backward and upward paths remain unavailable. With diagonals enabled, a gesture must be
 within 22.5 degrees of an allowed direction. Existing orthogonal layouts keep their
-generation algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
+placement algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
 app can show the same path geometry over its own grid content.
 
 `board(for:seed:firstDirection:)` can require a direction for the first word, for example
 when introducing a new path. The direction must be enabled, the first word must fit it,
 and enough other words must remain to satisfy the vertical quota. Otherwise generation
 throws `BoardGenerator.Failure.noRoom`.
+
+Targets must have at least two letters and be distinct after uppercasing; invalid targets
+throw `noRoom`. An impossible minimum vertical quota also throws rather than reducing it.
+
+Empty cells are filled with seeded, weighted letter choices, rejecting unwanted words as
+they become complete and backtracking when necessary. Fixed placement conflicts reject
+the layout before filling. Each fill searches at most the number of empty cells times the
+number of distinct filler letters; `fillsPerAttempt` bounds repeated fills, and `attempts`
+bounds layouts. Exhausting this search throws `noRoom`; it does not prove that every
+possible layout is impossible. Every returned board is checked again for unique targets
+and stray dictionary words.
 
 ## Build and test
 

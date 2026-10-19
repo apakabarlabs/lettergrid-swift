@@ -62,6 +62,22 @@ struct BoardGeneratorTests {
     #expect(board.strayWords(of: ["HER", "THE", "THERE"], along: [.right, .down]).isEmpty)
   }
 
+  @Test func weightedFillerAvoidsStrayWordsInsteadOfNeedingAnUnlikelyRandomGrid() throws {
+    let directions: [Direction] = [.right, .down, .downRight, .downLeft]
+    let generator = BoardGenerator(
+      columns: 7, rows: 15, directions: directions,
+      filler: try LetterWeights(["a": 1_000, "b": 1]), dictionary: ["AAA"],
+      downWords: 1...2, layoutsPerAttempt: 1, attempts: 1, fillsPerAttempt: 20)
+    let words = ["PERSPECTIVE", "SUN", "MOON"]
+    let board = try generator.board(for: words, seed: 1)
+
+    #expect(board.strayWords(of: ["AAA"], along: directions).isEmpty)
+    for word in words {
+      #expect(board.occurrences(of: word, along: directions) == 1)
+    }
+    #expect(board.placements.map(\.word) == words)
+  }
+
   @Test func aDictionaryWordAcrossTheBoardIsStray() {
     let board = Board(
       letters: [Array("CATQ"), Array("QQQQ")],
@@ -87,6 +103,34 @@ struct BoardGeneratorTests {
       for seed in UInt64(1)...20 {
         let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
         #expect(range.contains(board.placements.filter { $0.direction == .down }.count))
+      }
+    }
+  }
+
+  @Test func anImpossibleMinimumVerticalQuotaFailsForEveryLayoutBuilder() throws {
+    for firstDirection: Direction? in [nil, .right] {
+      let generator = BoardGenerator(
+        columns: 3, rows: 3, directions: [.right, .down], filler: filler,
+        downWords: 2...2)
+
+      #expect(throws: BoardGenerator.Failure.self) {
+        try generator.board(for: ["CAT"], seed: 1, firstDirection: firstDirection)
+      }
+    }
+  }
+
+  @Test func repeatedTargetsAreRejectedAfterCaseNormalization() {
+    for firstDirection: Direction? in [nil, .right] {
+      #expect(throws: BoardGenerator.Failure.self) {
+        try generator().board(for: ["cat", "CAT"], seed: 1, firstDirection: firstDirection)
+      }
+    }
+  }
+
+  @Test func targetsTooShortForASelectionAreRejected() {
+    for word in ["", "A"] {
+      #expect(throws: BoardGenerator.Failure.self) {
+        try generator().board(for: [word], seed: 1)
       }
     }
   }

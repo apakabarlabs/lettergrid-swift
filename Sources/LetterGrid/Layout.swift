@@ -34,8 +34,8 @@ struct LayoutBuilder {
     let mustStand = indices.filter { !across || words[$0].count > columns }
     let mayLie = indices.filter { across && words[$0].count <= columns }
     let most = down ? min(downWords.upperBound, words.count, columns) : 0
-    guard mustStand.count <= most else { return nil }
-    let fewest = min(max(down ? downWords.lowerBound : 0, mustStand.count), most)
+    let fewest = max(downWords.lowerBound, mustStand.count)
+    guard fewest <= most else { return nil }
     let shortestFirst = mayLie.shuffled(using: &random).sorted {
       words[$0].count < words[$1].count
     }

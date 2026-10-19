@@ -24,8 +24,8 @@ struct DiagonalLayoutBuilder {
       words[$0].count > columns || others.isEmpty || ($0 == 0 && firstDirection == .down)
     }
     let maximum = directions.contains(.down) ? min(downWords.upperBound, words.count, columns) : 0
-    guard forced.count <= maximum else { return nil }
-    let minimum = min(max(downWords.lowerBound, forced.count), maximum)
+    let minimum = max(downWords.lowerBound, forced.count)
+    guard minimum <= maximum else { return nil }
     let optional = indices.filter {
       !forced.contains($0) && !($0 == 0 && firstDirection != nil && firstDirection != .down)
     }.shuffled(using: &random)

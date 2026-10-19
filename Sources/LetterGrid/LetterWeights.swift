@@ -6,29 +6,43 @@ public struct LetterWeights: Equatable, Sendable {
   }
 
   private let letters: [Character]
-  private let thresholds: [Double]
+  private let weights: [Double]
+
+  var letterCount: Int { Set(letters).count }
 
   public init(_ weights: [String: Double]) throws {
     guard !weights.isEmpty else { throw Failure.empty }
     var letters: [Character] = []
-    var thresholds: [Double] = []
-    var total = 0.0
+    var orderedWeights: [Double] = []
     for (key, weight) in weights.sorted(by: { $0.key < $1.key }) {
       guard key.count == 1, let letter = key.uppercased().first, letter.isLetter else {
         throw Failure.notALetter(key)
       }
       guard weight > 0 else { throw Failure.notPositive(key) }
-      total += weight
       letters.append(letter)
-      thresholds.append(total)
+      orderedWeights.append(weight)
     }
     self.letters = letters
-    self.thresholds = thresholds
+    self.weights = orderedWeights
   }
 
-  func letter(using random: inout SeededRandom) -> Character {
-    let point = Double.random(in: 0..<(thresholds.last ?? 1), using: &random)
-    let index = thresholds.firstIndex { point < $0 } ?? letters.count - 1
-    return letters[index]
+  func orderedLetters(using random: inout SeededRandom) -> [Character] {
+    var remaining = Array(zip(letters, weights))
+    var ordered: [Character] = []
+    while !remaining.isEmpty {
+      let total = remaining.reduce(0) { $0 + $1.1 }
+      var point = Double.random(in: 0..<total, using: &random)
+      var chosen = remaining[remaining.count - 1].0
+      for (letter, weight) in remaining {
+        point -= weight
+        if point < 0 {
+          chosen = letter
+          break
+        }
+      }
+      ordered.append(chosen)
+      remaining.removeAll { $0.0 == chosen }
+    }
+    return ordered
   }
 }

@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2] - 2026-10-19
+
+### Fixed
+
+- Fill empty cells with bounded weighted backtracking instead of requiring an entire
+  random grid to avoid dictionary words by chance. Validate fixed placements before
+  filling and retain the final independent board checks.
+- Reject impossible minimum vertical quotas, repeated target words and targets shorter
+  than the round's two-letter selection minimum.
+
 ## [0.2.1] - 2026-10-18
 
 ### Added
