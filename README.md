@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.2.1")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.3.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
@@ -27,6 +27,13 @@ backward and upward paths remain unavailable. With diagonals enabled, a gesture 
 within 22.5 degrees of an allowed direction. Existing orthogonal layouts keep their
 placement algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
 app can show the same path geometry over its own grid content.
+
+`LetterBoard` accepts an optional `missed: Placement?` for a word that should remain
+highlighted after play ends. Its path uses `LetterGridStyle.rejected`, above the other
+paths and below the board's single layer of letters. The app can apply SwiftUI's
+`textCase` to the board to change every displayed letter consistently, including the
+missed word. Omitting `missed` preserves the usual board. This does not change the round,
+word placement or saved board data.
 
 `board(for:seed:firstDirection:)` can require a direction for the first word, for example
 when introducing a new path. The direction must be enabled, the first word must fit it,

@@ -4,6 +4,7 @@
 
   public struct LetterBoard: View {
     let round: Round
+    let missed: Placement?
     let style: LetterGridStyle
     let onTouch: (Cell) -> Void
     let onDrag: (Cell) -> Void
@@ -12,11 +13,13 @@
     @State private var isDragging = false
 
     public init(
-      round: Round, style: LetterGridStyle, onTouch: @escaping (Cell) -> Void,
+      round: Round, missed: Placement? = nil, style: LetterGridStyle,
+      onTouch: @escaping (Cell) -> Void,
       onDrag: @escaping (Cell) -> Void, onRelease: @escaping () -> Void,
       onRejectionShown: @escaping () -> Void
     ) {
       self.round = round
+      self.missed = missed
       self.style = style
       self.onTouch = onTouch
       self.onDrag = onDrag
@@ -40,6 +43,10 @@
               start: span.first, end: span.last, cellSize: side, color: style.rejected
             )
             .transition(.opacity)
+          }
+          if let missed, let span = Span(missed.cells) {
+            LetterHighlight(
+              start: span.first, end: span.last, cellSize: side, color: style.rejected)
           }
           letters(side: side)
         }
