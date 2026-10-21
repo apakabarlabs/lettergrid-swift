@@ -1,7 +1,7 @@
 # LetterGrid
 
-A grid of letters with words hidden in it, read left to right, top to bottom, or diagonally
-down in either direction, for iOS apps written in Swift. It builds the grid so that every
+A grid of letters with words hidden in it, read across, up or down, or diagonally, either
+way along each line, for iOS apps written in Swift. It builds the grid so that every
 word sits there exactly once and, as long as it can, no other word of a given dictionary
 turns up by chance; it follows a finger drawn along a word, opens letters as hints, and
 draws the grid and the list of words to find in SwiftUI.
@@ -14,18 +14,31 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.4.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.6.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
 SwiftUI.
 
-Directions are opt-in: pass `.right` and `.down` for orthogonal words, and add `.downRight`
-and `.downLeft` for diagonals. YAML uses `down_right` and `down_left`. The vertical-word
-quota counts `.down` placements only. Selection snaps to the nearest allowed direction;
-backward and upward paths remain unavailable. With diagonals enabled, a gesture must be
-within 22.5 degrees of an allowed direction. Existing orthogonal layouts keep their
-placement algorithm. `LetterHighlight` draws a capsule between two cell centres, so an
+Directions are opt-in: pass `.right` and `.down` for orthogonal words, `.downRight` and
+`.downLeft` for diagonals down, and `.left`, `.up`, `.upLeft` and `.upRight` for words read
+backwards. YAML uses `down_right`, `down_left`, `up_left` and `up_right`. The vertical-word
+quota counts `.down` and `.up` placements. Selection snaps to the nearest allowed direction;
+with any diagonal enabled, a gesture must be within 22.5 degrees of an allowed direction.
+Orthogonal layouts with only `.right` and `.down` keep their placement algorithm.
+
+A word that reads the same backwards, such as LEVEL, counts as one word even when both
+directions of its line are enabled: it stands on the board once, and a drag from either end
+finds it.
+
+The filler letters come from `LetterWeights`, which maps each letter to a weight. Its
+`sameNeighbour` factor, between 0 and 1, keeps equal letters apart: a letter's weight is
+multiplied by it for each neighbouring cell that already holds that letter, in any of the
+eight directions. With the default of 1 letters follow their weights alone.
+
+```swift
+let filler = try LetterWeights(["a": 8.2, "e": 12.7, "t": 9.1, "q": 0.1], sameNeighbour: 0.2)
+``` `LetterHighlight` draws a capsule between two cell centres, so an
 app can show the same path geometry over its own grid content.
 
 `LetterBoard` accepts an optional `missed: Placement?` for a word that should remain
@@ -48,6 +61,7 @@ the words:
 
 - a word is shorter than two letters, or two are the same after uppercasing;
 - one word contains another, which would then read twice;
+- both directions of a line are enabled and one word contains another read backwards;
 - every filler letter is used by the words;
 - the directions cannot be assigned: the first word does not fit `firstDirection` or it is
   not enabled, or the vertical quota cannot be met.

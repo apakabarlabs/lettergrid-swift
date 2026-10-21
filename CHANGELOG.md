@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.6.0] - 2026-10-22
+
+### Added
+
+- Words can be read backwards. `Direction` has four new cases: `.left`, `.up`, `.upLeft`
+  and `.upRight` (`left`, `up`, `up_left`, `up_right` in YAML). `.up` is vertical, `.upLeft`
+  and `.upRight` are diagonal, and `opposite` pairs each with its forward direction: `.right`
+  with `.left`, `.down` with `.up`, `.downRight` with `.upLeft`, `.downLeft` with `.upRight`.
+  Pass them in the `directions` of `BoardGenerator` and `Round` like the others. The
+  generator's `downWords` range, which limits how many words stand upright, now counts words
+  running up together with words running down. A round with only `.upLeft` or `.upRight`
+  among its diagonals now follows a drag the way a round with `.downRight` or `.downLeft`
+  already did: along the enabled direction closest in angle, and only within 22.5 degrees of
+  it. Rounds that use only the 0.5.0 directions behave as before.
+- When a direction and its opposite are both enabled, a word that reads the same backwards,
+  such as LEVEL, stands on the board once, and dragging it from either end finds it.
+- `LetterWeights(_:sameNeighbour:)` keeps equal filler letters apart. `LetterWeights` maps
+  each letter, a one-letter string in either case, to its weight and is passed to `BoardGenerator` as `filler`, the letters the
+  empty cells get. The cells are filled one at a time; for each cell, a letter's weight is
+  multiplied by `sameNeighbour` once for each of the eight neighbouring cells already
+  holding that letter, hidden word or filler. The factor must be above 0 and at most 1, so
+  no letter is ever ruled out. With the default of 1 every board is the same as in 0.5.0.
+  With a smaller factor the filler letters differ, and now and then where the words stand,
+  so do not compare such boards with ones you stored before.
+
+  ```swift
+  let filler = try LetterWeights(["a": 8.2, "e": 12.7, "q": 0.1], sameNeighbour: 0.2)
+  ```
+
+### Changed
+
+- `Direction` is an enum, so a `switch` over it that names every case and has no
+  `default` stops compiling. Add the new cases:
+
+  ```swift
+  // 0.5.0
+  switch direction {
+  case .right, .down: "straight"
+  case .downRight, .downLeft: "diagonal"
+  }
+
+  // 0.6.0
+  switch direction {
+  case .right, .down, .left, .up: "straight"
+  case .downRight, .downLeft, .upLeft, .upRight: "diagonal"
+  }
+  ```
+- When a direction and its opposite are both enabled, `request(for:firstDirection:)` also
+  throws `BoardGenerator.Failure.noRoom` if one word, read backwards, lies inside another.
+  With the words CATS and TAC, TAC backwards is CAT, which is inside CATS, so TAC would read
+  a second time inside CATS. With only one direction of each pair enabled, nothing changes.
+- `Board.occurrences(of:along:)`, which returns how many times a word reads along the given
+  directions, now counts each set of cells once, so LEVEL read both ways over the same cells
+  counts as one.
+
 ## [0.5.0] - 2026-10-21
 
 ### Changed
