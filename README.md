@@ -38,8 +38,10 @@ eight directions. With the default of 1 letters follow their weights alone.
 
 ```swift
 let filler = try LetterWeights(["a": 8.2, "e": 12.7, "t": 9.1, "q": 0.1], sameNeighbour: 0.2)
-``` `LetterHighlight` draws a capsule between two cell centres, so an
-app can show the same path geometry over its own grid content.
+```
+
+`LetterHighlight` draws a capsule between two cell centres, so an app can show the same
+path geometry over its own grid content.
 
 `LetterBoard` accepts an optional `missed: Placement?` for a word that should remain
 highlighted after play ends. Its path uses `LetterGridStyle.rejected`, above the other
