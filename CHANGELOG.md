@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0] - 2026-10-21
+
+### Changed
+
+- When the search finds no board and the words are laid out in bands, words running down
+  now stand side by side in every other column, with filler letters between them, instead
+  of one under another. The board is then as tall as the longest word running down plus a
+  band for each other word. Two words running down and one diagonal, six letters each, on
+  a grid seven columns wide take 13 rows instead of 20. Each word still reads exactly once.
+
 ## [0.4.0] - 2026-10-21
 
 ### Added

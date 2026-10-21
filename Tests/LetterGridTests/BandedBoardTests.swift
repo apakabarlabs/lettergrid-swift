@@ -67,6 +67,21 @@ struct BandedBoardTests {
     #expect(built > 500)
   }
 
+  @Test func downWordsStandSideBySideSoTheBoardIsOnlyAsTallAsTheLongest() throws {
+    let directions: [Direction] = [.right, .down, .downRight]
+    let generator = try generator(directions: directions, downWords: 2...2)
+    let request = try generator.request(
+      for: ["ABCDEF", "BADCFE", "CAFEBD"], firstDirection: .downRight)
+
+    let board = generator.board(for: request, seed: 7)
+
+    #expect(board.rows == 13)
+    #expect(board.placements.filter { $0.direction == .down }.map(\.start.column) == [0, 2])
+    for word in request.words {
+      #expect(board.occurrences(of: word, along: directions) == 1)
+    }
+  }
+
   @Test func aWordInsideAnotherIsRejectedBecauseItWouldReadTwice() throws {
     let generator = try generator(directions: [.right, .down], downWords: 0...2)
 
