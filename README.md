@@ -43,14 +43,18 @@ let filler = try LetterWeights(["a": 8.2, "e": 12.7, "t": 9.1, "q": 0.1], sameNe
 `LetterHighlight` draws a capsule between two cell centres, so an app can show the same
 path geometry over its own grid content.
 
-`LetterBoard` accepts an optional `label: (Character) -> String` that sets the text each cell
-shows, so an app can show the same board in another script. All cells share one font size, set
-by the longest label, and a `textCase` on the board applies to labels as well. It also accepts an optional `missed: Placement?` for a word that should remain
-highlighted after play ends. Its path uses `LetterGridStyle.rejected`, above the other
-paths and below the board's single layer of letters. The app can apply SwiftUI's
-`textCase` to the board to change every displayed letter consistently, including the
-missed word. Omitting `missed` preserves the usual board. This does not change the round,
-word placement or saved board data.
+`LetterBoard` accepts an optional `label: (Character) -> String` that sets the text each
+cell shows, so an app can show the same board in another script. All cells share one font
+size, set by the longest label. `label` runs for every cell on every redraw, so keep it a
+lookup.
+
+It also accepts an optional `missed: Placement?` for a word that should remain highlighted
+after play ends. Its path uses `LetterGridStyle.rejected`, above the other paths and below
+the board's single layer of letters. Omitting `missed` preserves the usual board. This
+does not change the round, word placement or saved board data.
+
+The app can apply SwiftUI's `textCase` to the board to change every displayed letter
+consistently, labels and the missed word included.
 
 Building a grid takes two steps: the words are checked once, and a board is then built for
 them without any way to fail.
