@@ -4,24 +4,37 @@
 
 ### Added
 
-- `BoardGenerator.request(for:firstDirection:)` checks the words once and returns a
-  `BoardRequest`. `board(for: request, seed:)` builds a board for it and cannot fail:
+- Building a board is split in two. `BoardGenerator.request(for:firstDirection:)` checks
+  the words and throws `noRoom` if no grid can hold them; `board(for: request, seed:)` then
+  returns a board and never throws. Check the words once, for example when choosing them,
+  and building the board later cannot fail:
 
   ```swift
   let request = try generator.request(for: words, firstDirection: .down)
   let board = generator.board(for: request, seed: seed)
   ```
 
+  A request is rejected when a word is shorter than two letters, two words are the same
+  after uppercasing, one word contains another, the words use every letter of the
+  generator's `filler`, or the directions cannot be assigned: `firstDirection` is not
+  enabled or the first word does not fit it, or the generator's quota of words running
+  down, `downWords`, cannot be met.
+
 ### Changed
 
-- A board is always built for words that pass the request. When the search for a board
-  without stray dictionary words reaches its bound, the words are laid out one per band of
-  rows and the empty cells use only filler letters the words do not contain. Each word
-  still reads exactly once, but another dictionary word may read by chance. Boards that
-  the search finds are the same as in 0.3.0 for the same seed.
-- `board(for:seed:firstDirection:)` throws `noRoom` only for words a request rejects:
-  besides the existing cases, one word inside another and words that use every filler
-  letter. Existing calls need no changes.
+- A board is now built for every set of words a request accepts. The generator first
+  searches for a board where no other dictionary word reads by chance, as before, within
+  `attempts`, `layoutsPerAttempt` and `fillsPerAttempt`. Where 0.3.0 threw `noRoom` after
+  that search, it now lays the words out one per band of rows, with an empty row between
+  bands, still honouring `firstDirection` and `downWords`, and fills the empty cells only
+  with `filler` letters none of the words contain. Each word then reads exactly once, but
+  another dictionary word may read by chance, and the board can be taller than `rows`.
+  Nothing marks such a board.
+- Boards the search finds are the same as in 0.3.0 for the same seed.
+- The existing `board(for:seed:firstDirection:)` stays and does both steps. It throws
+  `noRoom` only when the request is rejected. One word inside another threw `noRoom` in
+  0.3.0 as well. Words that use every filler letter could get a board in 0.3.0 and are now
+  rejected by the request: give the filler at least one letter the words do not use.
 
 ## [0.3.0] - 2026-10-20
 
