@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.7.0] - 2026-10-22
+
+### Added
+
+- `LetterBoard` takes an optional `label`, which turns the letter of a cell into the text
+  the cell shows. Pass it to show the board in another script without changing the board,
+  for example Georgian letters spelled in Latin while a button is held:
+
+  ```swift
+  LetterBoard(
+    round: round, style: style, label: { showsLatin ? latin[$0, default: String($0)] : String($0) },
+    onTouch: touch, onDrag: drag, onRelease: release, onRejectionShown: clear)
+  ```
+
+  Selection, found words and hints still work on the board's own letters. All cells share
+  one font size: labels of one or two letters keep the usual size, and a longer label
+  shrinks every cell alike, so the board stays even. `LabelScale` gives that size as a
+  share of the cell. A `textCase` set on the board applies to the labels too. Without
+  `label` every cell shows its letter, as in 0.6.0. `label` runs for every cell on every
+  redraw, a drag included, so keep it cheap: look letters up in a table built once rather
+  than transliterating each time.
+
 ## [0.6.0] - 2026-10-22
 
 ### Added

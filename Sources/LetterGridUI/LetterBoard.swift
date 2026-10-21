@@ -10,10 +10,12 @@
     let onDrag: (Cell) -> Void
     let onRelease: () -> Void
     let onRejectionShown: () -> Void
+    let label: (Character) -> String
     @State private var isDragging = false
 
     public init(
       round: Round, missed: Placement? = nil, style: LetterGridStyle,
+      label: @escaping (Character) -> String = { String($0) },
       onTouch: @escaping (Cell) -> Void,
       onDrag: @escaping (Cell) -> Void, onRelease: @escaping () -> Void,
       onRejectionShown: @escaping () -> Void
@@ -21,6 +23,7 @@
       self.round = round
       self.missed = missed
       self.style = style
+      self.label = label
       self.onTouch = onTouch
       self.onDrag = onDrag
       self.onRelease = onRelease
@@ -79,12 +82,14 @@
     }
 
     private func letters(side: CGFloat) -> some View {
-      VStack(spacing: 0) {
+      let scale = LabelScale(longest: board.letters.joined().map { label($0).count }.max() ?? 1)
+        .fontToCell
+      return VStack(spacing: 0) {
         ForEach(0..<board.rows, id: \.self) { row in
           HStack(spacing: 0) {
             ForEach(0..<board.columns, id: \.self) { column in
-              Text(String(board[Cell(row: row, column: column)]))
-                .font(.system(size: side * 0.5, weight: .semibold, design: .rounded))
+              Text(label(board[Cell(row: row, column: column)]))
+                .font(.system(size: side * scale, weight: .semibold, design: .rounded))
                 .frame(width: side, height: side)
             }
           }

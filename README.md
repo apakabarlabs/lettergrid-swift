@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.6.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.7.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
@@ -43,7 +43,9 @@ let filler = try LetterWeights(["a": 8.2, "e": 12.7, "t": 9.1, "q": 0.1], sameNe
 `LetterHighlight` draws a capsule between two cell centres, so an app can show the same
 path geometry over its own grid content.
 
-`LetterBoard` accepts an optional `missed: Placement?` for a word that should remain
+`LetterBoard` accepts an optional `label: (Character) -> String` that sets the text each cell
+shows, so an app can show the same board in another script. All cells share one font size, set
+by the longest label, and a `textCase` on the board applies to labels as well. It also accepts an optional `missed: Placement?` for a word that should remain
 highlighted after play ends. Its path uses `LetterGridStyle.rejected`, above the other
 paths and below the board's single layer of letters. The app can apply SwiftUI's
 `textCase` to the board to change every displayed letter consistently, including the
