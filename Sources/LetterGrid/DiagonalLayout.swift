@@ -14,20 +14,22 @@ struct DiagonalLayoutBuilder {
     for words: [String], using random: inout SeededRandom
   ) -> [Int: Direction]? {
     let indices = Array(words.indices)
-    let others = directions.filter { $0 != .down }
+    let upright = directions.filter(\.isVertical)
+    let others = directions.filter { !$0.isVertical }
     if let firstDirection {
       guard directions.contains(firstDirection), let first = words.first,
-        firstDirection == .down || first.count <= columns
+        firstDirection.isVertical || first.count <= columns
       else { return nil }
     }
+    let firstStands = firstDirection?.isVertical == true
     let forced = indices.filter {
-      words[$0].count > columns || others.isEmpty || ($0 == 0 && firstDirection == .down)
+      words[$0].count > columns || others.isEmpty || ($0 == 0 && firstStands)
     }
-    let maximum = directions.contains(.down) ? min(downWords.upperBound, words.count, columns) : 0
+    let maximum = upright.isEmpty ? 0 : min(downWords.upperBound, words.count, columns)
     let minimum = max(downWords.lowerBound, forced.count)
     guard minimum <= maximum else { return nil }
     let optional = indices.filter {
-      !forced.contains($0) && !($0 == 0 && firstDirection != nil && firstDirection != .down)
+      !forced.contains($0) && !($0 == 0 && firstDirection != nil && !firstStands)
     }.shuffled(using: &random)
     guard minimum <= forced.count + optional.count else { return nil }
     let allowedMaximum = min(maximum, forced.count + optional.count)
@@ -39,7 +41,7 @@ struct DiagonalLayoutBuilder {
       guard
         let direction = index == 0 && firstDirection != nil
           ? firstDirection
-          : (vertical.contains(index) ? Direction.down : others.randomElement(using: &random))
+          : (vertical.contains(index) ? upright : others).randomElement(using: &random)
       else {
         return nil
       }

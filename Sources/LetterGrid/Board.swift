@@ -97,7 +97,7 @@ public struct Board: Equatable, Sendable {
       return [start]
     }
     let direction = best.way
-    if ways.contains(.downRight) || ways.contains(.downLeft) {
+    if ways.contains(where: \.isDiagonal) {
       let travel = sqrt(Double(row * row + column * column))
       guard best.alignment / travel >= cos(.pi / 8) else { return [start] }
     }

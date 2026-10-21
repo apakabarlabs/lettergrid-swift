@@ -58,6 +58,7 @@ public struct BoardGenerator: Sendable {
     var probe = SeededRandom(seed: 0)
     guard Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
+      !readsBackwardsInside(words),
       filler.letters(excluding: Set(words.joined())) != nil,
       directionBuilder(firstDirection).assignments(for: words, using: &probe) != nil
     else {
@@ -105,6 +106,11 @@ public struct BoardGenerator: Sendable {
     }
     return BandLayout(columns: columns, minimumRows: rows)
       .board(for: request.words, directions: assigned, filler: free, using: &random)
+  }
+
+  private func readsBackwardsInside(_ words: [String]) -> Bool {
+    guard directions.contains(where: { directions.contains($0.opposite) }) else { return false }
+    return words.contains { word in words.contains { word.contains(String($0.reversed())) } }
   }
 
   private func directionBuilder(_ firstDirection: Direction?) -> DiagonalLayoutBuilder {

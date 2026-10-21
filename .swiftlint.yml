@@ -18,6 +18,7 @@ identifier_name:
     - z
     - a
     - b
+    - up
 
 custom_rules:
   no_try_optional:

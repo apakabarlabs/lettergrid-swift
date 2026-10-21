@@ -7,6 +7,8 @@ struct BandedBoardTests {
   private let directionSets: [[Direction]] = [
     [.right], [.down], [.right, .down], [.right, .down, .downRight],
     [.right, .down, .downRight, .downLeft], [.downRight, .downLeft],
+    [.left], [.up], [.right, .left], [.down, .up], [.upLeft, .upRight],
+    Direction.allCases,
   ]
 
   private func generator(
@@ -59,8 +61,8 @@ struct BandedBoardTests {
           }
           if let first { #expect(board.placements.first?.direction == first) }
           #expect(
-            downWords.contains(board.placements.filter { $0.direction == .down }.count)
-              || !directions.contains(.down))
+            downWords.contains(board.placements.filter(\.direction.isVertical).count)
+              || !directions.contains(where: \.isVertical))
         }
       }
     }

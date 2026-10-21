@@ -22,7 +22,7 @@ struct LayoutBuilder {
   }
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
-    if directions.contains(.downRight) || directions.contains(.downLeft) || firstDirection != nil {
+    if !Set(directions).isSubset(of: [.right, .down]) || firstDirection != nil {
       return DiagonalLayoutBuilder(
         columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords,
         firstDirection: firstDirection
