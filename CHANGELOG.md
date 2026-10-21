@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.0] - 2026-10-21
+
+### Added
+
+- `BoardGenerator.request(for:firstDirection:)` checks the words once and returns a
+  `BoardRequest`. `board(for: request, seed:)` builds a board for it and cannot fail:
+
+  ```swift
+  let request = try generator.request(for: words, firstDirection: .down)
+  let board = generator.board(for: request, seed: seed)
+  ```
+
+### Changed
+
+- A board is always built for words that pass the request. When the search for a board
+  without stray dictionary words reaches its bound, the words are laid out one per band of
+  rows and the empty cells use only filler letters the words do not contain. Each word
+  still reads exactly once, but another dictionary word may read by chance. Boards that
+  the search finds are the same as in 0.3.0 for the same seed.
+- `board(for:seed:firstDirection:)` throws `noRoom` only for words a request rejects:
+  besides the existing cases, one word inside another and words that use every filler
+  letter. Existing calls need no changes.
+
 ## [0.3.0] - 2026-10-20
 
 ### Added

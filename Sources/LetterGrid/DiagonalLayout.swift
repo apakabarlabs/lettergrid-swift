@@ -10,7 +10,7 @@ struct DiagonalLayoutBuilder {
     return place(words, directions: assigned, using: &random)
   }
 
-  private func assignments(
+  func assignments(
     for words: [String], using random: inout SeededRandom
   ) -> [Int: Direction]? {
     let indices = Array(words.indices)

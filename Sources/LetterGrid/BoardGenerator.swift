@@ -1,5 +1,15 @@
 import Foundation
 
+public struct BoardRequest: Equatable, Sendable {
+  public let words: [String]
+  public let firstDirection: Direction?
+
+  fileprivate init(words: [String], firstDirection: Direction?) {
+    self.words = words
+    self.firstDirection = firstDirection
+  }
+}
+
 public struct BoardGenerator: Sendable {
   public enum Failure: LocalizedError, Equatable {
     case noRoom(words: [String], columns: Int, rows: Int)
@@ -7,7 +17,7 @@ public struct BoardGenerator: Sendable {
     public var errorDescription: String? {
       switch self {
       case .noRoom(let words, let columns, let rows):
-        "No clean grid \(columns) wide and at least \(rows) high holds "
+        "No grid \(columns) wide and at least \(rows) high can hold "
           + words.joined(separator: ", ")
       }
     }
@@ -41,16 +51,26 @@ public struct BoardGenerator: Sendable {
     self.fillsPerAttempt = fillsPerAttempt
   }
 
-  public func board(
-    for words: [String], seed: UInt64, firstDirection: Direction? = nil
-  ) throws -> Board {
+  public func request(
+    for words: [String], firstDirection: Direction? = nil
+  ) throws -> BoardRequest {
     let words = words.map { $0.uppercased() }
-    guard Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }) else {
+    var probe = SeededRandom(seed: 0)
+    guard Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
+      !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
+      filler.letters(excluding: Set(words.joined())) != nil,
+      directionBuilder(firstDirection).assignments(for: words, using: &probe) != nil
+    else {
       throw Failure.noRoom(words: words, columns: columns, rows: rows)
     }
+    return BoardRequest(words: words, firstDirection: firstDirection)
+  }
+
+  public func board(for request: BoardRequest, seed: UInt64) -> Board {
+    let words = request.words
     let builder = LayoutBuilder(
       columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
-      firstDirection: firstDirection)
+      firstDirection: request.firstDirection)
     var random = SeededRandom(seed: seed)
     let targets = WordIndex(Set(words))
     for _ in 0..<attempts {
@@ -66,7 +86,31 @@ public struct BoardGenerator: Sendable {
       else { continue }
       if isClean(board, hiding: words) { return board }
     }
-    throw Failure.noRoom(words: words, columns: columns, rows: rows)
+    return bandedBoard(for: request, using: &random)
+  }
+
+  public func board(
+    for words: [String], seed: UInt64, firstDirection: Direction? = nil
+  ) throws -> Board {
+    board(for: try request(for: words, firstDirection: firstDirection), seed: seed)
+  }
+
+  private func bandedBoard(for request: BoardRequest, using random: inout SeededRandom) -> Board {
+    guard
+      let assigned = directionBuilder(request.firstDirection).assignments(
+        for: request.words, using: &random),
+      let free = filler.letters(excluding: Set(request.words.joined()))
+    else {
+      fatalError("A board request is checked for directions and a free filler letter")
+    }
+    return BandLayout(columns: columns, minimumRows: rows)
+      .board(for: request.words, directions: assigned, filler: free, using: &random)
+  }
+
+  private func directionBuilder(_ firstDirection: Direction?) -> DiagonalLayoutBuilder {
+    DiagonalLayoutBuilder(
+      columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
+      firstDirection: firstDirection)
   }
 
   private func isClean(_ board: Board, hiding words: [String]) -> Bool {

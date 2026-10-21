@@ -2,9 +2,9 @@
 
 A grid of letters with words hidden in it, read left to right, top to bottom, or diagonally
 down in either direction, for iOS apps written in Swift. It builds the grid so that every
-word sits there exactly once and no other
-word of a given dictionary turns up by chance, follows a finger drawn along a word, opens
-letters as hints, and draws the grid and the list of words to find in SwiftUI.
+word sits there exactly once and, as long as it can, no other word of a given dictionary
+turns up by chance; it follows a finger drawn along a word, opens letters as hints, and
+draws the grid and the list of words to find in SwiftUI.
 
 Everything that shapes a grid — its width, the least number of rows, which directions words
 run in, how many stand upright, the letters the empty cells are filled with, the order hints
@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.3.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.4.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
@@ -35,21 +35,32 @@ paths and below the board's single layer of letters. The app can apply SwiftUI's
 missed word. Omitting `missed` preserves the usual board. This does not change the round,
 word placement or saved board data.
 
-`board(for:seed:firstDirection:)` can require a direction for the first word, for example
-when introducing a new path. The direction must be enabled, the first word must fit it,
-and enough other words must remain to satisfy the vertical quota. Otherwise generation
-throws `BoardGenerator.Failure.noRoom`.
+Building a grid takes two steps: the words are checked once, and a board is then built for
+them without any way to fail.
 
-Targets must have at least two letters and be distinct after uppercasing; invalid targets
-throw `noRoom`. An impossible minimum vertical quota also throws rather than reducing it.
+```swift
+let request = try generator.request(for: ["cat", "dog", "sun"], firstDirection: .down)
+let board = generator.board(for: request, seed: 42)
+```
 
-Empty cells are filled with seeded, weighted letter choices, rejecting unwanted words as
-they become complete and backtracking when necessary. Fixed placement conflicts reject
-the layout before filling. Each fill searches at most the number of empty cells times the
-number of distinct filler letters; `fillsPerAttempt` bounds repeated fills, and `attempts`
-bounds layouts. Exhausting this search throws `noRoom`; it does not prove that every
-possible layout is impossible. Every returned board is checked again for unique targets
-and stray dictionary words.
+`request(for:firstDirection:)` throws `BoardGenerator.Failure.noRoom` when no grid can hold
+the words:
+
+- a word is shorter than two letters, or two are the same after uppercasing;
+- one word contains another, which would then read twice;
+- every filler letter is used by the words;
+- the directions cannot be assigned: the first word does not fit `firstDirection` or it is
+  not enabled, or the vertical quota cannot be met.
+
+`board(for:seed:)` then always returns a board with every word exactly once. It first
+searches for a clean board, one where no other dictionary word reads by chance: empty cells
+get seeded, weighted letters, unwanted words are rejected as they complete, and the search
+backtracks. `attempts`, `layoutsPerAttempt` and `fillsPerAttempt` bound it. If the bound is
+reached, the words are laid out one per band of rows with an empty row between bands, and
+the empty cells take only filler letters that none of the words use. No word can then read
+anywhere but in its own place, but another dictionary word may.
+
+`board(for:seed:firstDirection:)` does both steps and throws what the request throws.
 
 ## Build and test
 

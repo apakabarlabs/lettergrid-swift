@@ -26,6 +26,17 @@ public struct LetterWeights: Equatable, Sendable {
     self.weights = orderedWeights
   }
 
+  private init(letters: [Character], weights: [Double]) {
+    self.letters = letters
+    self.weights = weights
+  }
+
+  func letters(excluding used: Set<Character>) -> LetterWeights? {
+    let kept = zip(letters, weights).filter { !used.contains($0.0) }
+    guard !kept.isEmpty else { return nil }
+    return LetterWeights(letters: kept.map(\.0), weights: kept.map(\.1))
+  }
+
   func orderedLetters(using random: inout SeededRandom) -> [Character] {
     var remaining = Array(zip(letters, weights))
     var ordered: [Character] = []
