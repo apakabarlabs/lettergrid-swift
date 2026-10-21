@@ -44,17 +44,40 @@ struct ReverseDirectionTests {
     }
   }
 
-  @Test func aWordThatReadsTheSameBackwardsIsRejectedWhenBothWaysAreOn() throws {
-    let filler = try LetterWeights(["x": 1])
-    let bothWays = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .left], filler: filler, downWords: 0...0)
-    let oneWay = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right], filler: filler, downWords: 0...0)
-
-    #expect(throws: BoardGenerator.Failure.self) {
-      try bothWays.request(for: ["LEVEL", "CAT"])
+  @Test func aWordThatReadsTheSameBackwardsStandsOnceWhenBothWaysAreOn() throws {
+    let generator = BoardGenerator(
+      columns: 7, rows: 7, directions: [.right, .left, .down, .up],
+      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), dictionary: ["LEVEL", "CAT", "SUN"],
+      downWords: 0...3)
+    for seed in 1...20 {
+      let board = try generator.board(for: ["LEVEL", "CAT", "SUN"], seed: UInt64(seed))
+      #expect(board.occurrences(of: "LEVEL", along: generator.directions) == 1)
+      #expect(board.strayWords(of: ["LEVEL", "CAT", "SUN"], along: generator.directions).isEmpty)
     }
-    #expect(throws: Never.self) { try oneWay.request(for: ["LEVEL", "CAT"]) }
+  }
+
+  @MainActor
+  @Test func aWordThatReadsTheSameBackwardsIsFoundFromEitherEnd() {
+    let level = Placement(word: "LEVEL", start: Cell(row: 0, column: 0), direction: .right)
+    let board = Board(letters: [Array("LEVELX"), Array("XXXXXX")], placements: [level])
+    for (start, end) in [(0, 4), (4, 0)] {
+      let round = Round(board: board, directions: [.right, .left])
+      round.touch(Cell(row: 0, column: start))
+      round.drag(to: Cell(row: 0, column: end))
+
+      #expect(round.release() == level)
+    }
+  }
+
+  @MainActor
+  @Test func aWordThatReadsDifferentlyBackwardsIsNotFoundFromItsEnd() {
+    let cat = Placement(word: "CAT", start: Cell(row: 0, column: 0), direction: .right)
+    let board = Board(letters: [Array("CATX"), Array("XXXX")], placements: [cat])
+    let round = Round(board: board, directions: [.right, .left])
+    round.touch(Cell(row: 0, column: 2))
+    round.drag(to: Cell(row: 0, column: 0))
+
+    #expect(round.release() == nil)
   }
 
   @Test func aWordWhoseReverseLiesInsideAnotherIsRejectedWhenBothWaysAreOn() throws {

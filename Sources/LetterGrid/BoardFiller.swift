@@ -32,9 +32,10 @@ struct BoardFiller {
     self.directions = directions
     self.dictionary = dictionary
     self.targets = targets
-    intended = Set(layout.placements)
+    let readings = layout.placements + layout.placements.filter(\.isPalindrome).map(\.reversed)
+    intended = Set(readings)
     var covered: [DirectedStart: Int] = [:]
-    for placement in layout.placements {
+    for placement in readings {
       let cells = placement.cells
       for (offset, cell) in cells.enumerated() {
         let start = DirectedStart(cell: cell, direction: placement.direction)

@@ -147,7 +147,7 @@ public final class Round: Identifiable {
     let released = selection
     selection = []
     guard phase == .playing, released.count > 1 else { return nil }
-    guard let placement = board.placements.first(where: { $0.cells == released }),
+    guard let placement = board.placements.first(where: { $0.reads(released) }),
       !found.contains(placement)
     else {
       rejected = released

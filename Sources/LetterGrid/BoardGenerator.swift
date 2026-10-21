@@ -110,7 +110,9 @@ public struct BoardGenerator: Sendable {
 
   private func readsBackwardsInside(_ words: [String]) -> Bool {
     guard directions.contains(where: { directions.contains($0.opposite) }) else { return false }
-    return words.contains { word in words.contains { word.contains(String($0.reversed())) } }
+    return words.contains { word in
+      words.contains { $0 != word && word.contains(String($0.reversed())) }
+    }
   }
 
   private func directionBuilder(_ firstDirection: Direction?) -> DiagonalLayoutBuilder {

@@ -14,6 +14,18 @@ public struct Placement: Hashable, Sendable {
   public var cells: [Cell] {
     (0..<word.count).map { start.moved(direction, by: $0) }
   }
+
+  public var isPalindrome: Bool { word == String(word.reversed()) }
+
+  var reversed: Placement {
+    Placement(
+      word: String(word.reversed()), start: start.moved(direction, by: word.count - 1),
+      direction: direction.opposite)
+  }
+
+  func reads(_ cells: [Cell]) -> Bool {
+    cells == self.cells || (isPalindrome && cells == reversed.cells)
+  }
 }
 
 public struct Board: Equatable, Sendable {
@@ -43,19 +55,19 @@ public struct Board: Equatable, Sendable {
 
   public func occurrences(of word: String, along directions: [Direction]) -> Int {
     let length = word.count
-    var found = 0
+    var found: Set<Set<Cell>> = []
     for row in 0..<rows {
       for column in 0..<columns {
         for direction in directions {
           let start = Cell(row: row, column: column)
           let cells = (0..<length).map { start.moved(direction, by: $0) }
           if cells.allSatisfy(contains), text(along: cells) == word {
-            found += 1
+            found.insert(Set(cells))
           }
         }
       }
     }
-    return found
+    return found.count
   }
 
   public func strayWords(of dictionary: Set<String>, along directions: [Direction]) -> [String] {
@@ -80,7 +92,11 @@ public struct Board: Equatable, Sendable {
   }
 
   private func lies(_ cells: [Cell], insideAPlacementAlong direction: Direction) -> Bool {
-    placements.contains { $0.direction == direction && Set($0.cells).isSuperset(of: cells) }
+    placements.contains { placement in
+      (placement.direction == direction
+        || (placement.isPalindrome && placement.direction.opposite == direction))
+        && Set(placement.cells).isSuperset(of: cells)
+    }
   }
 
   public func selection(from start: Cell, toward end: Cell, along ways: [Direction]) -> [Cell] {
