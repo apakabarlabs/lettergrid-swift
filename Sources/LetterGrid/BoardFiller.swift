@@ -74,7 +74,9 @@ struct BoardFiller {
     var trials = empty.count * weights.letterCount
     while position < empty.count {
       if frames.count == position {
-        frames.append(Frame(letters: weights.orderedLetters(using: &random)))
+        let neighbours = neighbours(of: cell(at: empty[position]), in: letters)
+        frames.append(
+          Frame(letters: weights.orderedLetters(using: &random, neighbours: neighbours)))
       }
       guard let letter = frames[position].take() else {
         letters[empty[position]] = nil
@@ -91,6 +93,19 @@ struct BoardFiller {
       if isClean(through: cell(at: index), letters: letters) { position += 1 }
     }
     return letters
+  }
+
+  private func neighbours(of cell: Cell, in letters: [Character?]) -> [Character: Int] {
+    var counts: [Character: Int] = [:]
+    for rowStep in -1...1 {
+      for columnStep in -1...1 where rowStep != 0 || columnStep != 0 {
+        let neighbour = Cell(row: cell.row + rowStep, column: cell.column + columnStep)
+        if contains(neighbour), let letter = letters[index(of: neighbour)] {
+          counts[letter, default: 0] += 1
+        }
+      }
+    }
+    return counts
   }
 
   private func board(from letters: [Character?]) -> Board {
