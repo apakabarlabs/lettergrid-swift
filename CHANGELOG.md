@@ -4,11 +4,18 @@
 
 ### Changed
 
-- When the search finds no board and the words are laid out in bands, words running down
-  now stand side by side in every other column, with filler letters between them, instead
-  of one under another. The board is then as tall as the longest word running down plus a
-  band for each other word. Two words running down and one diagonal, six letters each, on
-  a grid seven columns wide take 13 rows instead of 20. Each word still reads exactly once.
+- The fallback board from 0.4.0, used when the search finds no board, is shorter. Words
+  running down now start in the top row side by side, in the first, third, fifth column
+  and so on, instead of each taking its own band of rows. Any grid row meets them only in
+  single letters with a filler letter between, so each word still reads exactly once. The
+  block is as tall as its longest word. When there are more words running down than such
+  columns, the rest form another block below, after an empty row. Words running across or
+  diagonally keep a band each below, as in 0.4.0: one row for a word across, as many rows
+  as letters for a diagonal, with an empty row between bands.
+  Two words running down and one diagonal, six letters each, on a grid seven columns wide
+  take 6 + 1 + 6 = 13 rows instead of 6 + 1 + 6 + 1 + 6 = 20.
+- Boards the search finds are the same as in 0.4.0. A fallback board for the same seed is
+  not: if you store fallback boards or compare them in tests, expect the new layout.
 
 ## [0.4.0] - 2026-10-21
 
@@ -25,10 +32,10 @@
   ```
 
   A request is rejected when a word is shorter than two letters, two words are the same
-  after uppercasing, one word contains another, the words use every letter of the
-  generator's `filler`, or the directions cannot be assigned: `firstDirection` is not
-  enabled or the first word does not fit it, or the generator's quota of words running
-  down, `downWords`, cannot be met.
+  after uppercasing, one word contains another, the words together use every letter of the
+  generator's `filler`, or the directions cannot be assigned: `firstDirection` is not among
+  the generator's `directions` or the first word does not fit it, or the number of words
+  running down cannot fall within the generator's range `downWords`.
 
 ### Changed
 
