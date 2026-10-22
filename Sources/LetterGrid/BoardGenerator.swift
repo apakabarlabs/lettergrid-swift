@@ -43,7 +43,7 @@ public struct BoardGenerator: Sendable {
     self.rows = rows
     self.directions = directions
     self.filler = filler
-    self.dictionary = Set(dictionary.map { $0.uppercased() })
+    self.dictionary = Set(dictionary.map(\.cellUppercased))
     self.wordIndex = WordIndex(self.dictionary)
     self.downWords = downWords
     self.layoutsPerAttempt = layoutsPerAttempt
@@ -54,7 +54,7 @@ public struct BoardGenerator: Sendable {
   public func request(
     for words: [String], firstDirection: Direction? = nil
   ) throws -> BoardRequest {
-    let words = words.map { $0.uppercased() }
+    let words = words.map(\.cellUppercased)
     var probe = SeededRandom(seed: 0)
     guard Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),

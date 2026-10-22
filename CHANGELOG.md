@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- A letter whose capital is longer than one character, such as Armenian `և` (capital `ԵՒ`)
+  or German `ß` (`SS`), now keeps one cell. Before, a word with it took one cell more than
+  it has letters, and `LetterWeights` filed such a filler letter under the first letter of
+  its capital. Other letters are uppercased as before.
+
+### Added
+
+- `cellUppercased` on `String` and `Character` returns the capitals the board uses, so an
+  app can spell a word the same way:
+
+  ```swift
+  "երևան".cellUppercased  // "ԵՐևԱՆ", five cells
+  ```
+
 ## [0.7.0] - 2026-10-22
 
 ### Added

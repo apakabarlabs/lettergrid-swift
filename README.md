@@ -31,6 +31,11 @@ A word that reads the same backwards, such as LEVEL, counts as one word even whe
 directions of its line are enabled: it stands on the board once, and a drag from either end
 finds it.
 
+Words and filler letters go on the board in capitals, one cell per letter. A letter whose
+capital is longer than one character, such as Armenian `և` (capital `ԵՒ`) or German `ß`
+(`SS`), stays as it is and keeps its own cell. `cellUppercased` on `String` and `Character`
+gives that form, so an app can spell a word the way the board holds it.
+
 The filler letters come from `LetterWeights`, which maps each letter to a weight. Its
 `sameNeighbour` factor, between 0 and 1, keeps equal letters apart: a letter's weight is
 multiplied by it for each neighbouring cell that already holds that letter, in any of the
@@ -54,7 +59,8 @@ the board's single layer of letters. Omitting `missed` preserves the usual board
 does not change the round, word placement or saved board data.
 
 The app can apply SwiftUI's `textCase` to the board to change every displayed letter
-consistently, labels and the missed word included.
+consistently, labels and the missed word included. `.uppercase` turns a cell holding `և`
+or `ß` into two letters; to show such letters in capitals, pass a `label` instead.
 
 Building a grid takes two steps: the words are checked once, and a board is then built for
 them without any way to fail.
