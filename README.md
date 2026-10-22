@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.7.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.8.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in

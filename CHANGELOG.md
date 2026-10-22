@@ -1,21 +1,42 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0] - 2026-10-22
 
-### Changed
+### Fixed
 
-- A letter whose capital is longer than one character, such as Armenian `և` (capital `ԵՒ`)
-  or German `ß` (`SS`), now keeps one cell. Before, a word with it took one cell more than
-  it has letters, and `LetterWeights` filed such a filler letter under the first letter of
-  its capital. Other letters are uppercased as before.
+- A letter whose `uppercased()` gives more than one Swift `Character`, such as Armenian `և`
+  (`ԵՒ`) or German `ß` (`SS`), now takes one cell and is kept as written, in lowercase.
+  Every other letter is uppercased as before.
+
+  Before, a word with such a letter took one cell more than it has letters: `ԵՒ` sat in
+  two cells, and the player had to drag across both. A filler weight for it was added to
+  the first letter of its capital: `"ß": 1` raised the weight of `S`, and `ß` never
+  appeared as filler.
+
+  What changes for you only if your words, dictionary or filler hold such a letter:
+
+  - the word is one cell shorter, so for the same seed the board differs from 0.7.0. A
+    `Board` built from letters and placements an app saved under 0.7.0 plays as before; an
+    app that rebuilds its boards from a seed gets the new board;
+  - a filler with such a letter now fills cells with the letter itself under its own
+    weight, so filler differs for the same seed even when no word holds the letter;
+  - duplicate and contained-word checks in `request(for:firstDirection:)` and the
+    dictionary check for words read by chance compare the new form: `straße` and
+    `strasse` are now two different words, as are `straße` and `STRASSE`;
+  - app code that compares a word with the board through `uppercased()` no longer matches
+    such a word; switch it to `cellUppercased`;
+  - a `label` table keyed by the board's letters needs an entry for `և` itself;
+  - SwiftUI `.textCase(.uppercase)` on the board still draws `ԵՒ` inside the one cell; to
+    show such letters differently, pass a `label`.
 
 ### Added
 
-- `cellUppercased` on `String` and `Character` returns the capitals the board uses, so an
-  app can spell a word the same way:
+- `cellUppercased` on `String` (returns `String`) and on `Character` (returns `Character`)
+  gives the form the board holds. Use it wherever the app compares or spells a word next
+  to the board, for example a list of found words:
 
   ```swift
-  "երևան".cellUppercased  // "ԵՐևԱՆ", five cells
+  "երևան".cellUppercased  // "ԵՐևԱՆ", five letters, five cells
   ```
 
 ## [0.7.0] - 2026-10-22
