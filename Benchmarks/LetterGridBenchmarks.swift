@@ -9,6 +9,7 @@ struct LetterGridBenchmarks {
     largeDictionary()
     try fallbackBoards()
     hints()
+    try OrdinaryBoards.run()
   }
 
   @MainActor
@@ -82,17 +83,19 @@ struct LetterGridBenchmarks {
   }
 
   @MainActor
-  private static func measure(_ name: String, iterations: Int, operation: () -> Int) {
-    var checksum = operation()
-    let samples = (0..<5).map { _ in
-      let duration = ContinuousClock().measure {
-        for _ in 0..<iterations { checksum &+= operation() }
+  static func measure(_ name: String, iterations: Int, operation: () throws -> Int) rethrows {
+    var checksum = try operation()
+    let samples = try (0..<5).map { _ in
+      let duration = try ContinuousClock().measure {
+        for _ in 0..<iterations { checksum &+= try operation() }
       }.components
       return (Double(duration.seconds) + Double(duration.attoseconds) / 1e18) * 1000
         / Double(iterations)
     }.sorted()
     let median = String(format: "%.6f", samples[2])
-    let line = "\(name): \(median) ms/op; checksum=\(checksum)\n"
+    let minimum = String(format: "%.6f", samples[0])
+    let maximum = String(format: "%.6f", samples[4])
+    let line = "\(name): \(median) ms/op; range=\(minimum)...\(maximum); checksum=\(checksum)\n"
     FileHandle.standardOutput.write(Data(line.utf8))
   }
 }
