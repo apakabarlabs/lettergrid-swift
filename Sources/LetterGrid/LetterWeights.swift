@@ -5,6 +5,7 @@ public struct LetterWeights: Equatable, Sendable {
     case empty
     case notALetter(String)
     case notPositive(String)
+    case notFinite(String)
     case sameNeighbourOutsideFraction(Double)
   }
 
@@ -25,6 +26,7 @@ public struct LetterWeights: Equatable, Sendable {
       guard key.count == 1, let letter = key.first?.cellUppercased, letter.isLetter else {
         throw Failure.notALetter(key)
       }
+      guard weight.isFinite else { throw Failure.notFinite(key) }
       guard weight > 0 else { throw Failure.notPositive(key) }
       letters.append(letter)
       orderedWeights.append(weight)
@@ -51,22 +53,34 @@ public struct LetterWeights: Equatable, Sendable {
     using random: inout SeededRandom, neighbours: [Character: Int] = [:]
   ) -> [Character] {
     var remaining = zip(letters, weights).map { letter, weight in
-      (letter, weight * pow(sameNeighbour, Double(neighbours[letter] ?? 0)))
+      let count = Double(neighbours[letter] ?? 0)
+      return (
+        letter: letter,
+        weight: weight * pow(sameNeighbour, count),
+        logarithm: log(weight) + count * log(sameNeighbour)
+      )
     }
     var ordered: [Character] = []
     while !remaining.isEmpty {
-      let total = remaining.reduce(0) { $0 + $1.1 }
+      var total = remaining.reduce(0) { $0 + $1.weight }
+      if !total.isFinite || total == 0 {
+        let largest = remaining.map(\.logarithm).max() ?? 0
+        for index in remaining.indices {
+          remaining[index].weight = exp(remaining[index].logarithm - largest)
+        }
+        total = remaining.reduce(0) { $0 + $1.weight }
+      }
       var point = Double.random(in: 0..<total, using: &random)
-      var chosen = remaining[remaining.count - 1].0
-      for (letter, weight) in remaining {
-        point -= weight
+      var chosen = remaining[remaining.count - 1].letter
+      for candidate in remaining {
+        point -= candidate.weight
         if point < 0 {
-          chosen = letter
+          chosen = candidate.letter
           break
         }
       }
       ordered.append(chosen)
-      remaining.removeAll { $0.0 == chosen }
+      remaining.removeAll { $0.letter == chosen }
     }
     return ordered
   }
