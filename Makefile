@@ -2,7 +2,7 @@ SWIFT_SOURCES = Sources Tests Package.swift
 
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools format lint comments test-build test build
+.PHONY: install-tools format lint comments test-build test build docs
 
 install-tools:
 	brew install swiftlint swift-format
@@ -26,3 +26,12 @@ test:
 
 build: lint test
 	swift build
+
+docs:
+	mkdir -p .build/docc
+	swift package --allow-writing-to-directory .build/docc generate-documentation \
+		--target LetterGrid --output-path .build/docc --warnings-as-errors \
+		--transform-for-static-hosting --hosting-base-path lettergrid-swift
+	swift package --allow-writing-to-directory .build/docc/ui generate-documentation \
+		--target LetterGridUI --output-path .build/docc/ui --warnings-as-errors \
+		--transform-for-static-hosting --hosting-base-path lettergrid-swift/ui

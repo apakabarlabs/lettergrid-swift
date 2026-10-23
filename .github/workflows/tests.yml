@@ -3,8 +3,12 @@ name: Tests
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
 
 concurrency:
   group: tests-${{ github.ref }}
@@ -30,5 +34,15 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Build with SwiftUI and run tests
-      run: swift build && make test
+    - name: Install lint tools
+      run: |
+        brew install swiftlint swift-format
+        python3 -m venv .build/lint-env
+        .build/lint-env/bin/pip install --quiet --upgrade git+https://github.com/botforge-pro/commentcensor.git
+        echo "$GITHUB_WORKSPACE/.build/lint-env/bin" >> "$GITHUB_PATH"
+
+    - name: Check style
+      run: make lint
+
+    - name: Build with SwiftUI
+      run: make test-build

@@ -9,6 +9,9 @@ let package = Package(
     .library(name: "LetterGrid", targets: ["LetterGrid"]),
     .library(name: "LetterGridUI", targets: ["LetterGridUI"]),
   ],
+  dependencies: [
+    .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+  ],
   targets: [
     .target(name: "LetterGrid"),
     .target(name: "LetterGridUI", dependencies: ["LetterGrid"]),
