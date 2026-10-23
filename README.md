@@ -40,21 +40,21 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
 
 ## Generating boards
 
-- Directions are opt-in, including diagonals and reverse readings. `rows` is a minimum;
-  the board grows to fit the words. Use `board.rows` for its resulting height.
+- Directions are opt-in, including diagonals and reverse readings. `columns` is fixed;
+  `rows` is a minimum. The board grows downwards to fit the words; read its height from `board.rows`.
 - Every accepted target occurs exactly once along the allowed directions. Removing other
-  words from an optional app-supplied dictionary (`Set<String>`) is best effort:
+  words from an optional `BoardGenerator` dictionary (`Set<String>`, passed as `dictionary:`) is best effort:
   bounded search falls back to a board that preserves the targets but may contain other words.
 - Targets need at least two letters and cannot duplicate or contain one another. The filler
   must include a letter absent from all targets. Invalid inputs throw before generation.
-- Filler weights must be positive and finite. `sameNeighbour` in `(0, 1]` reduces adjacent
+- Filler weights must be positive and finite. `LetterWeights.sameNeighbour` in `(0, 1]` reduces adjacent
   repetitions; its default of `1` leaves weights unchanged.
 - Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
   in one cell even when its capital would expand.
 
 ## Saving and restoring
 
-Save the board's letters and placements together with `round.progress`. A seed alone does
+The app serializes the board's letters and placements together with `round.progress`. A seed alone does
 not preserve a layout across library updates. Restore external data through checked initializers:
 
 ```swift
@@ -64,9 +64,10 @@ let round = try Round(
 ```
 
 These report invalid data without clearing it. Nonthrowing `Board(letters:placements:)` and
-`Round(board:directions:...)` enforce valid inputs with preconditions.
-Omit the round's `seconds` when the app owns the clock. The library countdown does not track
-elapsed time while the app is suspended.
+`Round(board:directions:)` and its variants enforce valid inputs with preconditions.
+
+Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock
+callbacks, or let the app own timing. The library countdown does not track elapsed time during suspension.
 
 See the API references above for round controls, countdown callbacks and view options,
 or the [changelog](https://github.com/apakabarlabs/lettergrid-swift/blob/main/CHANGELOG.md) for migration steps.
