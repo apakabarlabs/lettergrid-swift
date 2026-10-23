@@ -11,15 +11,15 @@
 
   A seed alone does not guarantee an identical board across library versions. Preserve a round
   by saving its letters and placements and reloading them with `Board(validating:placements:)`.
-  If only the seed was saved, rebuild with the previous library version and save the board
-  before upgrading. Weights and neighbour penalties retain their meaning. Public call signatures
-  are unchanged in 0.11.0.
+  If only seeds were saved, rebuild all such boards with the library version and settings that
+  created them, then save their letters and placements before upgrading. Saved `RoundProgress`
+  remains usable with that same saved board through `Round(restoring:board:directions:...)`.
+  Weights and neighbour penalties retain their meaning. Public call signatures are unchanged
+  in 0.11.0.
 
 ### Fixed
 
-- Dictionary scans and hint display avoid repeated work on long rows and words. Scans preserve
-  result order, repeated readings, case sensitivity and the board's exact Unicode spelling.
-  Small-board scans also avoid work proportional to the size of a large dictionary.
+- Dictionary scans and hint display are faster on long rows and words, with unchanged results.
 
 ## [0.10.0] - 2026-10-23
 
