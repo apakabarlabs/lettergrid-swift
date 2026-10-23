@@ -41,6 +41,18 @@ struct SelectionTests {
     #expect(board.text(along: cells) == "SEAL")
   }
 
+  @Test func aDragToAnExtremeCoordinateOnlyVisitsBoardCells() {
+    #expect(
+      board.selection(
+        from: Cell(row: 0, column: 3), toward: Cell(row: Int.max, column: 3), along: [.down])
+        == (0..<4).map { Cell(row: $0, column: 3) })
+    #expect(
+      board.selection(
+        from: Cell(row: 3, column: 3), toward: Cell(row: Int.min, column: Int.min),
+        along: [.upLeft])
+        == (0..<4).map { Cell(row: 3 - $0, column: 3 - $0) })
+  }
+
   @Test func bothForwardDiagonalsCanBeSelected() {
     let ways: [Direction] = [.right, .down, .downRight, .downLeft]
     #expect(
