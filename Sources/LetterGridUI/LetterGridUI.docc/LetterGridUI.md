@@ -13,8 +13,16 @@ the round.
 The application supplies the hidden-word accessibility label in its own language.
 ``LetterHighlight`` draws the same path geometry over custom board content.
 
-A cell label can replace a character with a display string without changing selection
-or word matching. Labels run on redraw and should use a prepared lookup table.
+### Display options
+
+- `LetterBoard.label` changes each cell's displayed string, allowing another script without
+  changing selection or word matching. All labels share a font size based on the longest label.
+  Labels run on redraw and should use a prepared lookup table.
+- `LetterBoard.missed` highlights a placement after play ends using `LetterGridStyle.rejected`.
+  Its path appears above other paths and below letters, without changing the round.
+- SwiftUI's `textCase` applies to every displayed letter. `.uppercase` expands `և` and `ß`
+  into two letters; use `label` when a cell needs a custom capital display.
+- `LetterGridStyle.rejectionSeconds` must be a positive representable duration.
 
 ## Topics
 
