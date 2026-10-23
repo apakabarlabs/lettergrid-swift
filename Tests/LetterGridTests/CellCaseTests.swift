@@ -22,7 +22,7 @@ struct CellCaseTests {
       columns: 6, rows: 6, directions: [.right, .down],
       filler: try LetterWeights(["ա": 1, "ն": 1, "ս": 1, "տ": 1, "կ": 1]))
     let request = try generator.request(for: ["երևան", "ևս"])
-    let board = generator.board(for: request, seed: 7)
+    let board = request.board(seed: 7)
 
     #expect(request.words == ["ԵՐևԱՆ", "ևՍ"])
     #expect(board.occurrences(of: "ԵՐևԱՆ", along: [.right, .down]) == 1)

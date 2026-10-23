@@ -47,7 +47,7 @@ struct BandedBoardTests {
           } catch {
             continue
           }
-          let board = generator.board(for: request, seed: random.next())
+          let board = request.board(seed: random.next())
           built += 1
           #expect(board.columns == 7)
           #expect(board.rows >= 7)
@@ -75,7 +75,7 @@ struct BandedBoardTests {
     let request = try generator.request(
       for: ["ABCDEF", "BADCFE", "CAFEBD"], firstDirection: .downRight)
 
-    let board = generator.board(for: request, seed: 7)
+    let board = request.board(seed: 7)
 
     #expect(board.rows == 13)
     #expect(board.placements.filter { $0.direction == .down }.map(\.start.column) == [0, 2])
@@ -110,7 +110,7 @@ struct BandedBoardTests {
     let request = try generator.request(for: ["house", "water", "cat"])
 
     for seed in UInt64(1)...20 {
-      let board = generator.board(for: request, seed: seed)
+      let board = request.board(seed: seed)
       #expect(board.rows == 7)
       #expect(board.strayWords(of: ["SAT", "TEA", "EAT", "SEA"], along: [.right, .down]).isEmpty)
     }

@@ -13,7 +13,7 @@ struct SameNeighbourTests {
     let request = try generator.request(for: words)
     var repeats = 0
     for seed in 1...40 {
-      let board = generator.board(for: request, seed: UInt64(seed))
+      let board = request.board(seed: UInt64(seed))
       let hidden = Set(board.placements.flatMap(\.cells))
       for row in 0..<board.rows {
         for column in 0..<board.columns {
@@ -46,8 +46,8 @@ struct SameNeighbourTests {
       filler: try LetterWeights(weights, sameNeighbour: 1), downWords: 1...2)
 
     #expect(
-      plain.board(for: try plain.request(for: words), seed: 3)
-        == explicit.board(for: try explicit.request(for: words), seed: 3))
+      try plain.request(for: words).board(seed: 3)
+        == explicit.request(for: words).board(seed: 3))
   }
 
   @Test(arguments: [0.0, -0.5, 1.5])
