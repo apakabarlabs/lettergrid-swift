@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.10.0] - 2026-10-23
+
+### Changed
+
+- A prepared board request now retains the settings it was checked against. Build it directly
+  instead of passing it to a second generator:
+
+  ```swift
+  // Before
+  let board = generator.board(for: request, seed: seed)
+
+  // Now
+  let board = request.board(seed: seed)
+  // A dictionary may still be supplied after checking the words.
+  let boardWithDictionary = request.board(seed: seed, dictionary: dictionary)
+  ```
+
+  The convenience `generator.board(for: words, seed:)` is unchanged. Requests remain
+  equatable and safe to pass between tasks; equality includes their generation settings.
+- `Countdown.run` now throws sleep failures, invalid intervals and callbacks that do not
+  advance the round. Add `try` and handle errors at the owner of the operation. Cancellation
+  still ends normally, without an extra introduction or tick callback.
+  The introduction callback must change the introduced cells or leave the introduction phase;
+  the tick callback must change the remaining seconds or leave the playing phase. Otherwise
+  they throw `Countdown.Failure.noIntroductionProgress` or `.noClockProgress`, respectively.
+- Nonthrowing board and round initializers now stop on a failed precondition for invalid
+  row widths, placements, progress or unselectable directions. Use the new throwing
+  initializers below for stored or otherwise external data so their errors can be handled.
+
+### Added
+
+- `Board(validating:placements:)`, `Round(restoring:board:directions:...)` and
+  `RoundProgress.validate(for:)` report malformed boards or saved progress without clearing
+  it. Checks include row widths, placement contents, unknown or repeated found words,
+  revealed-letter counts, negative seconds and directions that make a word unselectable.
+- Published API references for [LetterGrid](https://apakabarlabs.github.io/lettergrid-swift/documentation/lettergrid/)
+  and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentation/lettergridui/).
+
+### Fixed
+
+- Extreme finite filler weights and neighbour penalties no longer crash sampling through
+  overflow or underflow. Non-finite weights are rejected.
+- Fallback boards now apply the same neighbour penalty as searched boards. With a penalty
+  below one, fallback filler may change for the same seed. As with earlier updates, save
+  letters and placements to preserve a round instead of regenerating it from its seed.
+- A round restored with an enabled countdown at zero is lost immediately. An empty board is already complete,
+  and an empty target list cannot become a playable request.
+- Invalid generator dimensions, directions and search limits are reported while preparing
+  a request. A drag far beyond the board now does work bounded by the board dimensions.
+- Empty or zero-width SwiftUI boards no longer convert invalid gesture coordinates to integers.
+
 ## [0.9.0] - 2026-10-23
 
 ### Changed
