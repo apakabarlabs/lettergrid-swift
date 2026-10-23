@@ -122,7 +122,7 @@ public final class Round: Identifiable {
 
   public var hintedCells: [Cell] {
     board.placements.filter { !found.contains($0) }.flatMap { placement in
-      revealedIndices(of: placement).map { placement.cells[$0] }
+      revealedIndices(of: placement).map { placement.start.moved(placement.direction, by: $0) }
     }
   }
 
@@ -188,7 +188,7 @@ public final class Round: Identifiable {
   }
 
   private func hintLimit(of placement: Placement) -> Int {
-    min(hintOrder.letterIndices(of: placement.word).count, placement.word.count - 1)
+    placement.word.count - 1
   }
 
   private func revealedIndices(of placement: Placement) -> [Int] {
