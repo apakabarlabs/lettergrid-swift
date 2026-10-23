@@ -1,23 +1,6 @@
 import Foundation
 import Observation
 
-public struct RoundProgress: Equatable, Sendable {
-  public var found: [String]
-  public var revealed: [String: Int]
-  public var secondsLeft: Int?
-  public var isLost: Bool
-
-  public init(
-    found: [String] = [], revealed: [String: Int] = [:], secondsLeft: Int? = nil,
-    isLost: Bool = false
-  ) {
-    self.found = found
-    self.revealed = revealed
-    self.secondsLeft = secondsLeft
-    self.isLost = isLost
-  }
-}
-
 public enum HintOrder: String, Sendable, Decodable {
   case fromStart = "from_start"
   case anyButFirst = "any_but_first"
@@ -39,6 +22,16 @@ public enum HintOrder: String, Sendable, Decodable {
 @MainActor
 @Observable
 public final class Round: Identifiable {
+  public enum Failure: LocalizedError, Equatable {
+    case unselectableWord(String)
+
+    public var errorDescription: String? {
+      switch self {
+      case .unselectableWord(let word): "The enabled directions cannot select the word \(word)."
+      }
+    }
+  }
+
   public enum Phase: Equatable, Sendable {
     case introducing
     case playing
@@ -63,6 +56,13 @@ public final class Round: Identifiable {
     board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
     hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
   ) {
+    precondition(seconds.map { $0 >= 0 } ?? true, "Round seconds must be nonnegative")
+    do {
+      try progress.validate(for: board)
+      try Self.validateDirections(directions, for: board)
+    } catch {
+      preconditionFailure("Invalid round progress: \(error.localizedDescription)")
+    }
     self.board = board
     self.directions = directions
     self.hintOrder = hintOrder
@@ -76,10 +76,31 @@ public final class Round: Identifiable {
       uniquingKeysWith: { first, _ in first })
     let startsWithIntroduction = introduces && progress.found.isEmpty && !board.placements.isEmpty
     self.phase = startsWithIntroduction ? .introducing : .playing
-    if found.count == board.placements.count, !board.placements.isEmpty {
+    if found.count == board.placements.count {
       phase = .won
-    } else if progress.isLost {
+    } else if progress.isLost || secondsLeft == 0 {
       phase = .lost
+    }
+  }
+
+  public convenience init(
+    restoring progress: RoundProgress, board: Board, directions: [Direction],
+    seconds: Int? = nil, introduces: Bool = false, hintOrder: HintOrder = .fromStart
+  ) throws {
+    if let seconds, seconds < 0 { throw RoundProgress.Failure.negativeSeconds(seconds) }
+    try progress.validate(for: board)
+    try Self.validateDirections(directions, for: board)
+    self.init(
+      board: board, directions: directions, seconds: seconds, introduces: introduces,
+      hintOrder: hintOrder, progress: progress)
+  }
+
+  private static func validateDirections(_ directions: [Direction], for board: Board) throws {
+    for placement in board.placements {
+      guard
+        directions.contains(placement.direction)
+          || (placement.isPalindrome && directions.contains(placement.direction.opposite))
+      else { throw Failure.unselectableWord(placement.word) }
     }
   }
 
@@ -133,7 +154,7 @@ public final class Round: Identifiable {
   }
 
   public func touch(_ cell: Cell) {
-    guard phase == .playing else { return }
+    guard phase == .playing, board.contains(cell) else { return }
     rejected = []
     selection = [cell]
   }
