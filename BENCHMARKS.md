@@ -1,5 +1,40 @@
 # Performance measurements
 
+## 2026-10-23: ordinary 7×7 boards with 0.11.0
+
+| Operation | Median, ms | Minimum, ms | Maximum, ms |
+|---|---:|---:|---:|
+| Generate one board | 2.40 | 2.38 | 2.44 |
+| Read hinted cells | 0.00319 | 0.00315 | 0.00334 |
+| Create a round and select every answer | 0.00765 | 0.00748 | 0.00772 |
+
+Run `make bench` in release mode. These are measurements of one English word set on an
+Apple M1 Pro, 32 GiB RAM, macOS 27.0.1, Apple Swift 6.4, connected to AC power.
+Library sources match tag `0.11.0`; benchmark sources are at `db6e7ce`.
+They do not measure UI latency or establish a speedup over an earlier version.
+
+### Workload and method
+
+- Three screens: `HOUSE HOME DOOR WINDOW`, `ROOF FLOOR WALL`, `KEY YARD GATE`.
+  Each uses seeds 1 through 30, producing 90 boards, all checked to be 7×7.
+- Right/down directions, half the answers vertical (rounded either way for three words),
+  filler weights proportional to letter frequency across all ten words, `sameNeighbour: 1`,
+  all ten words as the dictionary, default search limits.
+- Generation includes constructing the generator and request, searching, filling and a
+  checksum of the resulting letters. Input spellings and filler weights are prepared
+  before timing. Before measurement, every input is checked for exactly one occurrence
+  of each answer and no stray dictionary words.
+- Hints use `.anyButFirst` and rounds prepared with twice as many `reveal()` calls as answers.
+  Round creation and revealing happen before timing; hinted-cell lookup and its checksum are timed.
+- Selection includes creating a round without a countdown, getting each placement's last cell, then one
+  `touch`, `drag` and `release` per answer. Successful releases and the winning phase are checked
+  inside the timed operation. It does not simulate intermediate drag events.
+- After one warm-up operation, five samples each execute 90 generation operations or 9,000
+  hint/selection operations. Each sample covers the complete 90-board corpus equally.
+  The table shows the median and range of those five batch means, not individual-operation
+  percentiles or a confidence interval. Checksums: generation `1691725`, hints `8270263`,
+  selection `150004`.
+
 ## 2026-10-23: 0.10.0 to 0.11.0
 
 **These are synthetic stress cases from one local run, not typical application timings.**

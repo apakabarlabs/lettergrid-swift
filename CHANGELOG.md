@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.1] - 2026-10-23
+
+### Added
+
+- Reproducible 7×7 performance measurements with natural-language words and timing ranges.
+  Run `make bench`; results and methodology are in
+  [BENCHMARKS.md](https://github.com/apakabarlabs/lettergrid-swift/blob/main/BENCHMARKS.md).
+  Library behavior and public API are unchanged; no application changes are needed.
+
 ## [0.11.0] - 2026-10-23
 
 ### Changed

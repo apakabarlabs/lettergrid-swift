@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.11.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.11.1")
 ```
 
 Then add products to your target's dependencies:
