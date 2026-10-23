@@ -4,23 +4,30 @@
 
 ### Changed
 
-- Fallback boards sample each filler letter directly instead of computing unused alternatives.
-  Weights and neighbour penalties keep the same meaning, but filler can change for the same seed,
-  even with `sameNeighbour: 1`. Reload saved letters and placements to preserve an existing round;
-  rebuilding it from its seed can give different filler. Public call signatures are unchanged.
+- **Seed compatibility:** fallback filler can differ from 0.10.0 for the same seed, including
+  with the default `sameNeighbour: 1`. Boards found by the bounded search keep their previous
+  letters and placements; only fallback filler changes. The API does not mark fallback boards,
+  so apps rebuilding saved boards from seeds must account for this change.
+
+  A seed alone does not guarantee an identical board across library versions. Preserve a round
+  by saving its letters and placements and reloading them with `Board(validating:placements:)`.
+  If only the seed was saved, rebuild with the previous library version and save the board
+  before upgrading. Weights and neighbour penalties retain their meaning. Public call signatures
+  are unchanged in 0.11.0.
 
 ### Fixed
 
 - Dictionary scans and hint display avoid repeated work on long rows and words. Scans preserve
   result order, repeated readings, case sensitivity and the board's exact Unicode spelling.
-  Small boards with large dictionaries avoid building an unnecessary search index.
+  Small-board scans also avoid work proportional to the size of a large dictionary.
 
 ## [0.10.0] - 2026-10-23
 
 ### Changed
 
 - A prepared board request now retains the settings it was checked against. Build it directly
-  instead of passing it to a second generator:
+  instead of passing it to a second generator. The old `board(for: request, seed:)` overload
+  was removed:
 
   ```swift
   // Before
