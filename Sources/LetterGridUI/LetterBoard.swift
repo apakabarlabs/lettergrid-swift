@@ -66,9 +66,11 @@
       .task(id: round.rejected) {
         guard !round.rejected.isEmpty else { return }
         do {
-          try await Task.sleep(for: .seconds(style.rejectionSeconds))
-        } catch {
+          try await Task.sleep(for: style.rejectionDelay)
+        } catch is CancellationError {
           return
+        } catch {
+          preconditionFailure("Unexpected rejection delay failure: \(error)")
         }
         onRejectionShown()
       }
@@ -100,23 +102,29 @@
     private func drag(side: CGFloat) -> some Gesture {
       DragGesture(minimumDistance: 0)
         .onChanged { value in
+          let point = isDragging ? value.location : value.startLocation
+          guard let cell = cell(at: point, side: side) else { return }
           if isDragging {
-            onDrag(cell(at: value.location, side: side))
+            onDrag(cell)
           } else {
             isDragging = true
-            onTouch(cell(at: value.startLocation, side: side))
+            onTouch(cell)
           }
         }
         .onEnded { _ in
+          guard isDragging else { return }
           isDragging = false
           onRelease()
         }
     }
 
-    private func cell(at point: CGPoint, side: CGFloat) -> Cell {
-      Cell(
-        row: min(max(Int(point.y / side), 0), board.rows - 1),
-        column: min(max(Int(point.x / side), 0), board.columns - 1)
+    private func cell(at point: CGPoint, side: CGFloat) -> Cell? {
+      guard side.isFinite, side > 0, point.x.isFinite, point.y.isFinite,
+        board.rows > 0, board.columns > 0
+      else { return nil }
+      return Cell(
+        row: Int(min(max(point.y / side, 0), CGFloat(board.rows - 1))),
+        column: Int(min(max(point.x / side, 0), CGFloat(board.columns - 1)))
       )
     }
   }

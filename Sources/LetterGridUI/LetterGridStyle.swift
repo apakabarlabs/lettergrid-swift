@@ -1,4 +1,5 @@
 #if canImport(SwiftUI)
+  import LetterGrid
   import SwiftUI
 
   public struct LetterGridStyle {
@@ -7,7 +8,14 @@
     public var rejected: Color
     public var hinted: Color
     public var foundText: Color
-    public var rejectionSeconds: Double
+    private var rejectionInterval: SleepInterval
+
+    public var rejectionSeconds: Double {
+      get { rejectionInterval.seconds }
+      set { rejectionInterval = SleepInterval(enforcing: newValue) }
+    }
+
+    var rejectionDelay: Duration { rejectionInterval.duration }
 
     public init(
       found: Color, selected: Color, rejected: Color, hinted: Color, foundText: Color,
@@ -18,7 +26,7 @@
       self.rejected = rejected
       self.hinted = hinted
       self.foundText = foundText
-      self.rejectionSeconds = rejectionSeconds
+      self.rejectionInterval = SleepInterval(enforcing: rejectionSeconds)
     }
   }
 #endif
