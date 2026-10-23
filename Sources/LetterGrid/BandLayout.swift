@@ -32,7 +32,7 @@ struct BandLayout {
         let counts = neighbours.counts(around: Cell(row: row, column: column)) {
           letters[$0.row][$0.column]
         }
-        letters[row][column] = filler.orderedLetters(using: &random, neighbours: counts)[0]
+        letters[row][column] = filler.randomLetter(using: &random, neighbours: counts)
       }
     }
     let rows = letters.map { line in

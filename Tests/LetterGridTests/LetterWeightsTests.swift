@@ -35,4 +35,37 @@ struct LetterWeightsTests {
     #expect(Set(ordered) == Set("AB"))
     #expect(ordered.first == "A")
   }
+
+  @Test func aSingleDrawMatchesTheFirstOrderedChoiceIncludingRescaledWeights() throws {
+    let cases: [(LetterWeights, [Character: Int])] = [
+      (try LetterWeights(["a": 8, "b": 2, "c": 1], sameNeighbour: 0.2), ["A": 4, "B": 1]),
+      (try LetterWeights(["a": .greatestFiniteMagnitude, "b": .greatestFiniteMagnitude]), [:]),
+      (
+        try LetterWeights(
+          ["a": 1, "b": .leastNonzeroMagnitude], sameNeighbour: .leastNonzeroMagnitude),
+        ["A": 8, "B": 8]
+      ),
+      (try LetterWeights(["a": 1, "A": 2, "b": 3]), [:]),
+    ]
+    for (weights, neighbours) in cases {
+      for seed: UInt64 in 1...100 {
+        var direct = SeededRandom(seed: seed)
+        var ordered = SeededRandom(seed: seed)
+        #expect(
+          weights.randomLetter(using: &direct, neighbours: neighbours)
+            == weights.orderedLetters(using: &ordered, neighbours: neighbours).first)
+      }
+    }
+  }
+
+  @Test func aSingleDrawDoesNotConsumeTheRestOfThePermutation() throws {
+    let weights = try LetterWeights(["a": 8, "b": 2, "c": 1])
+    for seed: UInt64 in 1...100 {
+      var direct = SeededRandom(seed: seed)
+      var expected = SeededRandom(seed: seed)
+      _ = weights.randomLetter(using: &direct)
+      _ = Double.random(in: 0..<11, using: &expected)
+      #expect(direct.next() == expected.next())
+    }
+  }
 }

@@ -1,6 +1,12 @@
 import Foundation
 
 public struct LetterWeights: Equatable, Sendable {
+  private struct Candidate {
+    let letter: Character
+    var weight: Double
+    let logarithm: Double
+  }
+
   public enum Failure: Error, Equatable {
     case empty
     case notALetter(String)
@@ -52,36 +58,50 @@ public struct LetterWeights: Equatable, Sendable {
   func orderedLetters(
     using random: inout SeededRandom, neighbours: [Character: Int] = [:]
   ) -> [Character] {
-    var remaining = zip(letters, weights).map { letter, weight in
+    var remaining = candidates(neighbours: neighbours)
+    var ordered: [Character] = []
+    while !remaining.isEmpty {
+      let chosen = draw(from: &remaining, using: &random)
+      ordered.append(chosen)
+      remaining.removeAll { $0.letter == chosen }
+    }
+    return ordered
+  }
+
+  func randomLetter(
+    using random: inout SeededRandom, neighbours: [Character: Int] = [:]
+  ) -> Character {
+    var candidates = candidates(neighbours: neighbours)
+    return draw(from: &candidates, using: &random)
+  }
+
+  private func candidates(neighbours: [Character: Int]) -> [Candidate] {
+    zip(letters, weights).map { letter, weight in
       let count = Double(neighbours[letter] ?? 0)
-      return (
+      return Candidate(
         letter: letter,
         weight: weight * pow(sameNeighbour, count),
         logarithm: log(weight) + count * log(sameNeighbour)
       )
     }
-    var ordered: [Character] = []
-    while !remaining.isEmpty {
-      var total = remaining.reduce(0) { $0 + $1.weight }
-      if !total.isFinite || total == 0 {
-        let largest = remaining.map(\.logarithm).max() ?? 0
-        for index in remaining.indices {
-          remaining[index].weight = exp(remaining[index].logarithm - largest)
-        }
-        total = remaining.reduce(0) { $0 + $1.weight }
+  }
+
+  private func draw(
+    from candidates: inout [Candidate], using random: inout SeededRandom
+  ) -> Character {
+    var total = candidates.reduce(0) { $0 + $1.weight }
+    if !total.isFinite || total == 0 {
+      let largest = candidates.map(\.logarithm).max() ?? 0
+      for index in candidates.indices {
+        candidates[index].weight = exp(candidates[index].logarithm - largest)
       }
-      var point = Double.random(in: 0..<total, using: &random)
-      var chosen = remaining[remaining.count - 1].letter
-      for candidate in remaining {
-        point -= candidate.weight
-        if point < 0 {
-          chosen = candidate.letter
-          break
-        }
-      }
-      ordered.append(chosen)
-      remaining.removeAll { $0.letter == chosen }
+      total = candidates.reduce(0) { $0 + $1.weight }
     }
-    return ordered
+    var point = Double.random(in: 0..<total, using: &random)
+    for candidate in candidates {
+      point -= candidate.weight
+      if point < 0 { return candidate.letter }
+    }
+    return candidates[candidates.count - 1].letter
   }
 }
