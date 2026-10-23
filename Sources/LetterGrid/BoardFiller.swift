@@ -1,9 +1,4 @@
 struct BoardFiller {
-  private struct DirectedStart: Hashable {
-    let cell: Cell
-    let direction: Direction
-  }
-
   private struct Frame {
     let letters: [Character]
     var next = 0
@@ -21,7 +16,7 @@ struct BoardFiller {
   let targets: WordIndex
   private let layout: Layout
   private let intended: Set<Placement>
-  private let covered: [DirectedStart: Int]
+  private let covered: PlacementCoverage
 
   init(
     layout: Layout, columns: Int, directions: [Direction], dictionary: WordIndex,
@@ -34,15 +29,7 @@ struct BoardFiller {
     self.targets = targets
     let readings = layout.placements + layout.placements.filter(\.isPalindrome).map(\.reversed)
     intended = Set(readings)
-    var covered: [DirectedStart: Int] = [:]
-    for placement in readings {
-      let cells = placement.cells
-      for (offset, cell) in cells.enumerated() {
-        let start = DirectedStart(cell: cell, direction: placement.direction)
-        covered[start] = max(covered[start] ?? 0, cells.count - offset)
-      }
-    }
-    self.covered = covered
+    self.covered = PlacementCoverage(layout.placements)
   }
 
   func fill(
@@ -141,7 +128,7 @@ struct BoardFiller {
     var targetNode: Int? = 0
     var length = 0
     var cell = start
-    let coverage = covered[DirectedStart(cell: start, direction: direction)] ?? 0
+    let coverage = covered.length(from: start, along: direction)
     while contains(cell), let letter = letters[index(of: cell)] {
       dictionaryNode = dictionary.next(after: dictionaryNode, letter: letter)
       targetNode = targets.next(after: targetNode, letter: letter)

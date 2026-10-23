@@ -109,7 +109,7 @@ public struct BoardGenerator: Equatable, Sendable {
       guard
         let board = filler.fill(with: self.filler, attempts: fillsPerAttempt, using: &random)
       else { continue }
-      if isClean(board, hiding: words, dictionary: dictionary) { return board }
+      if isClean(board, hiding: words, dictionary: index) { return board }
     }
     return bandedBoard(for: request, using: &random)
   }
@@ -145,8 +145,8 @@ public struct BoardGenerator: Equatable, Sendable {
       firstDirection: firstDirection)
   }
 
-  private func isClean(_ board: Board, hiding words: [String], dictionary: Set<String>) -> Bool {
+  private func isClean(_ board: Board, hiding words: [String], dictionary: WordIndex) -> Bool {
     words.allSatisfy { board.occurrences(of: $0, along: directions) == 1 }
-      && board.strayWords(of: dictionary, along: directions).isEmpty
+      && board.strayWords(in: dictionary, along: directions).isEmpty
   }
 }

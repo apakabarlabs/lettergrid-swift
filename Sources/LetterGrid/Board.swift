@@ -118,32 +118,14 @@ public struct Board: Equatable, Sendable {
   }
 
   public func strayWords(of dictionary: Set<String>, along directions: [Direction]) -> [String] {
-    var stray: [String] = []
-    for row in 0..<rows {
-      for column in 0..<columns {
-        for direction in directions {
-          var cells: [Cell] = []
-          var cell = Cell(row: row, column: column)
-          while contains(cell) {
-            cells.append(cell)
-            let text = self.text(along: cells)
-            if dictionary.contains(text) && !lies(cells, insideAPlacementAlong: direction) {
-              stray.append(text)
-            }
-            cell = cell.moved(direction, by: 1)
-          }
-        }
-      }
+    if BoardWordSearch.shouldIndex(wordCount: dictionary.count, on: self, along: directions) {
+      return strayWords(in: WordIndex(dictionary), along: directions)
     }
-    return stray
+    return BoardWordSearch(board: self, dictionary: .words(dictionary)).words(along: directions)
   }
 
-  private func lies(_ cells: [Cell], insideAPlacementAlong direction: Direction) -> Bool {
-    placements.contains { placement in
-      (placement.direction == direction
-        || (placement.isPalindrome && placement.direction.opposite == direction))
-        && Set(placement.cells).isSuperset(of: cells)
-    }
+  func strayWords(in dictionary: WordIndex, along directions: [Direction]) -> [String] {
+    BoardWordSearch(board: self, dictionary: .indexed(dictionary)).words(along: directions)
   }
 
   public func selection(from start: Cell, toward end: Cell, along ways: [Direction]) -> [Cell] {

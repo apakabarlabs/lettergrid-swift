@@ -6,6 +6,7 @@ struct LetterGridBenchmarks {
   @MainActor
   static func main() throws {
     boardScans()
+    largeDictionary()
     try fallbackBoards()
     hints()
   }
@@ -35,6 +36,15 @@ struct LetterGridBenchmarks {
     let joined = Board(letters: Array(repeating: row, count: side), placements: [])
     measure("strayWords joinedUnicode 18x16", iterations: 3) {
       joined.strayWords(of: ["á", "áx", "x"], along: Direction.allCases).count
+    }
+  }
+
+  @MainActor
+  private static func largeDictionary() {
+    let dictionary = Set((0..<50_000).map { "UNRELATED\($0)" }).union(["CAT", "DOG", "SUN"])
+    let board = Board(letters: [Array("CAT"), Array("DOG"), Array("SUN")], placements: [])
+    measure("strayWords dictionary=50003 board=3x3", iterations: 100) {
+      board.strayWords(of: dictionary, along: Direction.allCases).count
     }
   }
 
