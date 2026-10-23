@@ -16,5 +16,7 @@ let package = Package(
     .target(name: "LetterGrid"),
     .target(name: "LetterGridUI", dependencies: ["LetterGrid"]),
     .testTarget(name: "LetterGridTests", dependencies: ["LetterGrid"]),
+    .executableTarget(
+      name: "LetterGridBenchmarks", dependencies: ["LetterGrid"], path: "Benchmarks"),
   ]
 )

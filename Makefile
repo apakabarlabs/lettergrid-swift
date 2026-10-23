@@ -1,8 +1,8 @@
-SWIFT_SOURCES = Sources Tests Package.swift
+SWIFT_SOURCES = Sources Tests Benchmarks Package.swift
 
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools format lint comments test-build test build docs
+.PHONY: install-tools format lint comments test-build test build docs bench
 
 install-tools:
 	brew install swiftlint swift-format
@@ -26,6 +26,9 @@ test:
 
 build: lint test
 	swift build
+
+bench:
+	swift run -c release LetterGridBenchmarks
 
 docs:
 	mkdir -p .build/docc
