@@ -26,9 +26,19 @@ struct BandLayout {
         letters[cell.row][cell.column] = letter
       }
     }
+    let neighbours = LetterNeighbours(columns: columns, rows: letters.count)
+    for row in letters.indices {
+      for column in 0..<columns where letters[row][column] == nil {
+        let counts = neighbours.counts(around: Cell(row: row, column: column)) {
+          letters[$0.row][$0.column]
+        }
+        letters[row][column] = filler.orderedLetters(using: &random, neighbours: counts)[0]
+      }
+    }
     let rows = letters.map { line in
       line.map { letter in
-        letter ?? filler.orderedLetters(using: &random)[0]
+        guard let letter else { fatalError("Every cell has been filled") }
+        return letter
       }
     }
     return Board(letters: rows, placements: placements)

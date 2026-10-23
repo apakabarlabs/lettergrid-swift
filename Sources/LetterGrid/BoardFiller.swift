@@ -97,16 +97,9 @@ struct BoardFiller {
   }
 
   private func neighbours(of cell: Cell, in letters: [Character?]) -> [Character: Int] {
-    var counts: [Character: Int] = [:]
-    for rowStep in -1...1 {
-      for columnStep in -1...1 where rowStep != 0 || columnStep != 0 {
-        let neighbour = Cell(row: cell.row + rowStep, column: cell.column + columnStep)
-        if contains(neighbour), let letter = letters[index(of: neighbour)] {
-          counts[letter, default: 0] += 1
-        }
-      }
+    LetterNeighbours(columns: columns, rows: layout.rows).counts(around: cell) {
+      letters[index(of: $0)]
     }
-    return counts
   }
 
   private func board(from letters: [Character?]) -> Board {
