@@ -14,7 +14,7 @@ list and another a short exercise over the words of a lesson.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.8.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.9.0")
 ```
 
 `LetterGrid` holds the grid, the round and the countdown; `LetterGridUI` draws them in
@@ -87,6 +87,12 @@ backtracks. `attempts`, `layoutsPerAttempt` and `fillsPerAttempt` bound it. If t
 reached, the words are laid out one per band of rows with an empty row between bands, and
 the empty cells take only filler letters that none of the words use. No word can then read
 anywhere but in its own place, but another dictionary word may.
+
+Within each attempt, the sampled layouts are ranked by fewest rows, then by most shared
+letters: a cell used by three words saves two cells. Equal scores keep the first sampled
+layout. The search does not guarantee the most crossings among all possible layouts.
+Updating from 0.8.0 can change a board rebuilt from the same seed. Reloading saved letters
+and placements without regenerating the board keeps the same layout.
 
 `board(for:seed:firstDirection:)` does both steps and throws what the request throws.
 

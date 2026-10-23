@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0] - 2026-10-23
+
+### Changed
+
+- Among sampled layouts with the same number of rows, generation now prefers the one
+  sharing the most letters between words. Previously it kept the first shortest layout,
+  even when a later layout crossed words without adding rows. Search limits and public
+  call signatures are unchanged; the search still does not guarantee maximum crossings.
+  A board rebuilt from a seed may differ from 0.8.0. If an app rebuilds a saved round
+  from its seed, its letters may move after updating. An app that reloads saved letters
+  and placements without regenerating the board keeps the same layout.
+
 ## [0.8.0] - 2026-10-22
 
 ### Fixed

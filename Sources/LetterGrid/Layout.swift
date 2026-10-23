@@ -1,6 +1,11 @@
 struct Layout {
   let rows: Int
   let placements: [Placement]
+
+  var sharedCells: Int {
+    let cells = placements.flatMap(\.cells)
+    return cells.count - Set(cells).count
+  }
 }
 
 struct LayoutBuilder {
@@ -14,7 +19,9 @@ struct LayoutBuilder {
     var lowest: Layout?
     for _ in 0..<max(tries, 1) {
       guard let layout = layout(for: words, using: &random) else { return nil }
-      if layout.rows < lowest?.rows ?? Int.max {
+      if lowest.map({
+        layout.rows < $0.rows || (layout.rows == $0.rows && layout.sharedCells > $0.sharedCells)
+      }) ?? true {
         lowest = layout
       }
     }
