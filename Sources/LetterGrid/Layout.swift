@@ -29,27 +29,20 @@ struct LayoutBuilder {
   }
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
-    if !Set(directions).isSubset(of: [.right, .down]) || firstDirection != nil {
+    let assignment = DirectionAssignment(
+      columns: columns, directions: directions, downWords: downWords,
+      firstDirection: firstDirection)
+    if !assignment.usesForwardOrthogonalLayout {
       return DiagonalLayoutBuilder(
         columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords,
         firstDirection: firstDirection
       ).layout(for: words, using: &random)
     }
-    let across = directions.contains(.right)
-    let down = directions.contains(.down)
+    guard let assigned = assignment.assignments(for: words, using: &random, order: .shortestFirst)
+    else { return nil }
     let indices = Array(words.indices)
-    let mustStand = indices.filter { !across || words[$0].count > columns }
-    let mayLie = indices.filter { across && words[$0].count <= columns }
-    let most = down ? min(downWords.upperBound, words.count, columns) : 0
-    let fewest = max(downWords.lowerBound, mustStand.count)
-    guard fewest <= most else { return nil }
-    let shortestFirst = mayLie.shuffled(using: &random).sorted {
-      words[$0].count < words[$1].count
-    }
-    let standing =
-      mustStand
-      + shortestFirst.prefix(Int.random(in: fewest...most, using: &random) - mustStand.count)
-    let lying = mayLie.filter { !standing.contains($0) }
+    let standing = assigned.filter(\.direction.isVertical).map(\.index)
+    let lying = assigned.filter { !$0.direction.isVertical }.map(\.index)
 
     var rows = max(minimumRows, standing.map { words[$0].count }.max() ?? 0)
     var placed: [Int: Placement] = [:]
