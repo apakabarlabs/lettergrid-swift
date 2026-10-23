@@ -78,11 +78,11 @@ struct RoundTests {
     #expect(round.phase == .playing)
   }
 
-  @Test func theCountdownIntroducesTheFirstWordLetterByLetter() async {
+  @Test func theCountdownIntroducesTheFirstWordLetterByLetter() async throws {
     let round = Round(board: board, directions: [.right], introduces: true)
     var letters = 0
 
-    await Countdown { _ in await Task.yield() }.run(
+    try await Countdown { _ in await Task.yield() }.run(
       round, secondsPerLetter: 0.1,
       introduce: {
         letters += 1
