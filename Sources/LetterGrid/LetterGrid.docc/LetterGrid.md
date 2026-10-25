@@ -26,7 +26,7 @@ comparing application words with board words. The same seed and configuration pr
 the same board within one library version. Save letters and placements when a board
 must retain its layout across library updates.
 
-Prepare words once using ``BoardGenerator/request(for:firstDirection:)`` and build them
+Prepare words once using ``BoardGenerator/request(for:firstDirection:firstRule:)`` and build them
 through ``BoardRequest/board(seed:dictionary:)``. The request retains its checked settings;
 an optional dictionary can be supplied at build time. Empty word lists and invalid generator
 configuration are rejected before a request is returned.
@@ -72,6 +72,23 @@ a wall-clock deadline across application suspension.
 
 ### Restoring and pacing
 
+- ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
+  revisiting cells. Its directions apply to the first segment. Supply rules to both the
+  generator and round. `firstRule` requires the first word to use one particular enabled rule.
+- ``Placement/init(word:cells:)`` retains a full ordered path; `direction` describes its first
+  segment and `turns` counts its direction changes. Hints, introduction and selection follow cells.
+- Rule-based requests inspect at most 256 shapes and 100,000 search nodes per initial direction
+  and rule. A request can reject a word when that bounded search finds no unique path. A checked
+  fallback guarantees target uniqueness; dictionary filtering is best effort as with straight boards.
+- A prepared request freezes its checked shapes; board seeds change positions and filler. If all
+  rules have zero turns, generation delegates to the straight generator and selection keeps its
+  start-anchored direction snapping.
+- ``BoardGenerationVersion`` has stable Codable identifiers. `.v0p9` preserves the released 0.9
+  straight generator's fallback draw order; pass the original configuration and words. Rule-based
+  generation uses `.v0p12`. `.current` is a value naming `.v0p12`, not a serialized moving alias.
+- ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced
+  motion. The caller owns timing and presentation.
+
 - Boards require equally wide, nonempty rows and unique placements matching their cells.
   An entirely empty board is valid. Saved progress must name existing words, list found
   words once, use revealed-letter counts from zero up to one less than the word length,
@@ -87,6 +104,8 @@ a wall-clock deadline across application suspension.
 
 - ``BoardGenerator``
 - ``BoardRequest``
+- ``WordRule``
+- ``BoardGenerationVersion``
 - ``LetterWeights``
 - ``SeededRandom``
 
@@ -104,3 +123,4 @@ a wall-clock deadline across application suspension.
 - ``HintOrder``
 - ``Countdown``
 - ``LabelScale``
+- ``PathReveal``

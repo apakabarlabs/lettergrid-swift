@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.12.0] - 2026-10-25
+
+### Added
+
+- Word paths can make zero to three 90-degree turns in either direction without revisiting cells.
+  Pass `WordRule(startDirections:turns:)` values through `rules:` to both `BoardGenerator` and
+  `Round`. The turn count is exact; directions describe the first segment. A request's optional
+  `firstRule:` applies one enabled rule to the first word. The vertical quota counts first segments.
+  Diagonal turns remain diagonal, for example ↘ can turn to ↙ or ↗.
+- `Placement(word:cells:)` preserves an ordered path, with `direction` describing its start and
+  `turns` its number of bends. Save those cells for turned words. Rule-based occurrence and stray-word
+  scans, drag backtracking, hints and introductions follow the same paths. Accepted requests retain
+  a fallback with unique targets; dictionary filtering remains best effort.
+  Restore a turned round by saving its letters, ordered placement cells, rules and progress, then
+  calling `Round(restoring: savedProgress, board: savedBoard, rules: savedRules)`.
+- SwiftUI highlights follow every segment. `LetterHighlight(cells:cellSize:color:)` draws paths over
+  custom content; `LetterBoard.traceCells` shows an externally controlled trace above highlights
+  and below letters. `PathReveal` computes a timed prefix and respects reduced motion. Existing
+  straight-highlight calls remain available, and colours still come from the app.
+- `BoardGenerationVersion` provides stable Codable identifiers `0.9` and `0.12` (`.v0p9` and
+  `.v0p12`). Its `current` value is `.v0p12`. For seed-only rounds created with 0.9, use the
+  `directions:` generator with `generationVersion: .v0p9` and the original settings and words
+  before saving complete boards. The default `directions:` generator keeps 0.11.1 behavior.
+  With only zero-turn rules, generation delegates to the straight generator, preserving layouts
+  for its derived directions, original settings and equivalent first-word constraint. When a
+  turned rule is enabled, the new generator freezes checked path shapes in each prepared request;
+  board seeds vary positions and filler. There is no
+  identifier for 0.10: materialize its seed-only boards with that release before updating.
+  Seed-only boards from 0.11 use the `directions:` generator with `.v0p12` and original settings.
+
 ## [0.11.1] - 2026-10-23
 
 ### Added

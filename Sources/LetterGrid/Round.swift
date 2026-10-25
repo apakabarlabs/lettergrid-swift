@@ -51,20 +51,27 @@ public final class Round: Identifiable {
   public private(set) var selection: [Cell] = []
   public private(set) var rejected: [Cell] = []
   private let directions: [Direction]
+  private let pathRules: [WordRule]
 
-  public init(
+  private init(
     board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
-    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
+    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress(),
+    pathRules: [WordRule]
   ) {
     precondition(seconds.map { $0 >= 0 } ?? true, "Round seconds must be nonnegative")
     do {
       try progress.validate(for: board)
-      try Self.validateDirections(directions, for: board)
+      if pathRules.isEmpty {
+        try Self.validateDirections(directions, for: board)
+      } else {
+        try Self.validateRules(pathRules, for: board)
+      }
     } catch {
       preconditionFailure("Invalid round progress: \(error.localizedDescription)")
     }
     self.board = board
     self.directions = directions
+    self.pathRules = pathRules
     self.hintOrder = hintOrder
     self.showsFirstWord = introduces && !board.placements.isEmpty
     self.secondsLeft = seconds.map { progress.secondsLeft ?? $0 }
@@ -84,6 +91,46 @@ public final class Round: Identifiable {
   }
 
   public convenience init(
+    board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
+    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
+  ) {
+    self.init(
+      board: board, directions: directions, seconds: seconds, introduces: introduces,
+      hintOrder: hintOrder, progress: progress, pathRules: [])
+  }
+
+  public convenience init(
+    board: Board, rules: [WordRule], seconds: Int? = nil, introduces: Bool = false,
+    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
+  ) {
+    self.init(
+      board: board, directions: Direction.allCases, seconds: seconds,
+      introduces: introduces, hintOrder: hintOrder, progress: progress, pathRules: rules)
+  }
+
+  public convenience init(
+    restoring progress: RoundProgress, board: Board, rules: [WordRule],
+    seconds: Int? = nil, introduces: Bool = false, hintOrder: HintOrder = .fromStart
+  ) throws {
+    if let seconds, seconds < 0 { throw RoundProgress.Failure.negativeSeconds(seconds) }
+    try progress.validate(for: board)
+    try Self.validateRules(rules, for: board)
+    self.init(
+      board: board, rules: rules, seconds: seconds, introduces: introduces,
+      hintOrder: hintOrder, progress: progress)
+  }
+
+  private static func validateRules(_ rules: [WordRule], for board: Board) throws {
+    for placement in board.placements {
+      guard rules.allSatisfy(\.isValid),
+        rules.contains(where: {
+          $0.matches(placement) || (placement.isPalindrome && $0.matches(placement.reversed))
+        })
+      else { throw Failure.unselectableWord(placement.word) }
+    }
+  }
+
+  public convenience init(
     restoring progress: RoundProgress, board: Board, directions: [Direction],
     seconds: Int? = nil, introduces: Bool = false, hintOrder: HintOrder = .fromStart
   ) throws {
@@ -97,7 +144,7 @@ public final class Round: Identifiable {
 
   private static func validateDirections(_ directions: [Direction], for board: Board) throws {
     for placement in board.placements {
-      guard
+      guard placement.turns == 0,
         directions.contains(placement.direction)
           || (placement.isPalindrome && directions.contains(placement.direction.opposite))
       else { throw Failure.unselectableWord(placement.word) }
@@ -122,7 +169,7 @@ public final class Round: Identifiable {
 
   public var hintedCells: [Cell] {
     board.placements.filter { !found.contains($0) }.flatMap { placement in
-      revealedIndices(of: placement).map { placement.start.moved(placement.direction, by: $0) }
+      revealedIndices(of: placement).map { placement.cells[$0] }
     }
   }
 
@@ -161,7 +208,10 @@ public final class Round: Identifiable {
 
   public func drag(to cell: Cell) {
     guard phase == .playing, let start = selection.first else { return }
-    selection = board.selection(from: start, toward: cell, along: directions)
+    selection =
+      pathRules.isEmpty
+      ? board.selection(from: start, toward: cell, along: directions)
+      : board.selection(extending: selection, toward: cell, rules: pathRules)
   }
 
   public func release() -> Placement? {

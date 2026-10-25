@@ -20,6 +20,10 @@ The application supplies the hidden-word accessibility label in its own language
   Labels run on redraw and should use a prepared lookup table.
 - `LetterBoard.missed` highlights a placement after play ends using `LetterGridStyle.rejected`.
   Its path appears above other paths and below letters, without changing the round.
+- `LetterBoard.traceCells` displays a caller-controlled ordered path above highlights and below
+  letters in `LetterGridStyle.selected`. The caller can pace it with LetterGrid's `PathReveal`.
+- `LetterHighlight(cells:cellSize:color:)` draws every segment with rounded turns and endpoints.
+  Its `start:end:cellSize:color:` initializer remains available for straight highlights.
 - SwiftUI's `textCase` applies to every displayed letter. `.uppercase` expands `և` and `ß`
   into two letters; use `label` when a cell needs a custom capital display.
 - `LetterGridStyle.rejectionSeconds` must be a positive representable duration.

@@ -1,6 +1,7 @@
 struct BandLayout {
   let columns: Int
   let minimumRows: Int
+  var generationVersion: BoardGenerationVersion = .current
 
   func board(
     for words: [String], directions assigned: [Int: Direction], filler: LetterWeights,
@@ -32,7 +33,10 @@ struct BandLayout {
         let counts = neighbours.counts(around: Cell(row: row, column: column)) {
           letters[$0.row][$0.column]
         }
-        letters[row][column] = filler.randomLetter(using: &random, neighbours: counts)
+        letters[row][column] =
+          generationVersion == .v0p9
+          ? filler.orderedLetters(using: &random)[0]
+          : filler.randomLetter(using: &random, neighbours: counts)
       }
     }
     let rows = letters.map { line in

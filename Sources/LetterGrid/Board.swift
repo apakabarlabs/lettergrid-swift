@@ -1,26 +1,56 @@
 import Foundation
 
 public struct Placement: Hashable, Sendable {
+  private enum Geometry: Sendable {
+    case straight
+    case path([Cell])
+  }
+
   public let word: String
   public let start: Cell
   public let direction: Direction
+  private let geometry: Geometry
 
   public init(word: String, start: Cell, direction: Direction) {
     self.word = word
     self.start = start
     self.direction = direction
+    self.geometry = .straight
   }
 
+  public init(word: String, cells: [Cell]) {
+    precondition(cells.count == word.count && PathGeometry(cells) != nil, "Invalid word path")
+    self.word = word
+    self.geometry = .path(cells)
+    self.start = cells[0]
+    guard let direction = Direction.between(cells[0], cells[1]) else {
+      preconditionFailure("A word path starts with adjacent cells")
+    }
+    self.direction = direction
+  }
+
+  public var turns: Int { PathGeometry(cells)?.turns ?? 0 }
+
   public var cells: [Cell] {
-    (0..<word.count).map { start.moved(direction, by: $0) }
+    switch geometry {
+    case .straight: (0..<word.count).map { start.moved(direction, by: $0) }
+    case .path(let cells): cells
+    }
+  }
+
+  public static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.word == rhs.word && lhs.cells == rhs.cells
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(word)
+    hasher.combine(cells)
   }
 
   public var isPalindrome: Bool { word == String(word.reversed()) }
 
   var reversed: Placement {
-    Placement(
-      word: String(word.reversed()), start: start.moved(direction, by: word.count - 1),
-      direction: direction.opposite)
+    Placement(word: String(word.reversed()), cells: Array(cells.reversed()))
   }
 
   func reads(_ cells: [Cell]) -> Bool {
@@ -76,15 +106,9 @@ public struct Board: Equatable, Sendable {
   }
 
   private func fits(_ placement: Placement) -> Bool {
-    guard placement.word.count > 1, contains(placement.start) else { return false }
-    let rowSpace =
-      placement.direction.rowStep < 0
-      ? placement.start.row + 1 : rows - placement.start.row
-    let columnSpace =
-      placement.direction.columnStep < 0
-      ? placement.start.column + 1 : columns - placement.start.column
-    return (placement.direction.rowStep == 0 || placement.word.count <= rowSpace)
-      && (placement.direction.columnStep == 0 || placement.word.count <= columnSpace)
+    placement.word.count > 1 && contains(placement.start)
+      && placement.cells.count == placement.word.count
+      && placement.cells.allSatisfy(contains) && PathGeometry(placement.cells) != nil
   }
 
   public subscript(cell: Cell) -> Character {

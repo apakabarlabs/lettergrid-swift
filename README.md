@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.11.1")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.12.0")
 ```
 
 Then add products to your target's dependencies:
@@ -52,6 +52,40 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
 - Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
   in one cell even when its capital would expand.
 
+## Paths with turns
+
+Use `rules:` in both the generator and round to enable paths with zero to three turns:
+
+```swift
+let straight = WordRule(startDirections: Direction.allCases)
+let bent = WordRule(startDirections: [.right], turns: 2)
+let generator = BoardGenerator(
+  columns: 7, rows: 7, rules: [straight, bent],
+  filler: try LetterWeights(["x": 1, "q": 1]))
+let request = try generator.request(for: ["planet", "star"], firstRule: bent)
+let board = request.board(seed: 42)
+let round = Round(board: board, rules: [straight, bent])
+```
+
+- A rule specifies the first segment and an exact turn count. Each turn is 90 degrees,
+  clockwise or counterclockwise; cells cannot repeat. `minimumLength` and `isValid` check rules.
+- `firstRule` must be one of the generator's rules and applies to its first word. The vertical
+  quota counts words whose first segment runs up or down, including turned words.
+- Requests check a bounded set of path shapes and reject words for which no checked unique
+  placement fits. Accepted requests retain a fallback with unique targets. Fallback dictionary
+  filtering remains best effort. Compact layouts prefer matching crossings within their height.
+- A prepared turned request freezes its checked shapes. Board seeds vary their positions and
+  filler. If every rule has zero turns, generation uses the existing straight generator.
+- `Placement(word:cells:)` retains the ordered path. `direction` is its first segment;
+  `turns` counts its bends. Save `cells`, rather than only `start` and `direction`, for turned words.
+- `Board.occurrences(of:rules:)` counts ordered paths, folding the two readings of a palindrome
+  into one. `strayWords(of:rules:)` scans dictionary prefixes along allowed paths.
+- A round follows bends as drag samples arrive and backtracks to an earlier cell when revisited.
+  Its hints and introduction follow the same ordered cells.
+- `LetterHighlight(cells:cellSize:color:)` draws the full path. `LetterBoard.traceCells` draws
+  an externally paced trace above highlights and below letters in the supplied selection colour.
+  `PathReveal(cells:elapsed:duration:reduceMotion:)` supplies its growing prefix.
+
 ## Saving and restoring
 
 The app serializes the board's letters and placements together with `round.progress`. A seed alone does
@@ -65,6 +99,12 @@ let round = try Round(
 
 These report invalid data without clearing it. Nonthrowing `Board(letters:placements:)` and
 `Round(board:directions:)` and its variants enforce valid inputs with preconditions.
+
+For seed-only data created with 0.9, use the `directions:` generator initializer with
+`generationVersion: .v0p9` and exactly its original settings and words. This retains the old
+fallback filler sequence. The `rules:` initializer requires `.v0p12`, the current generation.
+`BoardGenerationVersion` is Codable with stable values `0.9` and `0.12`; persist
+`BoardGenerationVersion.current`, whose value is `.v0p12`, rather than the text `current`.
 
 Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock
 callbacks, or let the app own timing. The library countdown does not track elapsed time during suspension.

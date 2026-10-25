@@ -11,10 +11,11 @@
     let onRelease: () -> Void
     let onRejectionShown: () -> Void
     let label: (Character) -> String
+    let traceCells: [Cell]
     @State private var isDragging = false
 
     public init(
-      round: Round, missed: Placement? = nil, style: LetterGridStyle,
+      round: Round, missed: Placement? = nil, style: LetterGridStyle, traceCells: [Cell] = [],
       label: @escaping (Character) -> String = { String($0) },
       onTouch: @escaping (Cell) -> Void,
       onDrag: @escaping (Cell) -> Void, onRelease: @escaping () -> Void,
@@ -24,6 +25,7 @@
       self.missed = missed
       self.style = style
       self.label = label
+      self.traceCells = traceCells
       self.onTouch = onTouch
       self.onDrag = onDrag
       self.onRelease = onRelease
@@ -38,19 +40,20 @@
         ZStack(alignment: .topLeading) {
           ForEach(bars.indices, id: \.self) { index in
             LetterHighlight(
-              start: bars[index].span.first, end: bars[index].span.last,
+              cells: bars[index].cells,
               cellSize: side, color: bars[index].color)
           }
-          if let span = Span(round.rejected) {
+          if !round.rejected.isEmpty {
             LetterHighlight(
-              start: span.first, end: span.last, cellSize: side, color: style.rejected
+              cells: round.rejected, cellSize: side, color: style.rejected
             )
             .transition(.opacity)
           }
-          if let missed, let span = Span(missed.cells) {
+          if let missed {
             LetterHighlight(
-              start: span.first, end: span.last, cellSize: side, color: style.rejected)
+              cells: missed.cells, cellSize: side, color: style.rejected)
           }
+          LetterHighlight(cells: traceCells, cellSize: side, color: style.selected)
           letters(side: side)
         }
         .contentShape(.rect)
@@ -76,11 +79,11 @@
       }
     }
 
-    private var bars: [(span: Span, color: Color)] {
+    private var bars: [(cells: [Cell], color: Color)] {
       let found = board.placements.filter(round.found.contains).map(\.cells) + [round.introduced]
-      return found.compactMap(Span.init).map { (span: $0, color: style.found) }
-        + round.hintedCells.map { (span: Span(first: $0, last: $0), color: style.hinted) }
-        + [Span(round.selection)].compactMap { $0 }.map { (span: $0, color: style.selected) }
+      return found.filter { !$0.isEmpty }.map { (cells: $0, color: style.found) }
+        + round.hintedCells.map { (cells: [$0], color: style.hinted) }
+        + [(cells: round.selection, color: style.selected)]
     }
 
     private func letters(side: CGFloat) -> some View {
@@ -126,21 +129,6 @@
         row: Int(min(max(point.y / side, 0), CGFloat(board.rows - 1))),
         column: Int(min(max(point.x / side, 0), CGFloat(board.columns - 1)))
       )
-    }
-  }
-
-  private struct Span {
-    let first: Cell
-    let last: Cell
-
-    init(first: Cell, last: Cell) {
-      self.first = first
-      self.last = last
-    }
-
-    init?(_ cells: [Cell]) {
-      guard let first = cells.first, let last = cells.last else { return nil }
-      self.init(first: first, last: last)
     }
   }
 
