@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.14.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.15.0")
 ```
 
 Then add products to your target's dependencies:
@@ -75,6 +75,10 @@ let round = Round(board: board, rules: [straight, bent])
 
 - A rule specifies the first segment and an exact turn count. Each turn is 90 degrees,
   clockwise or counterclockwise; cells cannot repeat. `minimumLength` and `isValid` check rules.
+- `rule.canFit(length:columns:maximumRows:)` checks whether one path fits an empty grid.
+  It has no random choices or search budget; cache results for the lengths and dimensions
+  you use. A nil height limit allows vertical growth. Letter content, multiword packing
+  and quotas are not checked, so this does not guarantee that a board request will succeed.
 - `firstRule` must be one of the generator's rules and applies to its first word. The vertical
   quota counts words whose first segment runs up or down, including turned words.
 - Requests check a bounded set of path shapes and reject words for which no checked unique

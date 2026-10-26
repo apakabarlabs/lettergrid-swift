@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0] - 2026-10-26
+
+### Added
+
+- `WordRule.canFit(length:columns:maximumRows:)` checks whether one path of the given
+  length fits an empty grid, with the rule's exact turn count. A missing height limit
+  permits vertical growth. The check is deterministic and has no search budget;
+  cache it per rule, word length and dimensions. It does not check letter
+  content, packing several words together or generation quotas, so a fitting word
+  can still be rejected by `BoardGenerator.request(for:)`. Existing generation and
+  seeded layouts are unchanged; existing callers need no changes.
+
 ## [0.14.0] - 2026-10-26
 
 ### Added

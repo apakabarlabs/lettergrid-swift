@@ -17,6 +17,17 @@ public struct WordRule: Hashable, Sendable {
 
   public func matches(_ placement: Placement) -> Bool { matches(placement.cells) }
 
+  public func canFit(length: Int, columns: Int, maximumRows: Int? = nil) -> Bool {
+    guard isValid, length >= minimumLength, columns > 0 else { return false }
+    if let maximumRows {
+      guard maximumRows > 0, (length - 1) / columns < maximumRows else { return false }
+    }
+    return !PathShapes(
+      columns: columns, length: length, rule: self, maximumShapes: 1,
+      maximumRows: maximumRows, visitedLimit: nil, randomized: false
+    ).cells().isEmpty
+  }
+
   public var isValid: Bool { !startDirections.isEmpty && (0...3).contains(turns) }
   public var minimumLength: Int { isValid ? turns + 2 : Int.max }
 }
