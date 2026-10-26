@@ -27,7 +27,7 @@ the same board within one library version. Save letters and placements when a bo
 must retain its layout across library updates.
 
 Prepare words once using ``BoardGenerator/request(for:firstDirection:firstRule:)`` and build them
-through ``BoardRequest/board(seed:dictionary:)``. The request retains its checked settings;
+through ``BoardRequest`` using `board(seed:dictionary:)`. The request retains its checked settings;
 an optional dictionary can be supplied at build time. Empty word lists and invalid generator
 configuration are rejected before a request is returned.
 
@@ -85,7 +85,12 @@ a wall-clock deadline across application suspension.
   start-anchored direction snapping.
 - ``BoardGenerationVersion`` has stable Codable identifiers. `.v0p9` preserves the released 0.9
   straight generator's fallback draw order; pass the original configuration and words. Rule-based
-  generation uses `.v0p12`. `.current` is a value naming `.v0p12`, not a serialized moving alias.
+  generation accepts `.v0p12` and `.v0p13`. The latter keeps the best unique-target ordinary fill
+  within its search budget, preferring fewer distinct stray words. It uses the isolated filler only
+  if no ordinary fill has unique targets. Noise scoring has a deterministic node budget and prunes
+  already counted dictionary words. `.current` names `.v0p13`, not a serialized moving alias.
+- ``BoardDictionary`` prepares a reusable dictionary index for many requests.
+  ``BoardGenerationLimits/standard`` exposes the unchanged default search bounds.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced
   motion. The caller owns timing and presentation.
 
@@ -106,6 +111,8 @@ a wall-clock deadline across application suspension.
 - ``BoardRequest``
 - ``WordRule``
 - ``BoardGenerationVersion``
+- ``BoardGenerationLimits``
+- ``BoardDictionary``
 - ``LetterWeights``
 - ``SeededRandom``
 

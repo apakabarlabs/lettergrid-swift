@@ -10,6 +10,7 @@ struct LetterGridBenchmarks {
     try fallbackBoards()
     hints()
     try OrdinaryBoards.run()
+    try TurnedBoards.run()
   }
 
   @MainActor

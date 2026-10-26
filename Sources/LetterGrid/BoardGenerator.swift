@@ -3,8 +3,9 @@ import Foundation
 public enum BoardGenerationVersion: String, Codable, Sendable {
   case v0p9 = "0.9"
   case v0p12 = "0.12"
+  case v0p13 = "0.13"
 
-  public static let current = Self.v0p12
+  public static let current = Self.v0p13
 }
 
 public struct BoardRequest: Equatable, Sendable {
@@ -27,6 +28,20 @@ public struct BoardRequest: Equatable, Sendable {
 
   public func board(seed: UInt64, dictionary: Set<String>? = nil) -> Board {
     generator.board(for: self, seed: seed, dictionary: dictionary)
+  }
+
+  public func board(seed: UInt64, dictionary: BoardDictionary) -> Board {
+    generator.board(for: self, seed: seed, dictionary: dictionary)
+  }
+}
+
+public struct BoardDictionary: Sendable {
+  public let words: Set<String>
+  let index: WordIndex
+
+  public init(_ words: Set<String>) {
+    self.words = Set(words.map(\.cellUppercased))
+    index = WordIndex(self.words)
   }
 }
 
@@ -73,7 +88,9 @@ public struct BoardGenerator: Equatable, Sendable {
   public init(
     columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
-    layoutsPerAttempt: Int = 40, attempts: Int = 200, fillsPerAttempt: Int = 20,
+    layoutsPerAttempt: Int = BoardGenerationLimits.standard.layoutsPerAttempt,
+    attempts: Int = BoardGenerationLimits.standard.attempts,
+    fillsPerAttempt: Int = BoardGenerationLimits.standard.fillsPerAttempt,
     generationVersion: BoardGenerationVersion = .current
   ) {
     self.columns = columns
@@ -93,7 +110,9 @@ public struct BoardGenerator: Equatable, Sendable {
   public init(
     columns: Int, rows: Int, rules: [WordRule], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
-    layoutsPerAttempt: Int = 40, attempts: Int = 200, fillsPerAttempt: Int = 20,
+    layoutsPerAttempt: Int = BoardGenerationLimits.standard.layoutsPerAttempt,
+    attempts: Int = BoardGenerationLimits.standard.attempts,
+    fillsPerAttempt: Int = BoardGenerationLimits.standard.fillsPerAttempt,
     generationVersion: BoardGenerationVersion = .current
   ) {
     self.init(
@@ -116,7 +135,7 @@ public struct BoardGenerator: Equatable, Sendable {
     else { throw Failure.invalidConfiguration }
     let words = words.map(\.cellUppercased)
     if usesPathRules {
-      guard generationVersion == .v0p12 else { throw Failure.invalidConfiguration }
+      guard generationVersion != .v0p9 else { throw Failure.invalidConfiguration }
       guard rules.allSatisfy(\.isValid), firstDirection == nil,
         firstRule.map({ rules.contains($0) }) ?? true
       else { throw Failure.invalidConfiguration }
@@ -168,15 +187,27 @@ public struct BoardGenerator: Equatable, Sendable {
   fileprivate func board(
     for request: BoardRequest, seed: UInt64, dictionary: Set<String>?
   ) -> Board {
-    let dictionary = dictionary.map { Set($0.map(\.cellUppercased)) } ?? self.dictionary
-    let index = dictionary == self.dictionary ? wordIndex : WordIndex(dictionary)
+    let normalized = dictionary.map { Set($0.map(\.cellUppercased)) } ?? self.dictionary
+    let index = normalized == self.dictionary ? wordIndex : WordIndex(normalized)
+    return board(for: request, seed: seed, index: index)
+  }
+
+  fileprivate func board(
+    for request: BoardRequest, seed: UInt64, dictionary: BoardDictionary
+  ) -> Board {
+    board(for: request, seed: seed, index: dictionary.index)
+  }
+
+  private func board(for request: BoardRequest, seed: UInt64, index: WordIndex) -> Board {
     if let layout = request.pathLayout {
-      return PathBoardBuilder(columns: columns, minimumRows: rows, rules: rules)
-        .board(
-          layout: layout, filler: filler, dictionary: index, seed: seed,
-          limits: PathFillLimits(
-            attempts: attempts, fillsPerAttempt: fillsPerAttempt,
-            layoutsPerAttempt: layoutsPerAttempt))
+      return PathBoardBuilder(
+        columns: columns, minimumRows: rows, rules: rules, generationVersion: generationVersion
+      )
+      .board(
+        layout: layout, filler: filler, dictionary: index, seed: seed,
+        limits: BoardGenerationLimits(
+          attempts: attempts, fillsPerAttempt: fillsPerAttempt,
+          layoutsPerAttempt: layoutsPerAttempt))
     }
     let words = request.words
     let builder = LayoutBuilder(

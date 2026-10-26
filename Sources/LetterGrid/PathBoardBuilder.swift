@@ -1,7 +1,14 @@
-struct PathFillLimits {
-  let attempts: Int
-  let fillsPerAttempt: Int
-  let layoutsPerAttempt: Int
+public struct BoardGenerationLimits: Equatable, Sendable {
+  public static let standard = Self(attempts: 200, fillsPerAttempt: 20, layoutsPerAttempt: 40)
+  public let attempts: Int
+  public let fillsPerAttempt: Int
+  public let layoutsPerAttempt: Int
+
+  public init(attempts: Int, fillsPerAttempt: Int, layoutsPerAttempt: Int) {
+    self.attempts = attempts
+    self.fillsPerAttempt = fillsPerAttempt
+    self.layoutsPerAttempt = layoutsPerAttempt
+  }
 }
 
 struct PathBoardBuilder {
@@ -9,6 +16,7 @@ struct PathBoardBuilder {
   let minimumRows: Int
   let rules: [WordRule]
   var downWords: ClosedRange<Int> = 0...Int.max
+  var generationVersion: BoardGenerationVersion = .current
 
   func preparedLayout(
     for words: [String], firstRule: WordRule?, filler: LetterWeights
@@ -61,18 +69,29 @@ struct PathBoardBuilder {
 
   func board(
     layout: Layout, filler: LetterWeights, dictionary: WordIndex, seed: UInt64,
-    limits: PathFillLimits
+    limits: BoardGenerationLimits
   ) -> Board {
     var random = SeededRandom(seed: seed)
+    var best: Board?
+    var leastNoise = Int.max
     for _ in 0..<limits.attempts {
       let compact = lowestLayout(layout, tries: limits.layoutsPerAttempt, using: &random)
       for _ in 0..<limits.fillsPerAttempt {
         let board = filled(compact, with: filler, using: &random)
-        if targetsAreUnique(board), board.strayWords(in: dictionary, rules: rules).isEmpty {
-          return board
+        guard targetsAreUnique(board) else { continue }
+        if generationVersion == .v0p12 {
+          if !board.hasStrayWord(in: dictionary, rules: rules) { return board }
+        } else {
+          let noise = board.strayWordCount(in: dictionary, rules: rules, lessThan: leastNoise)
+          if noise == 0 { return board }
+          if best == nil || noise < leastNoise {
+            best = board
+            leastNoise = noise
+          }
         }
       }
     }
+    if let best { return best }
     guard let free = filler.letters(excluding: Set(layout.placements.map(\.word).joined())) else {
       preconditionFailure("A prepared path layout requires unused filler letters")
     }
@@ -110,7 +129,7 @@ struct PathBoardBuilder {
         let placement = Placement(word: word, cells: cells)
         let layout = Layout(rows: (cells.map(\.row).max() ?? 0) + 1, placements: [placement])
         let board = filled(layout, with: filler, using: &random)
-        if board.hasSingleOccurrence(of: word, rules: rules) {
+        if Set(word).count == word.count || board.hasSingleOccurrence(of: word, rules: rules) {
           return placement
         }
       }

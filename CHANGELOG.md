@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.13.0] - 2026-10-26
+
+### Changed
+
+- Turned boards prefer an ordinary weighted fill with unique targets and the fewest distinct
+  stray dictionary words found within the configured search budget. A clean fill still returns
+  immediately. The isolated filler is reserved for searches with no unique-target ordinary fill.
+  Dictionary filtering remains best effort; target uniqueness remains mandatory.
+- This changes turned seed layouts. `BoardGenerationVersion.current` now names `.v0p13`
+  (Codable value `0.13`). Use `.v0p12` with the original settings and words for seed-only 0.12
+  games. Straight generation and `.v0p9` restoration keep their previous behavior.
+
+### Added
+
+- `BoardDictionary(words)` and the prepared-dictionary overload of `BoardRequest.board` reuse
+  one normalized index across boards: `let dictionary = BoardDictionary(words)`, then
+  `request.board(seed: seed, dictionary: dictionary)`. Existing word-set calls remain available.
+- `BoardGenerationLimits.standard` exposes the existing default attempt, fill and layout bounds.
+- Dictionary checks stop at the first disqualifying word. Distinct noise scoring prunes counted
+  word subtrees and bounds node visits; exhausting its work budget never declares a board clean.
+  Path scanning reuses a path buffer and visited-cell storage.
+  A completely scored fill is preferred to an unscored fill. If every unique-target ordinary
+  fill exhausts scoring, the first one is retained; this does not trigger the isolated filler.
+
 ## [0.12.0] - 2026-10-25
 
 ### Added

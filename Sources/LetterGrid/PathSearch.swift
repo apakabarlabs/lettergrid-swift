@@ -1,12 +1,21 @@
 struct PathSearch {
+  private struct Visitor {
+    let visit: (Placement) -> Bool
+    let skips: (Int) -> Bool
+  }
   private struct AllowedTurns {
     let direction: Direction
     let counts: Set<Int>
     var maximum: Int { counts.max() ?? 0 }
   }
 
-  private struct Cursor {
-    let cells: [Cell]
+  private struct Trail {
+    var cells: [Cell] = []
+    var visited: [Bool]
+    var stopped = false
+  }
+
+  private struct Step {
     let direction: Direction
     let turns: Int
     let node: Int
@@ -17,55 +26,87 @@ struct PathSearch {
   var maximumReadings = Int.max
 
   func readings(in index: WordIndex) -> [Placement] {
-    guard index.longest > 0 else { return [] }
     var found: Set<Placement> = []
+    visitReadings(in: index) { placement in
+      found.insert(placement)
+      return found.count < maximumReadings
+    }
+    return Array(found)
+  }
+
+  func visitReadings(
+    in index: WordIndex, skipping: @escaping (Int) -> Bool = { _ in false },
+    _ visit: @escaping (Placement) -> Bool
+  ) {
+    guard index.longest > 0, maximumReadings > 0 else { return }
     let grouped = Direction.allCases.compactMap { direction -> AllowedTurns? in
       let counts = Set(
         rules.filter { $0.isValid && $0.startDirections.contains(direction) }.map(\.turns))
       return counts.isEmpty ? nil : AllowedTurns(direction: direction, counts: counts)
     }
+    var trail = Trail(visited: Array(repeating: false, count: board.rows * board.columns))
+    let visitor = Visitor(visit: visit, skips: skipping)
+    trail.cells.reserveCapacity(min(index.longest, board.rows * board.columns))
     for rule in grouped {
       for row in 0..<board.rows {
         for column in 0..<board.columns {
           let start = Cell(row: row, column: column)
-          guard let node = index.next(after: 0, letter: board[start]) else { continue }
+          guard let node = index.next(after: 0, letter: board[start]), !visitor.skips(node) else {
+            continue
+          }
+          enter(start, &trail)
           walk(
-            Cursor(cells: [start], direction: rule.direction, turns: 0, node: node),
-            rule: rule, index: index, found: &found)
+            Step(direction: rule.direction, turns: 0, node: node), rule: rule, index: index,
+            trail: &trail, visitor: visitor)
+          leave(&trail)
+          if trail.stopped { return }
         }
       }
     }
-    return Array(found)
   }
 
   private func walk(
-    _ cursor: Cursor, rule: AllowedTurns, index: WordIndex, found: inout Set<Placement>
+    _ step: Step, rule: AllowedTurns, index: WordIndex, trail: inout Trail,
+    visitor: Visitor
   ) {
-    guard found.count < maximumReadings else { return }
-    let cells = cursor.cells
-    let turns = cursor.turns
-    let direction = cursor.direction
-    if rule.counts.contains(turns), let word = index.word(at: cursor.node) {
+    let (direction, turns, node) = (step.direction, step.turns, step.node)
+    let length = trail.cells.count
+    if rule.counts.contains(turns), let word = index.word(at: node) {
       let placement =
-        cells.count == 1
-        ? Placement(word: word, start: cells[0], direction: rule.direction)
-        : Placement(word: word, cells: cells)
-      found.insert(placement)
+        length == 1
+        ? Placement(word: word, start: trail.cells[0], direction: rule.direction)
+        : Placement(word: word, cells: trail.cells)
+      if !visitor.visit(placement) {
+        trail.stopped = true
+        return
+      }
     }
-    guard cells.count < index.longest, let last = cells.last else { return }
-    let ways =
-      [direction] + (cells.count > 1 && turns < rule.maximum ? direction.perpendiculars : [])
-    for way in ways {
+    guard length < index.longest, let last = trail.cells.last else { return }
+    let canTurn = length > 1 && turns < rule.maximum
+    for way in [direction] + (canTurn ? direction.perpendiculars : []) {
       let next = last.moved(way, by: 1)
-      guard board.contains(next), !cells.contains(next),
-        let child = index.next(after: cursor.node, letter: board[next])
+      guard board.contains(next), !trail.visited[slot(of: next)],
+        let child = index.next(after: node, letter: board[next]), !visitor.skips(child)
       else { continue }
+      enter(next, &trail)
       walk(
-        Cursor(
-          cells: cells + [next], direction: way,
-          turns: turns + (way == direction ? 0 : 1), node: child),
-        rule: rule, index: index, found: &found)
+        Step(direction: way, turns: turns + (way == direction ? 0 : 1), node: child),
+        rule: rule, index: index, trail: &trail, visitor: visitor)
+      leave(&trail)
+      if trail.stopped { return }
     }
+  }
+
+  private func slot(of cell: Cell) -> Int { cell.row * board.columns + cell.column }
+
+  private func enter(_ cell: Cell, _ trail: inout Trail) {
+    trail.cells.append(cell)
+    trail.visited[slot(of: cell)] = true
+  }
+
+  private func leave(_ trail: inout Trail) {
+    let cell = trail.cells.removeLast()
+    trail.visited[slot(of: cell)] = false
   }
 }
 
@@ -95,12 +136,24 @@ extension Board {
   }
 
   func strayWords(in dictionary: WordIndex, rules: [WordRule]) -> [String] {
-    PathSearch(board: self, rules: rules).readings(in: dictionary).filter { reading in
-      !placements.contains { placement in
-        placement.containsReading(reading.cells)
-          || (placement.isPalindrome && placement.reversed.containsReading(reading.cells))
-      }
-    }.map(\.word).sorted()
+    PathSearch(board: self, rules: rules).readings(in: dictionary).filter { !covers($0) }
+      .map(\.word).sorted()
+  }
+
+  func hasStrayWord(in dictionary: WordIndex, rules: [WordRule]) -> Bool {
+    var stray = false
+    PathSearch(board: self, rules: rules).visitReadings(in: dictionary) { reading in
+      stray = !covers(reading)
+      return !stray
+    }
+    return stray
+  }
+
+  func covers(_ reading: Placement) -> Bool {
+    placements.contains { placement in
+      placement.containsReading(reading.cells)
+        || (placement.isPalindrome && placement.reversed.containsReading(reading.cells))
+    }
   }
 }
 

@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.12.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.13.0")
 ```
 
 Then add products to your target's dependencies:
@@ -76,6 +76,14 @@ let round = Round(board: board, rules: [straight, bent])
   filtering remains best effort. Compact layouts prefer matching crossings within their height.
 - A prepared turned request freezes its checked shapes. Board seeds vary their positions and
   filler. If every rule has zero turns, generation uses the existing straight generator.
+- Turned generation keeps the unique-target weighted fill with the fewest distinct stray words
+  found within the configured attempts. A clean fill returns immediately. Letters absent from all
+  targets are used only when no ordinary fill has unique targets. Noise scoring prunes known words
+  and has a deterministic work limit; an exhausted score is not treated as a clean board.
+  Fully scored fills outrank incomplete scores; if every score is incomplete, the first
+  unique-target ordinary fill is retained.
+- Build `BoardDictionary(words)` once and pass it to `request.board(seed:dictionary:)` to reuse
+  its prepared index across boards. The existing `Set<String>` argument remains supported.
 - `Placement(word:cells:)` retains the ordered path. `direction` is its first segment;
   `turns` counts its bends. Save `cells`, rather than only `start` and `direction`, for turned words.
 - `Board.occurrences(of:rules:)` counts ordered paths, folding the two readings of a palindrome
@@ -102,9 +110,9 @@ These report invalid data without clearing it. Nonthrowing `Board(letters:placem
 
 For seed-only data created with 0.9, use the `directions:` generator initializer with
 `generationVersion: .v0p9` and exactly its original settings and words. This retains the old
-fallback filler sequence. The `rules:` initializer requires `.v0p12`, the current generation.
-`BoardGenerationVersion` is Codable with stable values `0.9` and `0.12`; persist
-`BoardGenerationVersion.current`, whose value is `.v0p12`, rather than the text `current`.
+fallback filler sequence. Rule-based generation accepts `.v0p12` and `.v0p13`; the former retains
+the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12` and `0.13`.
+Persist `BoardGenerationVersion.current`, whose value is `.v0p13`, rather than the text `current`.
 
 Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock
 callbacks, or let the app own timing. The library countdown does not track elapsed time during suspension.

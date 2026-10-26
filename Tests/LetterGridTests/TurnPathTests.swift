@@ -175,7 +175,7 @@ struct TurnPathIntegrationTests {
     #expect(legacyRandom.next() == expected.next())
     #expect(legacy.rows == 2)
     #expect(legacy.placements[0].word == "AB")
-    #expect(BoardGenerationVersion.current.rawValue == "0.12")
+    #expect(BoardGenerationVersion(rawValue: "0.12") == .v0p12)
     #expect(BoardGenerationVersion(rawValue: "current") == nil)
   }
 
