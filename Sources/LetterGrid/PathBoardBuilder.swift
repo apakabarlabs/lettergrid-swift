@@ -17,9 +17,11 @@ struct PathBoardBuilder {
   let rules: [WordRule]
   var downWords: ClosedRange<Int> = 0...Int.max
   var generationVersion: BoardGenerationVersion = .current
+  var maximumRows: Int?
 
   func preparedLayout(
-    for words: [String], firstRule: WordRule?, filler: LetterWeights
+    for words: [String], firstRule: WordRule?, filler: LetterWeights,
+    tries: Int = BoardGenerationLimits.standard.layoutsPerAttempt
   ) -> Layout? {
     guard !words.isEmpty, Set(words).count == words.count,
       words.allSatisfy({ $0.count > 1 }),
@@ -27,6 +29,24 @@ struct PathBoardBuilder {
       let free = filler.letters(excluding: Set(words.joined()))
     else { return nil }
     var random = SeededRandom(seed: requestSeed(for: words))
+    guard maximumRows != nil else {
+      return isolatedLayout(for: words, firstRule: firstRule, filler: free, using: &random)
+    }
+    for _ in 0..<max(1, tries) {
+      guard
+        let isolated = isolatedLayout(
+          for: words, firstRule: firstRule, filler: free, using: &random),
+        let compact = compacted(isolated, using: &random)
+      else { continue }
+      if targetsAreUnique(filled(compact, with: free, using: &random)) { return compact }
+    }
+    return nil
+  }
+
+  private func isolatedLayout(
+    for words: [String], firstRule: WordRule?, filler free: LetterWeights,
+    using random: inout SeededRandom
+  ) -> Layout? {
     let choices = words.enumerated().map { index, word in
       candidates(
         for: word, rules: index == 0 ? firstRule.map { [$0] } ?? rules : rules,
@@ -124,7 +144,7 @@ struct PathBoardBuilder {
     for limit in [1, 256] {
       for cells in PathShapes(
         columns: columns, length: word.count, rule: rule,
-        maximumShapes: limit
+        maximumShapes: limit, maximumRows: maximumRows
       ).cells(seed: seed) {
         let placement = Placement(word: word, cells: cells)
         let layout = Layout(rows: (cells.map(\.row).max() ?? 0) + 1, placements: [placement])
@@ -144,17 +164,20 @@ struct PathBoardBuilder {
   private func lowestLayout(
     _ fallback: Layout, tries: Int, using random: inout SeededRandom
   ) -> Layout {
-    var best = compacted(fallback, using: &random)
-    for _ in 1..<max(1, tries) {
-      let candidate = compacted(fallback, using: &random)
-      let shorter = candidate.rows < best.rows
-      let moreShared = candidate.rows == best.rows && candidate.sharedCells > best.sharedCells
-      if shorter || moreShared { best = candidate }
+    var best: Layout?
+    for _ in 0..<max(1, tries) {
+      guard let candidate = compacted(fallback, using: &random) else { continue }
+      if best.map({
+        candidate.rows < $0.rows
+          || (candidate.rows == $0.rows && candidate.sharedCells > $0.sharedCells)
+      }) ?? true {
+        best = candidate
+      }
     }
-    return best
+    return best ?? fallback
   }
 
-  private func compacted(_ layout: Layout, using random: inout SeededRandom) -> Layout {
+  private func compacted(_ layout: Layout, using random: inout SeededRandom) -> Layout? {
     var placed: [Int: Placement] = [:]
     var occupied: [Cell: Character] = [:]
     var rows = minimumRows
@@ -164,24 +187,15 @@ struct PathBoardBuilder {
       let placement = layout.placements[index]
       let top = placement.cells.map(\.row).min() ?? 0
       let height = (placement.cells.map(\.row).max() ?? 0) - top + 1
-      let width = (placement.cells.map(\.column).max() ?? 0) + 1
       rows = max(rows, height)
+      guard maximumRows.map({ rows <= $0 }) ?? true else { return nil }
       var candidates: [Placement] = []
       while candidates.isEmpty {
-        for row in 0...(rows - height) {
-          for column in 0...(columns - width) {
-            let cells = placement.cells.map {
-              Cell(row: $0.row - top + row, column: $0.column + column)
-            }
-            let candidate = Placement(word: placement.word, cells: cells)
-            if zip(cells, placement.word).allSatisfy({ cell, letter in
-              occupied[cell].map { $0 == letter } ?? true
-            }) {
-              candidates.append(candidate)
-            }
-          }
+        candidates = fittingTranslations(of: placement, rows: rows, beside: occupied)
+        if candidates.isEmpty {
+          if let maximumRows, rows >= maximumRows { return nil }
+          rows += 1
         }
-        if candidates.isEmpty { rows += 1 }
       }
       let shared = candidates.map { $0.cells.filter { occupied[$0] != nil }.count }.max() ?? 0
       guard
@@ -201,6 +215,29 @@ struct PathBoardBuilder {
     return Layout(
       rows: max(minimumRows, (ordered.flatMap(\.cells).map(\.row).max() ?? 0) + 1),
       placements: ordered)
+  }
+
+  private func fittingTranslations(
+    of placement: Placement, rows: Int, beside occupied: [Cell: Character]
+  ) -> [Placement] {
+    let top = placement.cells.map(\.row).min() ?? 0
+    let left = placement.cells.map(\.column).min() ?? 0
+    let height = (placement.cells.map(\.row).max() ?? 0) - top + 1
+    let width = (placement.cells.map(\.column).max() ?? 0) - left + 1
+    var candidates: [Placement] = []
+    for row in 0...(rows - height) {
+      for column in 0...(columns - width) {
+        let cells = placement.cells.map {
+          Cell(row: $0.row - top + row, column: $0.column - left + column)
+        }
+        if zip(cells, placement.word).allSatisfy({ cell, letter in
+          occupied[cell].map { $0 == letter } ?? true
+        }) {
+          candidates.append(Placement(word: placement.word, cells: cells))
+        }
+      }
+    }
+    return candidates
   }
 
   private func filled(

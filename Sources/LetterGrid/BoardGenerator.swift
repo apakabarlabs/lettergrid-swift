@@ -13,17 +13,19 @@ public struct BoardRequest: Equatable, Sendable {
   public let firstDirection: Direction?
   public let firstRule: WordRule?
   fileprivate let pathLayout: Layout?
+  fileprivate let boundedFallback: Layout?
   private let generator: BoardGenerator
 
   fileprivate init(
     words: [String], firstDirection: Direction?, generator: BoardGenerator,
-    firstRule: WordRule? = nil, pathLayout: Layout? = nil
+    firstRule: WordRule? = nil, pathLayout: Layout? = nil, boundedFallback: Layout? = nil
   ) {
     self.words = words
     self.firstDirection = firstDirection
     self.generator = generator
     self.firstRule = firstRule
     self.pathLayout = pathLayout
+    self.boundedFallback = boundedFallback
   }
 
   public func board(seed: UInt64, dictionary: Set<String>? = nil) -> Board {
@@ -53,17 +55,19 @@ public struct BoardGenerator: Equatable, Sendable {
     public var errorDescription: String? {
       switch self {
       case .noRoom(let words, let columns, let rows):
-        "No grid \(columns) wide and at least \(rows) high can hold "
+        "Could not prepare a checked grid \(columns) wide with minimum height \(rows) for "
           + words.joined(separator: ", ")
       case .invalidConfiguration:
         "Grid dimensions must be positive, directions nonempty, the vertical minimum "
-          + "nonnegative, and search limits nonnegative with at least one layout per attempt."
+          + "nonnegative, and search limits nonnegative with at least one layout per attempt. "
+          + "A maximum height must be at least the minimum and cannot be used with generation 0.9."
       }
     }
   }
 
   public let columns: Int
   public let rows: Int
+  public let maxRows: Int?
   public let directions: [Direction]
   public let filler: LetterWeights
   public let dictionary: Set<String>
@@ -77,7 +81,8 @@ public struct BoardGenerator: Equatable, Sendable {
   private let wordIndex: WordIndex
 
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.columns == rhs.columns && lhs.rows == rhs.rows && lhs.directions == rhs.directions
+    lhs.columns == rhs.columns && lhs.rows == rhs.rows && lhs.maxRows == rhs.maxRows
+      && lhs.directions == rhs.directions
       && lhs.filler == rhs.filler && lhs.dictionary == rhs.dictionary
       && lhs.downWords == rhs.downWords && lhs.layoutsPerAttempt == rhs.layoutsPerAttempt
       && lhs.attempts == rhs.attempts && lhs.fillsPerAttempt == rhs.fillsPerAttempt
@@ -86,7 +91,7 @@ public struct BoardGenerator: Equatable, Sendable {
   }
 
   public init(
-    columns: Int, rows: Int, directions: [Direction], filler: LetterWeights,
+    columns: Int, rows: Int, maxRows: Int? = nil, directions: [Direction], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
     layoutsPerAttempt: Int = BoardGenerationLimits.standard.layoutsPerAttempt,
     attempts: Int = BoardGenerationLimits.standard.attempts,
@@ -95,6 +100,7 @@ public struct BoardGenerator: Equatable, Sendable {
   ) {
     self.columns = columns
     self.rows = rows
+    self.maxRows = maxRows
     self.directions = directions
     self.filler = filler
     self.dictionary = Set(dictionary.map(\.cellUppercased))
@@ -108,7 +114,7 @@ public struct BoardGenerator: Equatable, Sendable {
   }
 
   public init(
-    columns: Int, rows: Int, rules: [WordRule], filler: LetterWeights,
+    columns: Int, rows: Int, maxRows: Int? = nil, rules: [WordRule], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
     layoutsPerAttempt: Int = BoardGenerationLimits.standard.layoutsPerAttempt,
     attempts: Int = BoardGenerationLimits.standard.attempts,
@@ -116,7 +122,7 @@ public struct BoardGenerator: Equatable, Sendable {
     generationVersion: BoardGenerationVersion = .current
   ) {
     self.init(
-      columns: columns, rows: rows,
+      columns: columns, rows: rows, maxRows: maxRows,
       directions: Direction.allCases.filter { way in
         rules.contains { $0.startDirections.contains(way) }
       },
@@ -133,24 +139,12 @@ public struct BoardGenerator: Equatable, Sendable {
     guard columns > 0, rows > 0, !directions.isEmpty, downWords.lowerBound >= 0,
       layoutsPerAttempt > 0, attempts >= 0, fillsPerAttempt >= 0
     else { throw Failure.invalidConfiguration }
+    guard maxRows.map({ $0 >= rows && generationVersion != .v0p9 }) ?? true else {
+      throw Failure.invalidConfiguration
+    }
     let words = words.map(\.cellUppercased)
     if usesPathRules {
-      guard generationVersion != .v0p9 else { throw Failure.invalidConfiguration }
-      guard rules.allSatisfy(\.isValid), firstDirection == nil,
-        firstRule.map({ rules.contains($0) }) ?? true
-      else { throw Failure.invalidConfiguration }
-      if rules.allSatisfy({ $0.turns == 0 }) {
-        return try straightRequest(for: words, firstRule: firstRule)
-      }
-      guard
-        let layout = PathBoardBuilder(
-          columns: columns, minimumRows: rows, rules: rules, downWords: downWords
-        )
-        .preparedLayout(for: words, firstRule: firstRule, filler: filler)
-      else { throw Failure.noRoom(words: words, columns: columns, rows: rows) }
-      return BoardRequest(
-        words: words, firstDirection: nil, generator: self,
-        firstRule: firstRule, pathLayout: layout)
+      return try pathRequest(for: words, firstDirection: firstDirection, firstRule: firstRule)
     }
     guard firstRule == nil else { throw Failure.invalidConfiguration }
     var probe = SeededRandom(seed: 0)
@@ -162,14 +156,58 @@ public struct BoardGenerator: Equatable, Sendable {
     else {
       throw Failure.noRoom(words: words, columns: columns, rows: rows)
     }
+    if maxRows != nil {
+      guard let fallback = boundedLayout(for: words, firstDirection: firstDirection, using: &probe)
+      else { throw Failure.noRoom(words: words, columns: columns, rows: rows) }
+      return BoardRequest(
+        words: words, firstDirection: firstDirection, generator: self, boundedFallback: fallback)
+    }
     return BoardRequest(words: words, firstDirection: firstDirection, generator: self)
+  }
+
+}
+
+extension BoardGenerator {
+  private func pathRequest(
+    for words: [String], firstDirection: Direction?, firstRule: WordRule?
+  ) throws -> BoardRequest {
+    guard generationVersion != .v0p9 else { throw Failure.invalidConfiguration }
+    guard rules.allSatisfy(\.isValid), firstDirection == nil,
+      firstRule.map({ rules.contains($0) }) ?? true
+    else { throw Failure.invalidConfiguration }
+    if rules.allSatisfy({ $0.turns == 0 }) {
+      return try straightRequest(for: words, firstRule: firstRule)
+    }
+    guard
+      let layout = PathBoardBuilder(
+        columns: columns, minimumRows: rows, rules: rules, downWords: downWords,
+        maximumRows: maxRows
+      ).preparedLayout(for: words, firstRule: firstRule, filler: filler, tries: layoutsPerAttempt)
+    else { throw Failure.noRoom(words: words, columns: columns, rows: rows) }
+    return BoardRequest(
+      words: words, firstDirection: nil, generator: self,
+      firstRule: firstRule, pathLayout: layout)
   }
 
   private func straightRequest(for words: [String], firstRule: WordRule?) throws -> BoardRequest {
     let generator = BoardGenerator(
-      columns: columns, rows: rows, directions: directions, filler: filler, dictionary: dictionary,
+      columns: columns, rows: rows, maxRows: maxRows, directions: directions,
+      filler: filler, dictionary: dictionary,
       downWords: downWords, layoutsPerAttempt: layoutsPerAttempt, attempts: attempts,
       fillsPerAttempt: fillsPerAttempt, generationVersion: generationVersion)
+    if maxRows != nil, let firstRule {
+      for direction in firstRule.startDirections {
+        do {
+          let request = try generator.request(for: words, firstDirection: direction)
+          return BoardRequest(
+            words: request.words, firstDirection: request.firstDirection, generator: generator,
+            firstRule: firstRule, boundedFallback: request.boundedFallback)
+        } catch Failure.noRoom(_, _, _) {
+          continue
+        }
+      }
+      throw Failure.noRoom(words: words, columns: columns, rows: rows)
+    }
     var probe = SeededRandom(seed: 0)
     let constrained = firstRule.map { Set($0.startDirections) != Set(directions) } ?? false
     let required = firstRule?.startDirections.first {
@@ -181,7 +219,7 @@ public struct BoardGenerator: Equatable, Sendable {
     let request = try generator.request(for: words, firstDirection: constrained ? required : nil)
     return BoardRequest(
       words: request.words, firstDirection: request.firstDirection,
-      generator: generator, firstRule: firstRule)
+      generator: generator, firstRule: firstRule, boundedFallback: request.boundedFallback)
   }
 
   fileprivate func board(
@@ -201,7 +239,8 @@ public struct BoardGenerator: Equatable, Sendable {
   private func board(for request: BoardRequest, seed: UInt64, index: WordIndex) -> Board {
     if let layout = request.pathLayout {
       return PathBoardBuilder(
-        columns: columns, minimumRows: rows, rules: rules, generationVersion: generationVersion
+        columns: columns, minimumRows: rows, rules: rules, generationVersion: generationVersion,
+        maximumRows: maxRows
       )
       .board(
         layout: layout, filler: filler, dictionary: index, seed: seed,
@@ -212,9 +251,13 @@ public struct BoardGenerator: Equatable, Sendable {
     let words = request.words
     let builder = LayoutBuilder(
       columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
-      firstDirection: request.firstDirection)
+      firstDirection: request.firstDirection, maximumRows: maxRows)
     var random = SeededRandom(seed: seed)
     let targets = WordIndex(Set(words))
+    let acceptsNoise = maxRows != nil && generationVersion == .v0p13
+    let fillingIndex = acceptsNoise ? WordIndex([]) : index
+    var best: Board?
+    var leastNoise = Int.max
     for _ in 0..<attempts {
       guard
         let layout = builder.lowestLayout(
@@ -222,13 +265,55 @@ public struct BoardGenerator: Equatable, Sendable {
       else { break }
       let filler = BoardFiller(
         layout: layout, columns: columns, directions: directions,
-        dictionary: index, targets: targets)
+        dictionary: fillingIndex, targets: targets)
       guard
         let board = filler.fill(with: self.filler, attempts: fillsPerAttempt, using: &random)
       else { continue }
-      if isClean(board, hiding: words, dictionary: index) { return board }
+      guard isClean(board, hiding: words, dictionary: fillingIndex) else { continue }
+      let noise =
+        acceptsNoise
+        ? board.strayWordCount(in: index, rules: rules, lessThan: leastNoise) : 0
+      if noise == 0 { return board }
+      if best == nil || noise < leastNoise {
+        best = board
+        leastNoise = noise
+      }
+    }
+    if let best { return best }
+    if let fallback = request.boundedFallback {
+      guard let board = isolatedBoard(layout: fallback, words: words, using: &random) else {
+        preconditionFailure("A bounded request retains a checked unique-target fallback.")
+      }
+      return board
     }
     return bandedBoard(for: request, using: &random)
+  }
+
+  private func boundedLayout(
+    for words: [String], firstDirection: Direction?, using random: inout SeededRandom
+  ) -> Layout? {
+    let builder = LayoutBuilder(
+      columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
+      firstDirection: firstDirection, maximumRows: maxRows)
+    for _ in 0..<layoutsPerAttempt {
+      guard let layout = builder.layout(for: words, using: &random) else { continue }
+      if isolatedBoard(layout: layout, words: words, using: &random) != nil { return layout }
+    }
+    return nil
+  }
+
+  private func isolatedBoard(
+    layout: Layout, words: [String], using random: inout SeededRandom
+  ) -> Board? {
+    guard let free = filler.letters(excluding: Set(words.joined())) else { return nil }
+    let empty = WordIndex([])
+    let filling = BoardFiller(
+      layout: layout, columns: columns, directions: directions, dictionary: empty,
+      targets: WordIndex(Set(words)))
+    guard let board = filling.fill(with: free, attempts: 1, using: &random),
+      isClean(board, hiding: words, dictionary: empty)
+    else { return nil }
+    return board
   }
 
   public func board(

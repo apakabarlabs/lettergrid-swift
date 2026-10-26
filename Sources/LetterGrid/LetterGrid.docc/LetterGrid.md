@@ -5,8 +5,8 @@ Build and play a word search using plain Swift.
 ## Overview
 
 Pass words, allowed directions, board dimensions and weighted filler letters to
-``BoardGenerator``. Rows are a minimum, not a height limit. A board can grow downwards
-to accommodate the words. Every accepted target occurs exactly once along the allowed
+``BoardGenerator``. Rows are a minimum. A board can grow downwards to accommodate the words
+unless `maxRows` limits its height. Every accepted target occurs exactly once along the allowed
 directions; dictionary filtering is best effort within the configured search limits.
 
 ``Board`` and ``Placement`` describe letters and their positions. ``Round`` owns the
@@ -61,9 +61,15 @@ a wall-clock deadline across application suspension.
   and `fillsPerAttempt` must be nonnegative. Invalid settings throw
   ``BoardGenerator/Failure/invalidConfiguration``; incompatible words throw
   ``BoardGenerator/Failure/noRoom(words:columns:rows:)``.
+- An optional `maxRows` must be at least `rows`. Set both to the same value for an exact
+  height. Bounded requests prepare a checked fallback within that height before returning;
+  failure to find one within the preparation budget throws `noRoom`, even if a different
+  packing might exist. Zero attempts or fills still require fallback preparation.
+  Both straight and turned paths support the limit. `.v0p9` rejects it; omitting it preserves
+  the existing seed geometry and growing-board behavior.
 - Each generation attempt samples `layoutsPerAttempt` layouts, preferring fewer rows and
   then more shared cells. Ties keep the first sample. Search is bounded by `attempts` and
-  `fillsPerAttempt`; zero attempts selects the fallback directly. The fallback separates
+  `fillsPerAttempt`; zero attempts selects the fallback directly. The unbounded fallback separates
   words into bands and fills gaps with letters absent from the targets. Target uniqueness
   remains guaranteed, but dictionary filtering and the maximum possible crossings do not.
 - Filler weights must be positive and finite. `sameNeighbour` in `(0, 1]` multiplies a letter's

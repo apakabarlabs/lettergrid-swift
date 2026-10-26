@@ -14,11 +14,15 @@ struct LayoutBuilder {
   let directions: [Direction]
   let downWords: ClosedRange<Int>
   var firstDirection: Direction?
+  var maximumRows: Int?
 
   func lowestLayout(for words: [String], tries: Int, using random: inout SeededRandom) -> Layout? {
     var lowest: Layout?
     for _ in 0..<max(tries, 1) {
-      guard let layout = layout(for: words, using: &random) else { return nil }
+      guard let layout = layout(for: words, using: &random) else {
+        if maximumRows != nil { continue }
+        return nil
+      }
       if lowest.map({
         layout.rows < $0.rows || (layout.rows == $0.rows && layout.sharedCells > $0.sharedCells)
       }) ?? true {
@@ -35,7 +39,7 @@ struct LayoutBuilder {
     if !assignment.usesForwardOrthogonalLayout {
       return DiagonalLayoutBuilder(
         columns: columns, minimumRows: minimumRows, directions: directions, downWords: downWords,
-        firstDirection: firstDirection
+        firstDirection: firstDirection, maximumRows: maximumRows
       ).layout(for: words, using: &random)
     }
     guard let assigned = assignment.assignments(for: words, using: &random, order: .shortestFirst)
@@ -45,6 +49,7 @@ struct LayoutBuilder {
     let lying = assigned.filter { !$0.direction.isVertical }.map(\.index)
 
     var rows = max(minimumRows, standing.map { words[$0].count }.max() ?? 0)
+    guard maximumRows.map({ rows <= $0 }) ?? true else { return nil }
     var placed: [Int: Placement] = [:]
     let standingColumns = Array(0..<columns).shuffled(using: &random)
     for (index, column) in zip(standing, standingColumns) {
@@ -55,6 +60,7 @@ struct LayoutBuilder {
     for index in lying.sorted(by: { words[$0].count > words[$1].count }) {
       var spots = self.spots(for: words[index], rows: rows, beside: placed)
       while spots.isEmpty {
+        if let maximumRows, rows >= maximumRows { return nil }
         rows += 1
         spots = self.spots(for: words[index], rows: rows, beside: placed)
       }

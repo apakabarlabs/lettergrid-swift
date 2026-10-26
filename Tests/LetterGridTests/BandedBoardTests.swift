@@ -12,12 +12,13 @@ struct BandedBoardTests {
   ]
 
   private func generator(
-    directions: [Direction], downWords: ClosedRange<Int>
+    directions: [Direction], downWords: ClosedRange<Int>, maxRows: Int? = nil
   ) throws -> BoardGenerator {
     var weights = Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) })
     weights["z"] = 0.5
     return BoardGenerator(
-      columns: 7, rows: 7, directions: directions, filler: try LetterWeights(weights),
+      columns: 7, rows: 7, maxRows: maxRows, directions: directions,
+      filler: try LetterWeights(weights),
       dictionary: Set(alphabet.flatMap { a in alphabet.map { b in String([a, b, a]) } }),
       downWords: downWords, attempts: 0)
   }
@@ -67,6 +68,37 @@ struct BandedBoardTests {
       }
     }
     #expect(built > 500)
+  }
+
+  @Test func everyAcceptedBoundedRequestKeepsItsWordsUniqueInsideTheSquare() throws {
+    var random = SeededRandom(seed: 2027)
+    var built = 0
+    for directions in directionSets {
+      for downWords in [0...2, 1...2] {
+        let generator = try generator(directions: directions, downWords: downWords, maxRows: 7)
+        for _ in 0..<30 {
+          let words = words(using: &random)
+          let first = directions.randomElement(using: &random)
+          let request: BoardRequest
+          do {
+            request = try generator.request(for: words, firstDirection: first)
+          } catch BoardGenerator.Failure.noRoom(_, _, _) {
+            continue
+          }
+          let board = request.board(seed: random.next())
+          built += 1
+          #expect(board.columns == 7 && board.rows == 7)
+          #expect(board.placements.map(\.word) == request.words)
+          for word in request.words {
+            #expect(board.occurrences(of: word, along: directions) == 1)
+          }
+          #expect(board.placements.allSatisfy { directions.contains($0.direction) })
+          #expect(board.placements.first?.direction == first)
+          #expect(downWords.contains(board.placements.filter(\.direction.isVertical).count))
+        }
+      }
+    }
+    #expect(built > 100)
   }
 
   @Test func downWordsStandSideBySideSoTheBoardIsOnlyAsTallAsTheLongest() throws {

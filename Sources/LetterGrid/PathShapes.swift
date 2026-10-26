@@ -8,6 +8,7 @@ struct PathShapes {
   let length: Int
   let rule: WordRule
   var maximumShapes = 256
+  var maximumRows: Int?
 
   func cells(seed: UInt64 = 0) -> [[Cell]] {
     guard rule.isValid, length >= rule.minimumLength else { return [] }
@@ -44,6 +45,10 @@ struct PathShapes {
       guard !path.contains(next) else { continue }
       let columnsUsed = path.map(\.column) + [next.column]
       guard (columnsUsed.max() ?? 0) - (columnsUsed.min() ?? 0) < columns else { continue }
+      if let maximumRows {
+        let rowsUsed = path.map(\.row) + [next.row]
+        guard (rowsUsed.max() ?? 0) - (rowsUsed.min() ?? 0) < maximumRows else { continue }
+      }
       walk(
         path + [next], direction: way, turns: turns + (way == direction ? 0 : 1),
         shapes: &shapes, search: &search)

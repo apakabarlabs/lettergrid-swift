@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0] - 2026-10-26
+
+### Added
+
+- `BoardGenerator.maxRows` optionally limits board height for straight and turned paths.
+  Set `maxRows` equal to `rows` for an exact height. With the limit set, `request(for:)`
+  returns only after preparing a checked unique-target fallback within the limit.
+  Bounded preparation can throw `noRoom` even when another packing could fit.
+  Dictionary filtering remains best effort.
+- Bounded `.v0p13` straight generation retains an ordinary unique-target fill with the
+  least dictionary noise found within its search budget, before using isolated filler.
+- The limit must be at least `rows` and is unavailable for `.v0p9`. Omitting it preserves
+  previous generation behavior and seeded layouts. Existing calls need no changes.
+
 ## [0.13.1] - 2026-10-26
 
 ### Fixed

@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.13.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.14.0")
 ```
 
 Then add products to your target's dependencies:
@@ -42,6 +42,12 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
 
 - Directions are opt-in, including diagonals and reverse readings. `columns` is fixed;
   `rows` is a minimum. The board grows downwards to fit the words; read its height from `board.rows`.
+- Set `maxRows: rows` for an exact height, or a larger `maxRows` for a height range.
+  Requests with a height limit retain a checked fallback within that limit. If bounded
+  preparation finds no unique-target layout, `request(for:)` throws `noRoom` before play.
+  A rejected request does not prove that no possible packing exists. The limit must be at
+  least `rows`; it is available for both straight and turned paths, except `.v0p9` generation.
+  Omitting `maxRows` preserves the existing growing-board behavior and seeded layouts.
 - Every accepted target occurs exactly once along the allowed directions. Removing other
   words from an optional `BoardGenerator` dictionary (`Set<String>`, passed as `dictionary:`) is best effort:
   bounded search falls back to a board that preserves the targets but may contain other words.

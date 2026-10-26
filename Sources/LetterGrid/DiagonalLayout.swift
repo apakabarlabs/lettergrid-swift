@@ -4,6 +4,7 @@ struct DiagonalLayoutBuilder {
   let directions: [Direction]
   let downWords: ClosedRange<Int>
   var firstDirection: Direction?
+  var maximumRows: Int?
 
   func layout(for words: [String], using random: inout SeededRandom) -> Layout? {
     guard let assigned = assignments(for: words, using: &random) else { return nil }
@@ -22,13 +23,19 @@ struct DiagonalLayoutBuilder {
 
   private func place(
     _ words: [String], directions assigned: [Int: Direction], using random: inout SeededRandom
-  ) -> Layout {
+  ) -> Layout? {
     var rows = max(minimumRows, words.map(\.count).max() ?? 0)
+    if maximumRows != nil {
+      let needed = assigned.map { $0.value.rowStep == 0 ? 1 : words[$0.key].count }.max() ?? 0
+      rows = max(minimumRows, needed)
+    }
+    guard maximumRows.map({ rows <= $0 }) ?? true else { return nil }
     var placed: [Placement] = []
     for index in words.indices.sorted(by: { words[$0].count > words[$1].count }) {
       guard let direction = assigned[index] else { fatalError("Every word needs a direction") }
       var choices = spots(for: words[index], direction: direction, rows: rows, beside: placed)
       while choices.isEmpty {
+        if let maximumRows, rows >= maximumRows { return nil }
         rows += 1
         choices = spots(for: words[index], direction: direction, rows: rows, beside: placed)
       }
