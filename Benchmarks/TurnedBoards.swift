@@ -48,11 +48,9 @@ enum TurnedBoards {
     generator: BoardGenerator, words: Set<String>, dictionary: BoardDictionary
   ) throws {
     let pool = words.filter { (5...7).contains($0.count) }.sorted()
-    let levels = (0..<30).map { level in
-      [
-        pool[(level * 3) % pool.count], pool[(level * 3 + 1) % pool.count],
-        pool[(level * 3 + 2) % pool.count],
-      ]
+    let levels: [[String]] = (0..<30).map { level in
+      let start = level * 3
+      return (0..<3).map { offset in pool[(start + offset) % pool.count] }
     }
     var accepted: [[String]] = []
     for level in levels {

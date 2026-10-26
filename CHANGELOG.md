@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1] - 2026-10-26
+
+### Fixed
+
+- Split benchmark input construction into smaller typed expressions so Swift 6.2 on Linux
+  can compile the benchmark target during `make test`. Library behavior is unchanged.
+
 ## [0.13.0] - 2026-10-26
 
 ### Changed
