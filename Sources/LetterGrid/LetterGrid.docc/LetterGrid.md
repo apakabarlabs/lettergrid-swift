@@ -78,6 +78,12 @@ a wall-clock deadline across application suspension.
 
 ### Restoring and pacing
 
+Generation `0.17` retains nonletter characters as ordinary target-path cells and adds at least
+one copy of each outside all target paths. `conditionalCharacters` applies the same rule to
+caller-selected letters. Ordinary weighted fill excludes these characters, so an absent
+conditional character never appears on the board. Checked fallbacks retain target uniqueness
+and the extra copies; requests reject layouts that cannot provide them within the search budget.
+
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
   generator and round. `firstRule` requires the first word to use one particular enabled rule.
@@ -91,10 +97,11 @@ a wall-clock deadline across application suspension.
   start-anchored direction snapping.
 - ``BoardGenerationVersion`` has stable Codable identifiers. `.v0p9` preserves the released 0.9
   straight generator's fallback draw order; pass the original configuration and words. Rule-based
-  generation accepts `.v0p12` and `.v0p13`. The latter keeps the best unique-target ordinary fill
+  generation accepts `.v0p12`, `.v0p13` and `.v0p17`. Since `0.13` it keeps the best unique-target ordinary fill
   within its search budget, preferring fewer distinct stray words. It uses the isolated filler only
   if no ordinary fill has unique targets. Noise scoring has a deterministic node budget and prunes
-  already counted dictionary words. `.current` names `.v0p13`, not a serialized moving alias.
+  already counted dictionary words. `.current` names `.v0p17`, not a serialized moving alias.
+  Explicit older versions retain their released seed behavior and do not add conditional copies.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.
   ``BoardGenerationLimits/standard`` exposes the unchanged default search bounds.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced

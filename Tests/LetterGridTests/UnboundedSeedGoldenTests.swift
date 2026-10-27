@@ -3,7 +3,7 @@ import Testing
 @testable import LetterGrid
 
 struct UnboundedSeedGoldenTests {
-  @Test(arguments: [BoardGenerationVersion.v0p9, .v0p12, .v0p13])
+  @Test(arguments: [BoardGenerationVersion.v0p9, .v0p12, .v0p13, .v0p17])
   func straightGenerationRetainsTheReleasedBoard(version: BoardGenerationVersion) throws {
     let board = try BoardGenerator(
       columns: 5, rows: 5, directions: [.right, .down], filler: filler(),
@@ -15,7 +15,7 @@ struct UnboundedSeedGoldenTests {
     #expect(signature(board) == letters + "|" + placements)
   }
 
-  @Test(arguments: [BoardGenerationVersion.v0p9, .v0p12, .v0p13])
+  @Test(arguments: [BoardGenerationVersion.v0p9, .v0p12, .v0p13, .v0p17])
   func straightFallbackRetainsTheReleasedBoard(version: BoardGenerationVersion) throws {
     let board = try BoardGenerator(
       columns: 5, rows: 5, directions: [.right, .down], filler: filler(),
@@ -28,7 +28,7 @@ struct UnboundedSeedGoldenTests {
     #expect(signature(board) == letters + "|" + placements)
   }
 
-  @Test(arguments: [BoardGenerationVersion.v0p12, .v0p13])
+  @Test(arguments: [BoardGenerationVersion.v0p12, .v0p13, .v0p17])
   func turnedGenerationRetainsTheReleasedBoard(version: BoardGenerationVersion) throws {
     let rules = (0...2).map { WordRule(startDirections: [.right, .down], turns: $0) }
     let board = try BoardGenerator(

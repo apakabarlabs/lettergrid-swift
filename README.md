@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.15.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.17.0")
 ```
 
 Then add products to your target's dependencies:
@@ -57,6 +57,12 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
   repetitions; its default of `1` leaves weights unchanged.
 - Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
   in one cell even when its capital would expand.
+- In generation `0.17`, nonletter target characters occupy ordinary path cells. Each gets at least
+  one additional copy outside all target paths. `conditionalCharacters:` applies the same rule to
+  caller-selected letters: filler never places them when they are absent from the targets.
+  Conditional characters are excluded from ordinary weighted fill, and added without changing
+  target cells or target uniqueness. A checked fallback keeps these guarantees for every seed;
+  a request fails when no checked placement leaves room for the extra copies.
 
 ## Paths with turns
 
@@ -122,9 +128,10 @@ These report invalid data without clearing it. Nonthrowing `Board(letters:placem
 
 For seed-only data created with 0.9, use the `directions:` generator initializer with
 `generationVersion: .v0p9` and exactly its original settings and words. This retains the old
-fallback filler sequence. Rule-based generation accepts `.v0p12` and `.v0p13`; the former retains
-the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12` and `0.13`.
-Persist `BoardGenerationVersion.current`, whose value is `.v0p13`, rather than the text `current`.
+fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13` and `.v0p17`; the former retains
+the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12`, `0.13` and `0.17`.
+Persist `BoardGenerationVersion.current`, whose value is `.v0p17`, rather than the text `current`.
+Explicit older versions retain their original fill, including targets with separators.
 
 Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock
 callbacks, or let the app own timing. The library countdown does not track elapsed time during suspension.

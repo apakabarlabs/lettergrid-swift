@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.17.0
+
+- Nonletter target characters remain cells of their full word paths. Generation 0.17 adds
+  at least one additional copy of every such character outside all target paths.
+- `BoardGenerator.conditionalCharacters` applies the same policy to caller-selected letters:
+  they never appear in ordinary fill when absent from the targets. Checked requests retain
+  a fallback with unique targets and the required extra copies, or reject when no checked
+  placement leaves room for them.
+- `BoardGenerationVersion.current` is now `v0p17`; explicit 0.9, 0.12 and 0.13 generation
+  retains its released behavior. Ordinary targets without conditional characters retain
+  their existing seeded boards.
+
 ## [0.16.0] - 2026-10-27
 
 ### Added
