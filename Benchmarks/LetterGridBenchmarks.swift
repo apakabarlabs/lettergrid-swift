@@ -9,6 +9,7 @@ struct LetterGridBenchmarks {
     largeDictionary()
     try fallbackBoards()
     hints()
+    try packedRequests()
     try OrdinaryBoards.run()
     try TurnedBoards.run()
   }
@@ -79,6 +80,31 @@ struct LetterGridBenchmarks {
         progress: RoundProgress(revealed: [word: length - 1]))
       measure("hintedCells length=\(length)", iterations: 200) {
         round.hintedCells.reduce(0) { $0 + $1.column }
+      }
+    }
+  }
+
+  @MainActor
+  private static func packedRequests() throws {
+    let groups: [[Direction]] = [
+      [.right, .down], [.downRight, .downLeft], [.left, .up], [.upLeft, .upRight],
+    ]
+    let rules = [0, 1].flatMap { turns in
+      groups.map { WordRule(startDirections: $0, turns: turns) }
+    }
+    let triples: [(words: [String], rules: Int)] = [
+      (["FIXTURE", "VENEER", "BEDDING"], 2),
+      (["STAIRCASE", "DOMESTICITY", "HABITATION"], 5),
+      (["STAIRCASE", "DOMESTICITY", "HABITATION"], 8),
+      (["ԽՈՀԱՐԱՐՈՑ", "ՀՐՈՒՇԱԿԵՂԵՆ", "ՀԱՄԵՄՈՒՆՔ"], 8),
+    ]
+    for (words, allowed) in triples {
+      let generator = BoardGenerator(
+        columns: 7, rows: 7, maxRows: 7, rules: Array(rules.prefix(allowed)),
+        filler: try LetterWeights(["q": 1, "w": 1]),
+        downWords: 1...2)
+      try measure("packedRequest \(words.joined(separator: " "))", iterations: 3) {
+        try generator.request(for: words).words.count
       }
     }
   }

@@ -1,4 +1,5 @@
 SWIFT_SOURCES = Sources Tests Benchmarks Package.swift
+BENCH_CONFIGURATION ?= release
 
 .DEFAULT_GOAL := build
 
@@ -28,7 +29,7 @@ build: lint test
 	swift build
 
 bench:
-	swift run -c release LetterGridBenchmarks
+	swift run -c $(BENCH_CONFIGURATION) LetterGridBenchmarks
 
 docs:
 	mkdir -p .build/docc

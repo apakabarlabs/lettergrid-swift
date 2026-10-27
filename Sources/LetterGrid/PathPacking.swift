@@ -83,6 +83,9 @@ struct PathPacking {
   var completes: @Sendable ([Placement]) -> Bool = { _ in true }
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {
+    precondition(
+      firstRule.map(rules.contains) ?? true,
+      "The first word's rule must be one of the rules every reading is checked against.")
     var random = SeededRandom(seed: seed)
     let used = Set(words.joined())
     guard !words.isEmpty,
@@ -156,12 +159,34 @@ struct PathPacking {
     }
     guard !nested else { return false }
     let board = Board(letters: letters, placements: placements)
-    guard placements.allSatisfy({ board.hasSingleOccurrence(of: $0.word, rules: rules) }) else {
-      return false
-    }
+    let counts = letterCounts(letters, blank: blank)
+    guard
+      placements.allSatisfy({
+        standsAlone($0.word, among: counts) || board.hasSingleOccurrence(of: $0.word, rules: rules)
+      })
+    else { return false }
     return zip(chosen, words).allSatisfy { placement, word in
-      placement != nil || leavesRoom(for: word, on: board, beside: areas)
+      placement != nil || !spells(word, from: counts)
+        || leavesRoom(for: word, on: board, beside: areas)
     }
+  }
+
+  private func letterCounts(_ letters: [[Character]], blank: Character) -> [Character: Int] {
+    var counts: [Character: Int] = [:]
+    for row in letters {
+      for letter in row where letter != blank { counts[letter, default: 0] += 1 }
+    }
+    return counts
+  }
+
+  private func spells(_ word: String, from counts: [Character: Int]) -> Bool {
+    var needed: [Character: Int] = [:]
+    for letter in word { needed[letter, default: 0] += 1 }
+    return needed.allSatisfy { counts[$0.key, default: 0] >= $0.value }
+  }
+
+  private func standsAlone(_ word: String, among counts: [Character: Int]) -> Bool {
+    Set(word).count == word.count && word.allSatisfy { counts[$0] == 1 }
   }
 
   private func leavesRoom(for word: String, on board: Board, beside areas: [Set<Cell>]) -> Bool {

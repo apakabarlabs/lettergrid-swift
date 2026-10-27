@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.18.1] - 2026-10-27
+
+### Changed
+
+- `request(for:)` on a `BoardGenerator` built with `rules:` and `maxRows` is about twice as
+  fast, in debug and release builds alike: three words on a 7 × 7 field take half the time
+  `make bench` measures for 0.18.0. It returns the same boards and throws
+  `BoardGenerator.Failure` for the same words as 0.18.0, so nothing changes in your code.
+
 ## [0.18.0] - 2026-10-27
 
 ### Changed
