@@ -11,7 +11,7 @@ struct BoundedHeightTests {
     let shifted = cells.map { Cell(row: $0.row + 2, column: $0.column + 2) }
     let rule = WordRule(startDirections: [.right], turns: 2)
     let builder = PathBoardBuilder(
-      columns: 5, minimumRows: 5, rules: [rule], maximumRows: 5)
+      columns: 5, minimumRows: 5, rules: [rule], generationVersion: .v0p17, maximumRows: 5)
     let weights = try filler()
     let limits = BoardGenerationLimits(attempts: 1, fillsPerAttempt: 1, layoutsPerAttempt: 1)
     func board(_ path: [Cell], seed: UInt64) -> Board {

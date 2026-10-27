@@ -104,4 +104,13 @@
   columns: 4
   rows: 2
   layouts: 40
+  version: "0.17"
   probeFallback: true
+- name: generation 0.18 lays the same words out with room for the extra separator
+  words: ["a-b", "cde", "-e"]
+  turns: 0
+  bounded: true
+  fallback: false
+  columns: 4
+  rows: 2
+  version: "0.18"

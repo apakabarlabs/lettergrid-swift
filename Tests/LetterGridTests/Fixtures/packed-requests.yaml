@@ -1,0 +1,50 @@
+- name: three long words that the random layout search refused now share the field
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [up_left, up_right], turns: 0}
+  - {directions: [right, down], turns: 1}
+  words: [STAIRCASE, DOMESTICITY, HABITATION]
+  fits: true
+- name: five words share one field
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right, down], turns: 1}
+  words: [APPLE, BREAD, CHAIR, DREAM, EIGHT]
+  fits: true
+- name: one word alone fits
+  rules: [{directions: [right, down], turns: 1}]
+  words: [THIRTEENTHLY]
+  fits: true
+- name: a word inside another is refused before any search
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, SCAT]
+  accepted: false
+  fits: false
+- name: a word longer than any path the rules allow is refused before any search
+  rules: [{directions: [right, down], turns: 0}]
+  words: [SEVENTEEN]
+  accepted: false
+  fits: false
+- name: words with no turns lie straight once the first may lie straight
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  words: [FIXTURE, VENEER, BEDDING]
+  fits: true
+- name: a full diagonal first word leaves the other two no line that agrees with it
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  firstRule: {directions: [down_right, down_left], turns: 0}
+  words: [FIXTURE, VENEER, BEDDING]
+  fits: false
+- name: a word read backwards at the end of another has no cells of its own
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [right, down], turns: 1}
+  - {directions: [left, up], turns: 1}
+  words: [KERING, ROTÁL, LÁT]
+  fits: false

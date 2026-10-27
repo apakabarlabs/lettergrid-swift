@@ -1,6 +1,78 @@
 # Changelog
 
-## 0.17.0
+## [0.18.0] - 2026-10-27
+
+### Changed
+
+- Source-breaking: `BoardGenerator.Failure` has a new case, `unsettled`, so an exhaustive
+  `switch` over it no longer compiles until it handles that case:
+
+  ```swift
+  // 0.17
+  case .noRoom: chooseOtherWords()
+  case .invalidConfiguration: fixSettings()
+  // 0.18
+  case .noRoom, .unsettled: chooseOtherWords()
+  case .invalidConfiguration: fixSettings()
+  ```
+
+- `BoardGenerationVersion.current` is now the new `v0p18`, stored as `"0.18"` when encoded.
+  LetterGrid 0.17 and earlier cannot decode that value.
+
+The remaining items of this section apply only to a `BoardGenerator` built with `rules:` and
+`maxRows` under `v0p18`, the default version of a new generator. They apply even when every
+rule has zero turns: such a generator no longer hands its words to the straight generator, as
+it does from 0.12 to 0.17. A generator built with `directions:` or without `maxRows`, or pinned
+to `v0p9`, `v0p12`, `v0p13` or `v0p17`, makes the same boards as in 0.17.
+
+- Boards made from a saved seed differ from 0.17. To keep them, pass
+  `generationVersion: .v0p17` to the `BoardGenerator` initializer, or save the letters and
+  placements of each board.
+- `request(for:)` tries every path each word can take under the rules, at every position on
+  the grid, instead of a random sample of `layoutsPerAttempt` layouts; that setting is
+  ignored, while `attempts` and `fillsPerAttempt` still bound the filling. Many sets that 0.17 refused now get
+  a board: in a sample of 771 three-word sets that 0.17 refused on a 7×7 grid with one turn
+  allowed, taken from a word game's vocabularies, 593 now fit and the search proved the other
+  178 cannot. Words still cross only on equal letters, the first word still follows `firstRule`,
+  the count of vertical words stays in `downWords`, and each word still reads once. The search
+  works for any number of words; tests cover one to five. It visits layouts in a fixed order, so
+  asking again for the same words gives the same answer.
+- No word may use only cells that another word also uses, whichever way either is read and
+  however the cells lie along the other word's path. Such a layout is skipped, and
+  `request(for:)` throws `noRoom` when no other layout exists. 0.17 checks this only on the text
+  of the words, before any layout is tried.
+- `noRoom` thrown by `request(for:)` now means that the set breaks a condition that
+  `accepts(_:firstRule:)` checks, or that the search proved no layout exists.
+- `board(seed:)` runs the layout search of `request(for:)` again, visiting layouts in an order
+  set by the seed, so seeds still place words differently. It never throws: if that search
+  reaches the limit of two million candidate placements described below, the board uses the
+  layout that `request(for:)` found. The search has no clock timeout, only that limit. In the
+  sample above one search, in `request(for:)` or in `board(seed:)`, took at most two seconds in a
+  debug build on an Apple silicon Mac; call both off the main thread.
+- Nonletter characters such as hyphens, and `conditionalCharacters`, still get extra copies
+  outside the words, as in 0.17. Their cells are now chosen during the layout search by trying
+  every way to place them; a set that leaves no room for them throws `noRoom`. A seed therefore
+  never falls back to another seed's board: in 0.17 a seed whose random placements of the copies
+  all failed received the board of seed 0.
+
+### Added
+
+- `BoardGenerator.accepts(_ words: [String], firstRule: WordRule? = nil) -> Bool` checks a
+  word set without building a board, under any generation version. It compares words after
+  `cellUppercased` and checks that they are distinct and at least two letters long, that none
+  contains another as text in the same direction, that each word alone has a path under the
+  rules within `columns` and `maxRows`, or of any height when `maxRows` is `nil` (the first word
+  under `firstRule` when given), and that the filler has a letter no word uses. It does not
+  check reversed text, `downWords` or the overlap rule above. When it returns `false`,
+  `request(for:firstRule:)` throws `noRoom` under every version. When it returns `true`, a
+  layout may still not exist.
+- `BoardGenerator.Failure.unsettled(words:columns:rows:)` is thrown only by
+  `request(for:firstRule:)` of the generators described under Changed, when the search tries two
+  million candidate path placements, a limit that cannot be changed, before it finds a layout or
+  proves there is none. `words` holds the words after `cellUppercased`; `rows` carries
+  `maxRows`. None of the 771 sets above reached the limit.
+
+## [0.17.0] - 2026-10-27
 
 - Nonletter target characters remain cells of their full word paths. Generation 0.17 adds
   at least one additional copy of every such character outside all target paths.

@@ -64,7 +64,11 @@ a wall-clock deadline across application suspension.
 - An optional `maxRows` must be at least `rows`. Set both to the same value for an exact
   height. Bounded requests prepare a checked fallback within that height before returning;
   failure to find one within the preparation budget throws `noRoom`, even if a different
-  packing might exist. Zero attempts or fills still require fallback preparation.
+  packing might exist. Zero attempts or fills still require fallback preparation. With `rules:`,
+  generation `0.18` instead searches every allowed path for any number of words: `noRoom` then
+  means that no layout exists, and ``BoardGenerator/Failure/unsettled(words:columns:rows:)``
+  that the search ran out first. ``BoardGenerator/accepts(_:firstRule:)`` checks the word
+  conditions without a board; a set it rejects always throws.
   Both straight and turned paths support the limit. `.v0p9` rejects it; omitting it preserves
   the existing seed geometry and growing-board behavior.
 - Each generation attempt samples `layoutsPerAttempt` layouts, preferring fewer rows and
@@ -78,7 +82,7 @@ a wall-clock deadline across application suspension.
 
 ### Restoring and pacing
 
-Generation `0.17` retains nonletter characters as ordinary target-path cells and adds at least
+Generations `0.17` and `0.18` retain nonletter characters as ordinary target-path cells and add at least
 one copy of each outside all target paths. `conditionalCharacters` applies the same rule to
 caller-selected letters. Ordinary weighted fill excludes these characters, so an absent
 conditional character never appears on the board. Checked fallbacks retain target uniqueness
@@ -89,19 +93,23 @@ and the extra copies; requests reject layouts that cannot provide them within th
   generator and round. `firstRule` requires the first word to use one particular enabled rule.
 - ``Placement/init(word:cells:)`` retains a full ordered path; `direction` describes its first
   segment and `turns` counts its direction changes. Hints, introduction and selection follow cells.
-- Rule-based requests inspect at most 256 shapes and 100,000 search nodes per initial direction
-  and rule. A request can reject a word when that bounded search finds no unique path. A checked
-  fallback guarantees target uniqueness; dictionary filtering is best effort as with straight boards.
-- A prepared request freezes its checked shapes; board seeds change positions and filler. If all
-  rules have zero turns, generation delegates to the straight generator and selection keeps its
-  start-anchored direction snapping.
+- Generation `0.18` with `rules:` and `maxRows` searches every allowed path, lets no target lie
+  entirely on another target's cells, and repeats the search for each board seed in its own
+  order. All other rule-based requests, including `0.18` without `maxRows`, inspect at most
+  256 shapes and 100,000 search nodes per initial direction and rule and can reject a word when
+  that bounded search finds no unique path. A prepared request then freezes its checked shapes
+  and board seeds change positions and filler; if all rules have zero turns, generation
+  delegates to the straight generator. A checked fallback guarantees target uniqueness;
+  dictionary filtering is best effort as with straight boards. Selection keeps its
+  start-anchored direction snapping for straight rules.
 - ``BoardGenerationVersion`` has stable Codable identifiers. `.v0p9` preserves the released 0.9
   straight generator's fallback draw order; pass the original configuration and words. Rule-based
-  generation accepts `.v0p12`, `.v0p13` and `.v0p17`. Since `0.13` it keeps the best unique-target ordinary fill
+  generation accepts `.v0p12`, `.v0p13`, `.v0p17` and `.v0p18`. Since `0.13` it keeps the best unique-target ordinary fill
   within its search budget, preferring fewer distinct stray words. It uses the isolated filler only
   if no ordinary fill has unique targets. Noise scoring has a deterministic node budget and prunes
-  already counted dictionary words. `.current` names `.v0p17`, not a serialized moving alias.
-  Explicit older versions retain their released seed behavior and do not add conditional copies.
+  already counted dictionary words. `.current` names `.v0p18`, not a serialized moving alias.
+  Explicit older versions retain their released seed behavior; `.v0p9`, `.v0p12` and `.v0p13`
+  do not add conditional copies.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.
   ``BoardGenerationLimits/standard`` exposes the unchanged default search bounds.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced

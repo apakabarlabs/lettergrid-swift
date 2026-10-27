@@ -89,15 +89,17 @@ struct PathBoardBuilder {
 
   func board(
     layout: Layout, filler: LetterWeights, dictionary: WordIndex, seed: UInt64,
-    limits: BoardGenerationLimits
+    limits: BoardGenerationLimits, fixed: [Cell: Character] = [:]
   ) -> Board {
     var random = SeededRandom(seed: seed)
     var best: Board?
     var leastNoise = Int.max
     for _ in 0..<limits.attempts {
-      let compact = lowestLayout(layout, tries: limits.layoutsPerAttempt, using: &random)
+      let compact =
+        generationVersion == .v0p18 && maximumRows != nil
+        ? layout : lowestLayout(layout, tries: limits.layoutsPerAttempt, using: &random)
       for _ in 0..<limits.fillsPerAttempt {
-        let board = filled(compact, with: filler, using: &random)
+        let board = filled(compact, with: filler, fixed: fixed, using: &random)
         guard targetsAreUnique(board) else { continue }
         if generationVersion == .v0p12 {
           if !board.hasStrayWord(in: dictionary, rules: rules) { return board }
@@ -115,7 +117,7 @@ struct PathBoardBuilder {
     guard let free = filler.letters(excluding: Set(layout.placements.map(\.word).joined())) else {
       preconditionFailure("A prepared path layout requires unused filler letters")
     }
-    return filled(layout, with: free, using: &random)
+    return filled(layout, with: free, fixed: fixed, using: &random)
   }
 
   private func candidates(
@@ -241,9 +243,13 @@ struct PathBoardBuilder {
   }
 
   private func filled(
-    _ layout: Layout, with filler: LetterWeights, using random: inout SeededRandom
+    _ layout: Layout, with filler: LetterWeights, fixed: [Cell: Character] = [:],
+    using random: inout SeededRandom
   ) -> Board {
     var letters = Array(repeating: [Character?](repeating: nil, count: columns), count: layout.rows)
+    for (cell, letter) in fixed {
+      letters[cell.row][cell.column] = letter
+    }
     for placement in layout.placements {
       for (cell, letter) in zip(placement.cells, placement.word) {
         letters[cell.row][cell.column] = letter

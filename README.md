@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.17.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.18.0")
 ```
 
 Then add products to your target's dependencies:
@@ -43,11 +43,16 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
 - Directions are opt-in, including diagonals and reverse readings. `columns` is fixed;
   `rows` is a minimum. The board grows downwards to fit the words; read its height from `board.rows`.
 - Set `maxRows: rows` for an exact height, or a larger `maxRows` for a height range.
-  Requests with a height limit retain a checked fallback within that limit. If bounded
-  preparation finds no unique-target layout, `request(for:)` throws `noRoom` before play.
-  A rejected request does not prove that no possible packing exists. The limit must be at
+  Requests with a height limit retain a checked fallback within that limit. The limit must be at
   least `rows`; it is available for both straight and turned paths, except `.v0p9` generation.
   Omitting `maxRows` preserves the existing growing-board behavior and seeded layouts.
+- With `rules:` and a height limit, generation 0.18 searches every path each rule allows, for
+  any number of words. `request(for:)` throws `noRoom` only when the words break a condition
+  below or no layout exists, and `unsettled` when the search ran out first. Earlier versions
+  search a bounded set of shapes, and their `noRoom` does not prove that no layout exists.
+- `accepts(_:firstRule:)` checks a word set without building a board: distinct words, none
+  inside another, a path for each word and filler letters left over. A set it rejects always
+  throws from `request(for:)`; a set it accepts may still have no layout.
 - Every accepted target occurs exactly once along the allowed directions. Removing other
   words from an optional `BoardGenerator` dictionary (`Set<String>`, passed as `dictionary:`) is best effort:
   bounded search falls back to a board that preserves the targets but may contain other words.
@@ -57,12 +62,14 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
   repetitions; its default of `1` leaves weights unchanged.
 - Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
   in one cell even when its capital would expand.
-- In generation `0.17`, nonletter target characters occupy ordinary path cells. Each gets at least
+- In generations `0.17` and `0.18`, nonletter target characters occupy ordinary path cells. Each gets at least
   one additional copy outside all target paths. `conditionalCharacters:` applies the same rule to
   caller-selected letters: filler never places them when they are absent from the targets.
   Conditional characters are excluded from ordinary weighted fill, and added without changing
   target cells or target uniqueness. A checked fallback keeps these guarantees for every seed;
-  a request fails when no checked placement leaves room for the extra copies.
+  a request fails when no checked placement leaves room for the extra copies. In generation
+  0.18 with `rules:` and `maxRows`, the layout search keeps that room itself and every
+  arrangement of the copies is tried, so each seed gets its own board with them.
 
 ## Paths with turns
 
@@ -89,11 +96,12 @@ let round = Round(board: board, rules: [straight, bent])
   turns (0 to 3) with which such a path fits, or `nil` when none does.
 - `firstRule` must be one of the generator's rules and applies to its first word. The vertical
   quota counts words whose first segment runs up or down, including turned words.
-- Requests check a bounded set of path shapes and reject words for which no checked unique
-  placement fits. Accepted requests retain a fallback with unique targets. Fallback dictionary
-  filtering remains best effort. Compact layouts prefer matching crossings within their height.
-- A prepared turned request freezes its checked shapes. Board seeds vary their positions and
-  filler. If every rule has zero turns, generation uses the existing straight generator.
+- Words may cross only on equal letters. Fallback dictionary filtering remains best effort.
+- In generation 0.18 with `maxRows`, no target may lie entirely on the cells of another, read in
+  any enabled direction, and each board seed searches the layout again in its own order, so
+  seeds vary where the words lie. Otherwise a prepared turned request freezes its checked shapes
+  and seeds vary their positions within the height; if every rule has zero turns, generation
+  uses the straight generator.
 - Turned generation keeps the unique-target weighted fill with the fewest distinct stray words
   found within the configured attempts. A clean fill returns immediately. Letters absent from all
   targets are used only when no ordinary fill has unique targets. Noise scoring prunes known words
@@ -128,9 +136,10 @@ These report invalid data without clearing it. Nonthrowing `Board(letters:placem
 
 For seed-only data created with 0.9, use the `directions:` generator initializer with
 `generationVersion: .v0p9` and exactly its original settings and words. This retains the old
-fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13` and `.v0p17`; the former retains
-the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12`, `0.13` and `0.17`.
-Persist `BoardGenerationVersion.current`, whose value is `.v0p17`, rather than the text `current`.
+fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13`, `.v0p17` and `.v0p18`;
+the first retains the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12`, `0.13`,
+`0.17` and `0.18`. Persist `BoardGenerationVersion.current`, whose value is `.v0p18`, rather than
+the text `current`.
 Explicit older versions retain their original fill, including targets with separators.
 
 Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock

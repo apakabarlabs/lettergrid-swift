@@ -1,0 +1,105 @@
+- name: two short words lie in the two rows of a square
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [0, 2]
+  words: [AB, CD]
+  outcome: placed
+- name: a search allowed no step settles nothing even where a layout exists
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [0, 2]
+  words: [AB, CD]
+  nodeLimit: 0
+  outcome: undetermined
+- name: a word longer than any straight line has no path
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [0, 2]
+  words: [ABC]
+  outcome: impossible
+- name: one turn lets the same word bend into the square
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, down], turns: 1}]
+  downWords: [0, 2]
+  words: [ABC]
+  outcome: placed
+- name: two words share the cell where their common letter stands
+  columns: 3
+  rows: 3
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [1, 1]
+  words: [ABC, DBE]
+  outcome: placed
+- name: a third word finds no row left clear of the crossing column
+  columns: 3
+  rows: 3
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [1, 1]
+  words: [ABC, DBE, FGH]
+  outcome: impossible
+- name: a vertical quota no allowed direction can meet
+  columns: 2
+  rows: 2
+  rules: [{directions: [right], turns: 0}]
+  downWords: [1, 1]
+  words: [AB]
+  outcome: impossible
+- name: a word read backwards is the other target
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, left, down, up], turns: 0}]
+  downWords: [0, 2]
+  words: [AB, BA]
+  outcome: impossible
+- name: a word read backwards inside a longer one has no cells of its own
+  columns: 3
+  rows: 1
+  rules: [{directions: [right, left], turns: 0}]
+  downWords: [0, 0]
+  words: [ABC, BA]
+  outcome: impossible
+- name: two words on the same four cells leave one inside the other
+  columns: 2
+  rows: 2
+  rules: [{directions: [right, down], turns: 2}]
+  downWords: [1, 1]
+  words: [ABCD, ADCB]
+  outcome: impossible
+- name: a word read backwards at the end of another lies inside it however that one bends
+  columns: 7
+  rows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [up_left, up_right], turns: 0}
+  - {directions: [right, down], turns: 1}
+  - {directions: [down_right, down_left], turns: 1}
+  - {directions: [left, up], turns: 1}
+  - {directions: [up_left, up_right], turns: 1}
+  downWords: [1, 2]
+  words: [KERING, ROTÁL, LÁT]
+  outcome: impossible
+- name: a full diagonal leaves no full line that agrees with it
+  columns: 7
+  rows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  firstRule: {directions: [down_right, down_left], turns: 0}
+  downWords: [1, 2]
+  words: [FIXTURE, VENEER, BEDDING]
+  outcome: impossible
+- name: the same words fit once the first may lie straight
+  columns: 7
+  rows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  downWords: [1, 2]
+  words: [FIXTURE, VENEER, BEDDING]
+  outcome: placed
