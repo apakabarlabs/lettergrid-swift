@@ -28,7 +28,18 @@ public struct WordRule: Hashable, Sendable {
     ).cells().isEmpty
   }
 
-  public var isValid: Bool { !startDirections.isEmpty && (0...3).contains(turns) }
+  public static func minimumTurns(
+    toFit length: Int, startDirections: [Direction], columns: Int, maximumRows: Int? = nil
+  ) -> Int? {
+    supportedTurns.first {
+      WordRule(startDirections: startDirections, turns: $0)
+        .canFit(length: length, columns: columns, maximumRows: maximumRows)
+    }
+  }
+
+  public static let supportedTurns = 0...3
+
+  public var isValid: Bool { !startDirections.isEmpty && Self.supportedTurns.contains(turns) }
   public var minimumLength: Int { isValid ? turns + 2 : Int.max }
 }
 

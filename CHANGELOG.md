@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.16.0] - 2026-10-27
+
+### Added
+
+- `WordRule.minimumTurns(toFit:startDirections:columns:maximumRows:)` is a static function:
+  given a word length (`toFit`), the directions its first segment may take, the grid width
+  and an optional height limit, it returns the fewest 90-degree turns, from 0 to 3, with
+  which one path of that length fits an empty grid. It returns `nil` when no supported
+  turn count fits. It asks `canFit(length:columns:maximumRows:)` for each turn count in
+  turn, so it shares that check's limits: no letter content, no packing of several words,
+  a `nil` height limit allows vertical growth, and the answer is deterministic.
+  On a 7×7 grid the longest word that fits, starting right, has 7 letters straight,
+  13 with one turn, 19 with two and 24 with three.
+- `WordRule.supportedTurns` is the `ClosedRange<Int>` `0...3` of turn counts a rule may have.
+- The package now declares Yams 6.2.2 or later for its tests. SwiftPM resolves it for
+  packages that depend on LetterGrid as well, though no LetterGrid target links it.
+
+Existing calls need no changes.
+
 ## [0.15.0] - 2026-10-26
 
 ### Added

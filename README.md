@@ -79,6 +79,8 @@ let round = Round(board: board, rules: [straight, bent])
   It has no random choices or search budget; cache results for the lengths and dimensions
   you use. A nil height limit allows vertical growth. Letter content, multiword packing
   and quotas are not checked, so this does not guarantee that a board request will succeed.
+- `WordRule.minimumTurns(toFit:startDirections:columns:maximumRows:)` returns the fewest
+  turns (0 to 3) with which such a path fits, or `nil` when none does.
 - `firstRule` must be one of the generator's rules and applies to its first word. The vertical
   quota counts words whose first segment runs up or down, including turned words.
 - Requests check a bounded set of path shapes and reject words for which no checked unique

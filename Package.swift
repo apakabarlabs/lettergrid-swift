@@ -10,12 +10,14 @@ let package = Package(
     .library(name: "LetterGridUI", targets: ["LetterGridUI"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+    .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0"),
+    .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2"),
   ],
   targets: [
     .target(name: "LetterGrid"),
     .target(name: "LetterGridUI", dependencies: ["LetterGrid"]),
-    .testTarget(name: "LetterGridTests", dependencies: ["LetterGrid"]),
+    .testTarget(
+      name: "LetterGridTests", dependencies: ["LetterGrid", "Yams"], resources: [.copy("Fixtures")]),
     .executableTarget(
       name: "LetterGridBenchmarks", dependencies: ["LetterGrid"], path: "Benchmarks"),
   ]
