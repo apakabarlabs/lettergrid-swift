@@ -127,7 +127,7 @@ struct TurnPathIntegrationTests {
     let rule = WordRule(startDirections: [.right, .down])
     let generator = BoardGenerator(
       columns: 4, rows: 4, rules: [rule],
-      filler: try LetterWeights(["x": 1]), downWords: 1...1,
+      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...1,
       attempts: 1, fillsPerAttempt: 1)
     let board = try generator.request(for: ["CAT", "TAR"]).board(seed: 17)
     #expect(!Set(board.placements[0].cells).isDisjoint(with: board.placements[1].cells))

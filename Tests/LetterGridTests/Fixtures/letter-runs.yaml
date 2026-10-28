@@ -1,0 +1,30 @@
+- name: filler extends a target's doubled letter
+  letters: [TOOO]
+  placements:
+    - {word: TOO, row: 0, column: 0, direction: right}
+  forbidden: true
+- name: a target's own triple is retained
+  letters: [BZZZ]
+  placements:
+    - {word: BZZZ, row: 0, column: 0, direction: right}
+  forbidden: false
+- name: filler extends a target's triple
+  letters: [BZZZZ]
+  placements:
+    - {word: BZZZ, row: 0, column: 0, direction: right}
+  forbidden: true
+- name: three target words create a crossing run
+  letters: [TTT, ABC]
+  placements:
+    - {word: TA, row: 0, column: 0, direction: down}
+    - {word: TB, row: 0, column: 1, direction: down}
+    - {word: TC, row: 0, column: 2, direction: down}
+  forbidden: true
+- name: diagonal filler run
+  letters: [TXY, ZTW, QRT]
+  placements: []
+  forbidden: true
+- name: dense field without a triple
+  letters: [XXY, YXX, XYY]
+  placements: []
+  forbidden: false

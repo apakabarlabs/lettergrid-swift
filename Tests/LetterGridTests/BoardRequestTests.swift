@@ -12,7 +12,8 @@ struct BoardRequestTests {
 
   @Test func aPreparedRequestRetainsItsGenerationSettings() throws {
     let request = try BoardGenerator(
-      columns: 3, rows: 4, directions: [.down], filler: LetterWeights(["x": 1]),
+      columns: 3, rows: 4, directions: [.down],
+      filler: LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]),
       downWords: 2...2, attempts: 0
     ).request(for: ["CAT", "DOG"])
 

@@ -1,0 +1,20 @@
+- name: clean fill beats a weighted noisy alternative
+  letters: ABXXX
+  word: AB
+  weights: {X: 100, Y: 1, Z: 1}
+  dictionary: [XY, YX, XZ, ZX]
+  expectedNoise: 0
+- name: dictionary noise is minimized among pair-free fills
+  letters: ABXXX
+  word: AB
+  weights: {X: 100, Y: 1, Z: 1}
+  dictionary: [XY, YX, XZ, ZX, YZ]
+  expectedNoise: 1
+- name: a conditional copy moves away from its target letter
+  letters: AÉÉXX
+  word: AÉ
+  weights: {X: 1, Y: 1, É: 1}
+  dictionary: []
+  conditional: É
+  expectedNoise: 0
+  expectedPairs: 0

@@ -47,9 +47,14 @@ struct BoardGeneratorTests {
     let generator = BoardGenerator(
       columns: 6, rows: 6, directions: [.right, .down], filler: filler, dictionary: dictionary)
 
+    let prepared = try generator.request(for: words)
+    let checked = prepared.board(seed: 0)
+    #expect(checked.strayWords(of: dictionary, along: [.right, .down]).isEmpty)
     for seed in 1...20 {
       let board = try generator.board(for: words, seed: UInt64(seed))
-      #expect(board.strayWords(of: dictionary, along: [.right, .down]).isEmpty)
+      #expect(
+        board.strayWords(of: dictionary, along: [.right, .down]).isEmpty,
+        "seed \(seed), letters \(board.letters.map { String($0) }), placements \(board.placements)")
     }
   }
 

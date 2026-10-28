@@ -25,7 +25,7 @@ Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 Add the package dependency:
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.18.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.19.0")
 ```
 
 Then add products to your target's dependencies:
@@ -45,8 +45,9 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
 - Set `maxRows: rows` for an exact height, or a larger `maxRows` for a height range.
   Requests with a height limit retain a checked fallback within that limit. The limit must be at
   least `rows`; it is available for both straight and turned paths, except `.v0p9` generation.
-  Omitting `maxRows` preserves the existing growing-board behavior and seeded layouts.
-- With `rules:` and a height limit, generation 0.18 searches every path each rule allows, for
+  Without `maxRows`, the board may grow. Pin a saved game's generation version to retain
+  its released seeded layouts.
+- With `rules:` and a height limit, generations 0.18 and 0.19 search every path each rule allows, for
   any number of words. `request(for:)` throws `noRoom` only when the words break a condition
   below or no layout exists, and `unsettled` when the search ran out first. Earlier versions
   search a bounded set of shapes, and their `noRoom` does not prove that no layout exists.
@@ -60,9 +61,15 @@ and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentat
   must include a letter absent from all targets. Invalid inputs throw before generation.
 - Filler weights must be positive and finite. `LetterWeights.sameNeighbour` in `(0, 1]` reduces adjacent
   repetitions; its default of `1` leaves weights unchanged.
+- Generation `0.19` forbids filler from creating three equal letters in a straight line,
+  including diagonals and lines crossing several target words. A run belonging to one
+  target word is retained, but filler cannot extend it. Filling first searches without
+  equal neighbouring letters, then permits pairs while still forbidding added triples.
+  Preparation retains a checked fallback. It throws `unsettled` if its bounded search
+  cannot prepare one; `board(seed:)` never returns a field with an added triple.
 - Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
   in one cell even when its capital would expand.
-- In generations `0.17` and `0.18`, nonletter target characters occupy ordinary path cells. Each gets at least
+- In generations `0.17` through `0.19`, nonletter target characters occupy ordinary path cells. Each gets at least
   one additional copy outside all target paths. `conditionalCharacters:` applies the same rule to
   caller-selected letters: filler never places them when they are absent from the targets.
   Conditional characters are excluded from ordinary weighted fill, and added without changing
@@ -136,9 +143,9 @@ These report invalid data without clearing it. Nonthrowing `Board(letters:placem
 
 For seed-only data created with 0.9, use the `directions:` generator initializer with
 `generationVersion: .v0p9` and exactly its original settings and words. This retains the old
-fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13`, `.v0p17` and `.v0p18`;
+fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13`, `.v0p17`, `.v0p18` and `.v0p19`;
 the first retains the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12`, `0.13`,
-`0.17` and `0.18`. Persist `BoardGenerationVersion.current`, whose value is `.v0p18`, rather than
+`0.17`, `0.18` and `0.19`. Persist `BoardGenerationVersion.current`, whose value is `.v0p19`, rather than
 the text `current`.
 Explicit older versions retain their original fill, including targets with separators.
 

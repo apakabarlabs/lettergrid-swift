@@ -48,6 +48,10 @@ a wall-clock deadline across application suspension.
 
 ### Generation and selection
 
+- Generation `0.19` forbids added runs of three equal letters along any straight direction.
+  Runs contained in one target word remain, but filler cannot extend them. Filling first
+  tries to avoid equal neighbours, then permits pairs when that search fails. Requests
+  retain a checked fallback and throw `unsettled` if bounded preparation cannot find one.
 - Directions are opt-in. The vertical quota counts only `.up` and `.down`; their serialized
   names are the case names, while diagonals use `down_right`, `down_left`, `up_left` and `up_right`.
 - A palindrome occurs once even when both directions of its line are enabled, and can be
@@ -82,7 +86,7 @@ a wall-clock deadline across application suspension.
 
 ### Restoring and pacing
 
-Generations `0.17` and `0.18` retain nonletter characters as ordinary target-path cells and add at least
+Generations `0.17` through `0.19` retain nonletter characters as ordinary target-path cells and add at least
 one copy of each outside all target paths. `conditionalCharacters` applies the same rule to
 caller-selected letters. Ordinary weighted fill excludes these characters, so an absent
 conditional character never appears on the board. Checked fallbacks retain target uniqueness
@@ -93,8 +97,8 @@ and the extra copies; requests reject layouts that cannot provide them within th
   generator and round. `firstRule` requires the first word to use one particular enabled rule.
 - ``Placement/init(word:cells:)`` retains a full ordered path; `direction` describes its first
   segment and `turns` counts its direction changes. Hints, introduction and selection follow cells.
-- Generation `0.18` with `rules:` and `maxRows` searches every allowed path, lets no target lie
-  entirely on another target's cells, and repeats the search for each board seed in its own
+- Generations `0.18` and `0.19` with `rules:` and `maxRows` search every allowed path, let no target lie
+  entirely on another target's cells, and repeat the search for each board seed in its own
   order. All other rule-based requests, including `0.18` without `maxRows`, inspect at most
   256 shapes and 100,000 search nodes per initial direction and rule and can reject a word when
   that bounded search finds no unique path. A prepared request then freezes its checked shapes
@@ -104,10 +108,10 @@ and the extra copies; requests reject layouts that cannot provide them within th
   start-anchored direction snapping for straight rules.
 - ``BoardGenerationVersion`` has stable Codable identifiers. `.v0p9` preserves the released 0.9
   straight generator's fallback draw order; pass the original configuration and words. Rule-based
-  generation accepts `.v0p12`, `.v0p13`, `.v0p17` and `.v0p18`. Since `0.13` it keeps the best unique-target ordinary fill
+  generation accepts `.v0p12`, `.v0p13`, `.v0p17`, `.v0p18` and `.v0p19`. Since `0.13` it keeps the best unique-target ordinary fill
   within its search budget, preferring fewer distinct stray words. It uses the isolated filler only
   if no ordinary fill has unique targets. Noise scoring has a deterministic node budget and prunes
-  already counted dictionary words. `.current` names `.v0p18`, not a serialized moving alias.
+  already counted dictionary words. `.current` names `.v0p19`, not a serialized moving alias.
   Explicit older versions retain their released seed behavior; `.v0p9`, `.v0p12` and `.v0p13`
   do not add conditional copies.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.

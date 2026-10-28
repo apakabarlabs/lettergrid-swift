@@ -24,6 +24,7 @@ struct PathSearch {
   let board: Board
   let rules: [WordRule]
   var maximumReadings = Int.max
+  var letters: ((Cell) -> Character?)?
 
   func readings(in index: WordIndex) -> [Placement] {
     var found: Set<Placement> = []
@@ -51,7 +52,9 @@ struct PathSearch {
       for row in 0..<board.rows {
         for column in 0..<board.columns {
           let start = Cell(row: row, column: column)
-          guard let node = index.next(after: 0, letter: board[start]), !visitor.skips(node) else {
+          guard let letter = letter(at: start),
+            let node = index.next(after: 0, letter: letter), !visitor.skips(node)
+          else {
             continue
           }
           enter(start, &trail)
@@ -85,8 +88,8 @@ struct PathSearch {
     let canTurn = length > 1 && turns < rule.maximum
     for way in [direction] + (canTurn ? direction.perpendiculars : []) {
       let next = last.moved(way, by: 1)
-      guard board.contains(next), !trail.visited[slot(of: next)],
-        let child = index.next(after: node, letter: board[next]), !visitor.skips(child)
+      guard board.contains(next), !trail.visited[slot(of: next)], let letter = letter(at: next),
+        let child = index.next(after: node, letter: letter), !visitor.skips(child)
       else { continue }
       enter(next, &trail)
       walk(
@@ -98,6 +101,11 @@ struct PathSearch {
   }
 
   private func slot(of cell: Cell) -> Int { cell.row * board.columns + cell.column }
+
+  private func letter(at cell: Cell) -> Character? {
+    if let letters { return letters(cell) }
+    return board[cell]
+  }
 
   private func enter(_ cell: Cell, _ trail: inout Trail) {
     trail.cells.append(cell)

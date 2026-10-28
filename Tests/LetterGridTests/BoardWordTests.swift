@@ -15,7 +15,7 @@ struct BoardWordTests {
   func onlyReadingsInsideAParallelPlacementAreExcluded(_ direction: Direction) throws {
     let generator = BoardGenerator(
       columns: 7, rows: 7, directions: [direction, direction.opposite],
-      filler: try LetterWeights(["x": 1]))
+      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]))
     let dictionary: Set<String> = ["L", "LE", "EVE", "LEVEL", "CAT", "TAC", "AT", "SUN", "NU"]
     for seed: UInt64 in 1...10 {
       let board = try generator.board(for: ["LEVEL", "CAT", "SUN"], seed: seed)

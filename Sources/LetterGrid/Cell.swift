@@ -22,6 +22,10 @@ public enum Direction: String, CaseIterable, Sendable, Decodable {
   case upLeft = "up_left"
   case upRight = "up_right"
 
+  static var lineAxes: [Direction] {
+    allCases.filter { $0.rowStep > 0 || ($0.rowStep == 0 && $0.columnStep > 0) }
+  }
+
   public var rowStep: Int {
     switch self {
     case .right, .left: 0

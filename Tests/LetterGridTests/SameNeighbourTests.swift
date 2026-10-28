@@ -9,7 +9,8 @@ struct SameNeighbourTests {
   private func repeatedNeighbours(sameNeighbour: Double) throws -> Int {
     let generator = BoardGenerator(
       columns: 7, rows: 7, directions: [.right, .down],
-      filler: try LetterWeights(weights, sameNeighbour: sameNeighbour), downWords: 1...2)
+      filler: try LetterWeights(weights, sameNeighbour: sameNeighbour), downWords: 1...2,
+      generationVersion: .v0p18)
     let request = try generator.request(for: words)
     var repeats = 0
     for seed in 1...40 {

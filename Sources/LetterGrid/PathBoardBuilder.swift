@@ -18,6 +18,7 @@ struct PathBoardBuilder {
   var downWords: ClosedRange<Int> = 0...Int.max
   var generationVersion: BoardGenerationVersion = .current
   var maximumRows: Int?
+  var avoidsTargetRuns = false
 
   func preparedLayout(
     for words: [String], firstRule: WordRule?, filler: LetterWeights,
@@ -150,6 +151,7 @@ struct PathBoardBuilder {
       ).cells(seed: seed) {
         let placement = Placement(word: word, cells: cells)
         let layout = Layout(rows: (cells.map(\.row).max() ?? 0) + 1, placements: [placement])
+        if avoidsTargetRuns, layout.hasForbiddenTargetRun(columns: columns) { continue }
         let board = filled(layout, with: filler, using: &random)
         if Set(word).count == word.count || board.hasSingleOccurrence(of: word, rules: rules) {
           return placement
@@ -160,7 +162,9 @@ struct PathBoardBuilder {
   }
 
   private func targetsAreUnique(_ board: Board) -> Bool {
-    board.placements.allSatisfy { board.hasSingleOccurrence(of: $0.word, rules: rules) }
+    let layout = Layout(rows: board.rows, placements: board.placements)
+    return (!avoidsTargetRuns || !layout.hasForbiddenTargetRun(columns: columns))
+      && board.placements.allSatisfy { board.hasSingleOccurrence(of: $0.word, rules: rules) }
   }
 
   private func lowestLayout(
@@ -169,6 +173,7 @@ struct PathBoardBuilder {
     var best: Layout?
     for _ in 0..<max(1, tries) {
       guard let candidate = compacted(fallback, using: &random) else { continue }
+      if avoidsTargetRuns, candidate.hasForbiddenTargetRun(columns: columns) { continue }
       if best.map({
         candidate.rows < $0.rows
           || (candidate.rows == $0.rows && candidate.sharedCells > $0.sharedCells)
@@ -242,6 +247,9 @@ struct PathBoardBuilder {
     return candidates
   }
 
+}
+
+extension PathBoardBuilder {
   private func filled(
     _ layout: Layout, with filler: LetterWeights, fixed: [Cell: Character] = [:],
     using random: inout SeededRandom

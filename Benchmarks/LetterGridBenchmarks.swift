@@ -103,10 +103,37 @@ struct LetterGridBenchmarks {
         columns: 7, rows: 7, maxRows: 7, rules: Array(rules.prefix(allowed)),
         filler: try LetterWeights(["q": 1, "w": 1]),
         downWords: 1...2)
-      try measure("packedRequest \(words.joined(separator: " "))", iterations: 3) {
+      try measureWorst("packed request \(words.joined(separator: " "))", iterations: 8) { _ in
         try generator.request(for: words).words.count
       }
+      let request = try generator.request(for: words)
+      let dictionary = BoardDictionary(Set(words))
+      measureWorst("packed board \(words.joined(separator: " "))", iterations: 8) { seed in
+        request.board(seed: UInt64(seed), dictionary: dictionary).rows
+      }
     }
+  }
+
+  @MainActor
+  static func measureWorst(
+    _ name: String, iterations: Int, operation: (Int) throws -> Int
+  ) rethrows {
+    var slowest = 0.0
+    var slowestInput = 0
+    var checksum = 0
+    for index in 0..<iterations {
+      let duration = try ContinuousClock().measure { checksum &+= try operation(index) }.components
+      let milliseconds =
+        (Double(duration.seconds) + Double(duration.attoseconds) / 1e18) * 1000
+      if milliseconds > slowest {
+        slowest = milliseconds
+        slowestInput = index
+      }
+    }
+    let line =
+      "\(name): worst_single=\(String(format: "%.6f", slowest)) ms; "
+      + "input=\(slowestInput); samples=\(iterations); checksum=\(checksum)\n"
+    FileHandle.standardOutput.write(Data(line.utf8))
   }
 
   @MainActor

@@ -6,7 +6,7 @@ struct DiagonalTests {
   @Test func aRequiredFirstDirectionKeepsWordOrderAndVerticalQuota() throws {
     let generator = BoardGenerator(
       columns: 7, rows: 7, directions: [.right, .down, .downRight, .downLeft],
-      filler: try LetterWeights(["x": 1]), downWords: 1...2)
+      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...2)
     for direction in [Direction.right, .down, .downRight, .downLeft] {
       for seed in 1...10 {
         let board = try generator.board(

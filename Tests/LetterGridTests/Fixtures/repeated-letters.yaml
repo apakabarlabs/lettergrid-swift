@@ -1,0 +1,32 @@
+- name: doubled letter in a target
+  words: [BOOK, SEAT]
+  columns: 7
+  rows: 4
+  weights: {O: 100, X: 1, Y: 1, Z: 1, Q: 1}
+  turns: 0
+- name: crossings of repeated target letters
+  words: [TENT, TART, TEST]
+  columns: 7
+  rows: 5
+  weights: {T: 100, X: 1, Y: 1, Z: 1, Q: 1}
+  turns: 0
+- name: dense turned board
+  words: [PLANET, COMET, ORBIT]
+  columns: 5
+  rows: 5
+  weights: {T: 100, X: 1, Y: 1, Z: 1, Q: 1}
+  turns: 1
+- name: pairs are unnecessary with two filler letters in a single row
+  words: [AB]
+  columns: 6
+  rows: 1
+  weights: {X: 1, Y: 1}
+  turns: 0
+  avoidsPairs: true
+- name: pairs are unnecessary along every axis of a square
+  words: [AB]
+  columns: 2
+  rows: 2
+  weights: {X: 1, Y: 1}
+  turns: 0
+  avoidsPairs: true

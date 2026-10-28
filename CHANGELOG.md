@@ -1,5 +1,35 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.19.0] - 2026-10-28
+
+### Changed
+
+- New generators use generation `0.19` (`BoardGenerationVersion.v0p19`). Filler no longer
+  creates three equal letters in a horizontal, vertical or diagonal line, including
+  lines crossing target words. An existing run is allowed only when its three cells
+  follow one target's path; crossing several targets does not qualify. Filler cannot
+  extend a target's run. Filling first searches without equal neighbours. Pairs remain
+  allowed when that search rules out a pair-free fill or exhausts its budget; added
+  triples remain forbidden.
+- Every generation `0.19` request, with or without `maxRows`, prepares a fallback meeting
+  these constraints before returning. Preparation tries eight seeds; each
+  refill strategy tries at most 32 times the number of empty cells times the number of
+  available filler characters (ordinary letters and required extra copies), and scores
+  at most 20 complete candidates. Required copies are placed by the same search rather
+  than frozen beside a target. These extra
+  limits are fixed; existing generator limits still apply to the preceding layout
+  search. A request throws `unsettled` if preparation cannot find a checked fallback,
+  including for filler alphabets that previously needed runs. `board(seed:)` remains
+  nonthrowing and uses that fallback when its seeded refill runs out.
+- A seeded fill also keeps the fallback when it avoids added equal neighbours and the
+  new fill does not. When both have pairs or both avoid them, the fill with fewer distinct
+  stray dictionary words wins; ties retain the seeded fill.
+- Seed-only games must retain their saved generation version, for example
+  `generationVersion: .v0p18`. Explicit generations `0.9` through `0.18` keep their
+  released boards. Earlier library releases cannot decode the new `"0.19"` value.
+
 ## [0.18.1] - 2026-10-27
 
 ### Changed
@@ -88,7 +118,8 @@ to `v0p9`, `v0p12`, `v0p13` or `v0p17`, makes the same boards as in 0.17.
 - `BoardGenerator.conditionalCharacters` applies the same policy to caller-selected letters:
   they never appear in ordinary fill when absent from the targets. Checked requests retain
   a fallback with unique targets and the required extra copies, or reject when no checked
-  placement leaves room for them.
+  placement leaves room for them. Rejection throws `BoardGenerator.Failure.noRoom`;
+  provide more room or choose words whose required copies fit outside their paths.
 - `BoardGenerationVersion.current` is now `v0p17`; explicit 0.9, 0.12 and 0.13 generation
   retains its released behavior. Ordinary targets without conditional characters retain
   their existing seeded boards.
@@ -376,8 +407,10 @@ Existing calls need no changes.
   multiplied by `sameNeighbour` once for each of the eight neighbouring cells already
   holding that letter, hidden word or filler. The factor must be above 0 and at most 1, so
   no letter is ever ruled out. With the default of 1 every board is the same as in 0.5.0.
-  With a smaller factor the filler letters differ, and now and then where the words stand,
-  so do not compare such boards with ones you stored before.
+  With a smaller factor the filler letters differ, and now and then where the words stand.
+  To preserve an existing seed-only game, generate and save its letters and placements
+  with the old settings before changing the factor. Already saved letters and placements
+  remain unchanged.
 
   ```swift
   let filler = try LetterWeights(["a": 8.2, "e": 12.7, "q": 0.1], sameNeighbour: 0.2)
@@ -423,8 +456,10 @@ Existing calls need no changes.
   as letters for a diagonal, with an empty row between bands.
   Two words running down and one diagonal, six letters each, on a grid seven columns wide
   take 6 + 1 + 6 = 13 rows instead of 6 + 1 + 6 + 1 + 6 = 20.
-- Boards the search finds are the same as in 0.4.0. A fallback board for the same seed is
-  not: if you store fallback boards or compare them in tests, expect the new layout.
+- Boards the search finds are the same as in 0.4.0. A fallback board regenerated from the
+  same seed differs. To preserve a seed-only game, generate and save its letters and
+  placements with 0.4.0 before upgrading. Already saved letters and placements remain
+  unchanged.
 
 ## [0.4.0] - 2026-10-21
 

@@ -6,7 +6,7 @@ struct FallbackNeighbourTests {
     let generator = BoardGenerator(
       columns: 7, rows: 7, directions: [.right, .down],
       filler: try LetterWeights(["x": 8, "y": 12, "z": 9, "q": 6], sameNeighbour: sameNeighbour),
-      downWords: 1...2, attempts: 0)
+      downWords: 1...2, attempts: 0, generationVersion: .v0p18)
     return try (1...40).reduce(0) { total, seed in
       let board = try generator.board(for: ["TUBA", "SEAT", "MUST"], seed: UInt64(seed))
       return total
