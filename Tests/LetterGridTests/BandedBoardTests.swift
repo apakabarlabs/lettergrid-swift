@@ -12,8 +12,7 @@ struct BandedBoardTests {
   ]
 
   private func generator(
-    directions: [Direction], downWords: ClosedRange<Int>, maxRows: Int? = nil,
-    generationVersion: BoardGenerationVersion = .current
+    directions: [Direction], downWords: ClosedRange<Int>, maxRows: Int? = nil
   ) throws -> BoardGenerator {
     var weights = Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) })
     weights["z"] = 0.5
@@ -21,7 +20,7 @@ struct BandedBoardTests {
       columns: 7, rows: 7, maxRows: maxRows, directions: directions,
       filler: try LetterWeights(weights),
       dictionary: Set(alphabet.flatMap { a in alphabet.map { b in String([a, b, a]) } }),
-      downWords: downWords, attempts: 0, generationVersion: generationVersion)
+      downWords: downWords, attempts: 0)
   }
 
   private func words(using random: inout SeededRandom) -> [String] {
@@ -100,67 +99,6 @@ struct BandedBoardTests {
       }
     }
     #expect(built > 100)
-  }
-
-  private struct PreparationCounts {
-    var accepted = 0
-    var noRoom = 0
-    var unsettled = 0
-  }
-
-  @Test func newPreparationRetainsThePreviousGenerationsPlayableRequests() throws {
-    var random = SeededRandom(seed: 2027)
-    var previous = PreparationCounts()
-    var current = PreparationCounts()
-    var regressions: [String] = []
-    var fixedTargetRuns = 0
-    for directions in directionSets {
-      for downWords in [0...2, 1...2] {
-        let old = try generator(
-          directions: directions, downWords: downWords, maxRows: 7, generationVersion: .v0p18)
-        let new = try generator(directions: directions, downWords: downWords, maxRows: 7)
-        for _ in 0..<30 {
-          let words = words(using: &random)
-          let first = directions.randomElement(using: &random)
-          let before = try prepared(old, words: words, first: first, counts: &previous)
-          let after = try prepared(new, words: words, first: first, counts: &current)
-          if let before, after == nil {
-            let board = before.board(seed: 1)
-            if containsTargetRun(board) { fixedTargetRuns += 1 }
-            regressions.append(
-              "\(words), directions \(directions), quota \(downWords), first \(String(describing: first)), "
-                + "old field \(board.letters.map { String($0) }), targets \(board.placements)")
-          }
-          _ = random.next()
-        }
-      }
-    }
-    #expect(
-      current.unsettled <= previous.unsettled,
-      "0.18: \(previous); 0.19: \(current); fixed target runs \(fixedTargetRuns)")
-    #expect(regressions.isEmpty, "\(regressions.joined(separator: "\n"))")
-  }
-
-  private func containsTargetRun(_ board: Board) -> Bool {
-    return LetterRuns(
-      placements: board.placements, columns: board.columns, rows: board.rows
-    ).containsForbiddenRun(in: board.placementLetters)
-  }
-
-  private func prepared(
-    _ generator: BoardGenerator, words: [String], first: Direction?, counts: inout PreparationCounts
-  ) throws -> BoardRequest? {
-    do {
-      let request = try generator.request(for: words, firstDirection: first)
-      counts.accepted += 1
-      return request
-    } catch BoardGenerator.Failure.noRoom(_, _, _) {
-      counts.noRoom += 1
-      return nil
-    } catch BoardGenerator.Failure.unsettled(_, _, _) {
-      counts.unsettled += 1
-      return nil
-    }
   }
 
   @Test func downWordsStandSideBySideSoTheBoardIsOnlyAsTallAsTheLongest() throws {

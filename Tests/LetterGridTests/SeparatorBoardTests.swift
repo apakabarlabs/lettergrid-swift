@@ -17,10 +17,7 @@ struct SeparatorBoardTests {
     let rejects: Bool?
     let conditional: [String]?
     let weights: [String: Double]?
-    let version: String?
-    let decoys: Bool?
     let layouts: Int?
-    let probeFallback: Bool?
   }
 
   @Test func separatorsHaveDecoysAndRemainCellsOfTheFoundPath() throws {
@@ -41,8 +38,6 @@ struct SeparatorBoardTests {
       rules: [rule], filler: try LetterWeights(example.weights ?? ["x": 1, "q": 1]),
       layoutsPerAttempt: example.layouts ?? 40,
       attempts: example.fallback ? 0 : 2, fillsPerAttempt: 2,
-      generationVersion: example.version.flatMap(BoardGenerationVersion.init(rawValue:))
-        ?? .current,
       conditionalCharacters: conditional)
     if example.rejects == true {
       #expect(throws: BoardGenerator.Failure.self) { try generator.request(for: example.words) }
@@ -56,32 +51,6 @@ struct SeparatorBoardTests {
       checkCopies(on: board, symbols: symbols, targets: targets, example: example)
       checkPaths(on: board, rule: rule, name: example.name)
     }
-    if example.probeFallback == true {
-      try checkConditionalFallback(generator: generator, request: request)
-    }
-  }
-
-  private func checkConditionalFallback(generator: BoardGenerator, request: BoardRequest) throws {
-    let ordinary = BoardGenerator(
-      columns: generator.columns, rows: generator.rows, maxRows: generator.maxRows,
-      rules: generator.rules, filler: generator.filler, downWords: generator.downWords,
-      layoutsPerAttempt: generator.layoutsPerAttempt, attempts: generator.attempts,
-      fillsPerAttempt: generator.fillsPerAttempt, generationVersion: .v0p13)
-    let raw = try ordinary.request(for: request.words)
-    let required = Set(request.words.joined().filter { !$0.isLetter }).count
-    let fallback = request.board(seed: 0)
-    var exercised = false
-    for seed in UInt64(1)...200 {
-      let board = raw.board(seed: seed)
-      let occupied = Set(board.placements.flatMap(\.cells)).count
-      if board.rows * board.columns - occupied < required {
-        #expect(request.board(seed: seed) == fallback)
-        exercised = true
-        break
-      }
-    }
-    #expect(
-      exercised, "The fixture must force the conditional fallback, not the ordinary fallback.")
   }
 
   private func checkPaths(on board: Board, rule: WordRule, name: String) {
@@ -107,10 +76,8 @@ struct SeparatorBoardTests {
       let actual = board.letters.joined().filter { $0 == symbol }.count
       if targets.contains(symbol) {
         let decoys = free.filter { board[$0] == symbol }.count
-        #expect(
-          example.decoys == false ? decoys == 0 : decoys >= 1,
-          "\(example.name): \(symbol.debugDescription), decoys \(decoys)")
-        if example.decoys != false { #expect(actual >= 2) }
+        #expect(decoys >= 1, "\(example.name): \(symbol.debugDescription), decoys \(decoys)")
+        #expect(actual >= 2)
       } else {
         #expect(actual == 0, "\(example.name): unexpected \(symbol.debugDescription)")
       }

@@ -82,35 +82,10 @@
   fallback: true
   conditional: ["é"]
   weights: {x: 1, q: 1, é: 100000}
-- name: legacy 0.12 separators retain their old fill
-  words: ["a-b", "cat", "sun"]
-  turns: 0
-  bounded: true
-  fallback: true
-  version: "0.12"
-  decoys: false
-- name: legacy 0.13 separators retain their old fill
-  words: ["a-b", "cat", "sun"]
-  turns: 1
-  bounded: true
-  fallback: true
-  version: "0.13"
-  decoys: false
-- name: a seed without a spare cell uses the checked conditional fallback
+- name: a tight board lays the words out with room for the extra separator
   words: ["a-b", "cde", "-e"]
   turns: 0
   bounded: true
   fallback: false
   columns: 4
   rows: 2
-  layouts: 40
-  version: "0.17"
-  probeFallback: true
-- name: generation 0.18 lays the same words out with room for the extra separator
-  words: ["a-b", "cde", "-e"]
-  turns: 0
-  bounded: true
-  fallback: false
-  columns: 4
-  rows: 2
-  version: "0.18"

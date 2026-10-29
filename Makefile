@@ -4,7 +4,6 @@ BENCH_ARGS ?=
 TEST_CONFIGURATION ?= debug
 TEST_ARGS ?=
 TEST_COST_OUTPUT ?= .build/test-costs.json
-PROFILE_VERSION ?= 0.19
 PROFILE_OPERATION ?= request
 PROFILE_INPUT ?= 0
 PROFILE_REPETITIONS ?= 20
@@ -63,7 +62,7 @@ profile-build:
 	swift build -c release --product LetterGridBenchmarks
 
 profile-run: profile-build
-	.build/release/LetterGridBenchmarks --profile '$(PROFILE_VERSION)' '$(PROFILE_OPERATION)' \
+	.build/release/LetterGridBenchmarks --profile '$(PROFILE_OPERATION)' \
 		'$(PROFILE_INPUT)' '$(PROFILE_REPETITIONS)' --wait
 
 profile-launch: profile-build
@@ -71,7 +70,7 @@ profile-launch: profile-build
 	mkdir -p .build/profiles
 	xcrun xctrace record --template 'Time Profiler' --no-prompt --time-limit '$(PROFILE_TIME)' \
 		--output '$(PROFILE_TRACE)' --target-stdout - --launch -- \
-		.build/release/LetterGridBenchmarks --profile '$(PROFILE_VERSION)' '$(PROFILE_OPERATION)' \
+		.build/release/LetterGridBenchmarks --profile '$(PROFILE_OPERATION)' \
 		'$(PROFILE_INPUT)' '$(PROFILE_REPETITIONS)'
 
 profile-record:

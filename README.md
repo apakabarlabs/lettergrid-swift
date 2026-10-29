@@ -56,11 +56,9 @@ let round = try Round(
   restoring: savedProgress, board: board, directions: [.right, .down], seconds: 60)
 ```
 
-Boards saved by seed only stay reproducible when the game pins its `BoardGenerationVersion`.
-
 ## Documentation
 
-- [LetterGrid](https://apakabarlabs.github.io/lettergrid-swift/documentation/lettergrid/): generation guarantees, height limits, filler, turns, versions, restoring
+- [LetterGrid](https://apakabarlabs.github.io/lettergrid-swift/documentation/lettergrid/): generation guarantees, height limits, filler, turns, restoring
 - [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentation/lettergridui/): board views and highlights
 - [Changelog](https://github.com/apakabarlabs/lettergrid-swift/blob/main/CHANGELOG.md): migration steps between versions
 

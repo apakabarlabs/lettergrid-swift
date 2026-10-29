@@ -5,7 +5,7 @@ import Testing
 struct PathSearchTests {
   private let rules = (0...3).map { WordRule(startDirections: Direction.allCases, turns: $0) }
 
-  @Test func stoppingAtTheFirstStrayWordAgreesWithTheFullSearch() {
+  @Test func countingStrayWordsAgreesWithTheFullSearch() {
     let dictionary = WordIndex(["AB", "ABC", "BAD", "CAB", "DAD", "ABBA", "CDDC"])
     var random = SeededRandom(seed: 11)
     let letters: [Character] = ["A", "B", "C", "D"]
@@ -15,14 +15,12 @@ struct PathSearchTests {
       }
       let bare = Board(letters: grid, placements: [])
       let bareWords = bare.strayWords(in: dictionary, rules: rules)
-      #expect(bare.hasStrayWord(in: dictionary, rules: rules) == !bareWords.isEmpty)
       #expect(bare.strayWordCount(in: dictionary, rules: rules) == Set(bareWords).count)
       let row = String(grid[0])
       let covered = Board(
         letters: grid,
         placements: [Placement(word: row, start: Cell(row: 0, column: 0), direction: .right)])
       let coveredWords = covered.strayWords(in: dictionary, rules: rules)
-      #expect(covered.hasStrayWord(in: dictionary, rules: rules) == !coveredWords.isEmpty)
       #expect(covered.strayWordCount(in: dictionary, rules: rules) == Set(coveredWords).count)
     }
   }

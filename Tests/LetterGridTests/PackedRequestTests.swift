@@ -27,26 +27,13 @@ struct PackedRequestTests {
     return try YAMLDecoder().decode([Case].self, from: String(contentsOf: url, encoding: .utf8))
   }
 
-  @Test func withoutAHeightLimitGeneration18KeepsTheBoardsOf17() throws {
-    let rule = WordRule(startDirections: [.right, .down], turns: 1)
-    func board(_ version: BoardGenerationVersion, seed: UInt64) throws -> Board {
-      try BoardGenerator(
-        columns: 7, rows: 7, rules: [rule], filler: try LetterWeights(["q": 1, "w": 1]),
-        generationVersion: version
-      ).request(for: ["PLANET", "ORBIT", "COMET"]).board(seed: seed)
-    }
-    for seed in UInt64(1)...4 {
-      #expect(try board(.v0p18, seed: seed) == board(.v0p17, seed: seed))
-    }
-  }
-
   @Test func theSolverDecidesWhetherWordsShareTheField() throws {
     for item in try Self.cases() {
       let rules = item.rules.map(\.wordRule)
       let generator = BoardGenerator(
         columns: 7, rows: 7, maxRows: 7, rules: rules,
         filler: try LetterWeights(["q": 1, "w": 1]),
-        downWords: item.words.count == 1 ? 0...1 : 1...2, generationVersion: .v0p18)
+        downWords: item.words.count == 1 ? 0...1 : 1...2)
       #expect(
         generator.accepts(item.words, firstRule: item.firstRule?.wordRule)
           == (item.accepted ?? true), "\(item.name)")

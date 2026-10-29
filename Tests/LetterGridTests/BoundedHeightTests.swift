@@ -11,7 +11,7 @@ struct BoundedHeightTests {
     let shifted = cells.map { Cell(row: $0.row + 2, column: $0.column + 2) }
     let rule = WordRule(startDirections: [.right], turns: 2)
     let builder = PathBoardBuilder(
-      columns: 5, minimumRows: 5, rules: [rule], generationVersion: .v0p17, maximumRows: 5)
+      columns: 5, minimumRows: 5, rules: [rule])
     let weights = try filler()
     let limits = BoardGenerationLimits(attempts: 1, fillsPerAttempt: 1, layoutsPerAttempt: 1)
     func board(_ path: [Cell], seed: UInt64) -> Board {
@@ -28,15 +28,6 @@ struct BoundedHeightTests {
   func aMaximumBelowTheMinimumIsRejected(maximum: Int) throws {
     let generator = BoardGenerator(
       columns: 5, rows: 5, maxRows: maximum, directions: [.right], filler: try filler())
-    #expect(throws: BoardGenerator.Failure.invalidConfiguration) {
-      try generator.request(for: ["CAT"])
-    }
-  }
-
-  @Test func legacyGenerationDoesNotSilentlyAcquireNewBoundedGeometry() throws {
-    let generator = BoardGenerator(
-      columns: 5, rows: 5, maxRows: 5, directions: [.right], filler: try filler(),
-      generationVersion: .v0p9)
     #expect(throws: BoardGenerator.Failure.invalidConfiguration) {
       try generator.request(for: ["CAT"])
     }
@@ -145,10 +136,7 @@ struct BoundedHeightTests {
     }
   }
 
-  @Test(arguments: [BoardGenerationVersion.v0p12, .v0p13])
-  func boundedStraightBoardsKeepNaturalFillerWhenTheDictionaryIsNoisy(
-    version: BoardGenerationVersion
-  ) throws {
+  @Test func boundedStraightBoardsKeepNaturalFillerWhenTheDictionaryIsNoisy() throws {
     let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     let dictionary = Set(alphabet.flatMap { first in alphabet.map { "\(first)\($0)" } })
     let weights = try LetterWeights(
@@ -157,7 +145,7 @@ struct BoundedHeightTests {
     let ways: [Direction] = [.right, .down]
     let request = try BoardGenerator(
       columns: 7, rows: 7, maxRows: 7, directions: ways, filler: weights,
-      downWords: 1...2, attempts: 2, fillsPerAttempt: 2, generationVersion: version
+      downWords: 1...2, attempts: 2, fillsPerAttempt: 2
     ).request(for: words)
     for seed in UInt64(0)..<4 {
       let board = request.board(seed: seed, dictionary: dictionary)
@@ -169,7 +157,7 @@ struct BoundedHeightTests {
           return !occupied.contains(cell) && targetLetters.contains(board[cell])
         }
       }
-      #expect(ordinary == (version == .v0p13))
+      #expect(ordinary)
       #expect(board.rows == 7)
       for word in words { #expect(board.occurrences(of: word, along: ways) == 1) }
     }

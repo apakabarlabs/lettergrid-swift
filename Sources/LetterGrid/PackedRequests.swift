@@ -1,8 +1,7 @@
 extension BoardGenerator {
   public func accepts(_ words: [String], firstRule: WordRule? = nil) -> Bool {
     let words = words.map(\.cellUppercased)
-    let excluded = Set(words.joined()).union(
-      generationVersion.fillsConditionally ? conditionalCharacters : [])
+    let excluded = Set(words.joined()).union(conditionalCharacters)
     guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
       filler.letters(excluding: excluded) != nil
@@ -47,7 +46,7 @@ extension BoardGenerator {
     return Layout(rows: layout.rows, placements: placements)
   }
 
-  var packs: Bool { generationVersion == .v0p18 && usesPathRules && maxRows != nil }
+  var packs: Bool { usesPathRules && maxRows != nil }
 
   func decoys(for layout: Layout, words: [String], seed: UInt64) -> [Cell: Character] {
     let required = requiredSymbols(in: words)

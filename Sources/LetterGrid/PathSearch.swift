@@ -148,15 +148,6 @@ extension Board {
       .map(\.word).sorted()
   }
 
-  func hasStrayWord(in dictionary: WordIndex, rules: [WordRule]) -> Bool {
-    var stray = false
-    PathSearch(board: self, rules: rules).visitReadings(in: dictionary) { reading in
-      stray = !covers(reading)
-      return !stray
-    }
-    return stray
-  }
-
   func covers(_ reading: Placement) -> Bool {
     placements.contains { placement in
       placement.containsReading(reading.cells)

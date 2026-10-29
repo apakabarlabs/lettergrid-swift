@@ -4,11 +4,19 @@
 
 ### Changed
 
-- Generation `0.19` fills boards with straight word rules faster while preserving seeded
+- Generation fills boards with straight word rules faster while preserving seeded
   results.
 - Generators built with `rules:` and `maxRows` prepare requests faster by checking each
   path shape once before shifting it across the board. Accepted requests and seeded
   placements stay the same.
+
+### Removed
+
+- `BoardGenerationVersion` and the `generationVersion:` parameter of `BoardGenerator`. The
+  library keeps one generation, the one 0.19 named `.v0p19`; its seeded boards are unchanged.
+  Apps move to a new release together and do not rebuild boards of an earlier one; an app
+  that must keep a board across updates saves its letters and placements. Remove the
+  argument and any stored version.
 
 ## [0.19.0] - 2026-10-28
 

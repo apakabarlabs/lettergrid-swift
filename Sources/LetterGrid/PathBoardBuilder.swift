@@ -16,13 +16,11 @@ struct PathBoardBuilder {
   let minimumRows: Int
   let rules: [WordRule]
   var downWords: ClosedRange<Int> = 0...Int.max
-  var generationVersion: BoardGenerationVersion = .current
   var maximumRows: Int?
   var avoidsTargetRuns = false
 
   func preparedLayout(
-    for words: [String], firstRule: WordRule?, filler: LetterWeights,
-    tries: Int = BoardGenerationLimits.standard.layoutsPerAttempt
+    for words: [String], firstRule: WordRule?, filler: LetterWeights
   ) -> Layout? {
     guard !words.isEmpty, Set(words).count == words.count,
       words.allSatisfy({ $0.count > 1 }),
@@ -30,18 +28,7 @@ struct PathBoardBuilder {
       let free = filler.letters(excluding: Set(words.joined()))
     else { return nil }
     var random = SeededRandom(seed: requestSeed(for: words))
-    guard maximumRows != nil else {
-      return isolatedLayout(for: words, firstRule: firstRule, filler: free, using: &random)
-    }
-    for _ in 0..<max(1, tries) {
-      guard
-        let isolated = isolatedLayout(
-          for: words, firstRule: firstRule, filler: free, using: &random),
-        let compact = compacted(isolated, using: &random)
-      else { continue }
-      if targetsAreUnique(filled(compact, with: free, using: &random)) { return compact }
-    }
-    return nil
+    return isolatedLayout(for: words, firstRule: firstRule, filler: free, using: &random)
   }
 
   private func isolatedLayout(
@@ -97,20 +84,16 @@ struct PathBoardBuilder {
     var leastNoise = Int.max
     for _ in 0..<limits.attempts {
       let compact =
-        generationVersion == .v0p18 && maximumRows != nil
+        maximumRows != nil
         ? layout : lowestLayout(layout, tries: limits.layoutsPerAttempt, using: &random)
       for _ in 0..<limits.fillsPerAttempt {
         let board = filled(compact, with: filler, fixed: fixed, using: &random)
         guard targetsAreUnique(board) else { continue }
-        if generationVersion == .v0p12 {
-          if !board.hasStrayWord(in: dictionary, rules: rules) { return board }
-        } else {
-          let noise = board.strayWordCount(in: dictionary, rules: rules, lessThan: leastNoise)
-          if noise == 0 { return board }
-          if best == nil || noise < leastNoise {
-            best = board
-            leastNoise = noise
-          }
+        let noise = board.strayWordCount(in: dictionary, rules: rules, lessThan: leastNoise)
+        if noise == 0 { return board }
+        if best == nil || noise < leastNoise {
+          best = board
+          leastNoise = noise
         }
       }
     }
@@ -172,7 +155,7 @@ struct PathBoardBuilder {
   ) -> Layout {
     var best: Layout?
     for _ in 0..<max(1, tries) {
-      guard let candidate = compacted(fallback, using: &random) else { continue }
+      let candidate = compacted(fallback, using: &random)
       if avoidsTargetRuns, candidate.hasForbiddenTargetRun(columns: columns) { continue }
       if best.map({
         candidate.rows < $0.rows
@@ -184,7 +167,7 @@ struct PathBoardBuilder {
     return best ?? fallback
   }
 
-  private func compacted(_ layout: Layout, using random: inout SeededRandom) -> Layout? {
+  private func compacted(_ layout: Layout, using random: inout SeededRandom) -> Layout {
     var placed: [Int: Placement] = [:]
     var occupied: [Cell: Character] = [:]
     var rows = minimumRows
@@ -195,14 +178,10 @@ struct PathBoardBuilder {
       let top = placement.cells.map(\.row).min() ?? 0
       let height = (placement.cells.map(\.row).max() ?? 0) - top + 1
       rows = max(rows, height)
-      guard maximumRows.map({ rows <= $0 }) ?? true else { return nil }
       var candidates: [Placement] = []
       while candidates.isEmpty {
         candidates = fittingTranslations(of: placement, rows: rows, beside: occupied)
-        if candidates.isEmpty {
-          if let maximumRows, rows >= maximumRows { return nil }
-          rows += 1
-        }
+        if candidates.isEmpty { rows += 1 }
       }
       let shared = candidates.map { $0.cells.filter { occupied[$0] != nil }.count }.max() ?? 0
       guard

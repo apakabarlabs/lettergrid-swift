@@ -165,20 +165,6 @@ struct TurnPathIntegrationTests {
     #expect(words.allSatisfy { board.occurrences(of: $0, rules: rules) == 1 })
   }
 
-  @Test func legacyFallbackConsumesTheReleasedWholePermutationPerBlank() throws {
-    let filler = try LetterWeights(["x": 1, "y": 2, "z": 3], sameNeighbour: 0.02)
-    var legacyRandom = SeededRandom(seed: 37)
-    let legacy = BandLayout(columns: 3, minimumRows: 2, generationVersion: .v0p9)
-      .board(for: ["AB"], directions: [0: .right], filler: filler, using: &legacyRandom)
-    var expected = SeededRandom(seed: 37)
-    for _ in 0..<12 { _ = expected.next() }
-    #expect(legacyRandom.next() == expected.next())
-    #expect(legacy.rows == 2)
-    #expect(legacy.placements[0].word == "AB")
-    #expect(BoardGenerationVersion(rawValue: "0.12") == .v0p12)
-    #expect(BoardGenerationVersion(rawValue: "current") == nil)
-  }
-
   @Test @MainActor func straightRulesCanCorrectAnInitiallyOffAxisDrag() {
     let placement = Placement(word: "CAT", start: Cell(row: 0, column: 0), direction: .right)
     let board = Board(letters: [Array("CAT"), Array("XXX")], placements: [placement])
