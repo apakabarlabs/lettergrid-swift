@@ -37,8 +37,7 @@ struct DirectionAssignment {
       } else if index == 0, let firstDirection {
         direction = firstDirection
       } else {
-        direction = directions.filter { $0.isVertical == vertical.contains(index) }
-          .randomElement(using: &random)
+        direction = random.pick(directions.filter { $0.isVertical == vertical.contains(index) })
       }
       guard let direction else { return nil }
       assigned.append(WordDirection(index: index, direction: direction))
@@ -62,14 +61,14 @@ struct DirectionAssignment {
     let maximum = upright ? min(downWords.upperBound, words.count, columns) : 0
     let minimum = max(downWords.lowerBound, forced.count)
     guard minimum <= maximum else { return nil }
-    var optional = words.indices.filter {
-      !forced.contains($0)
-        && !($0 == 0 && firstDirection != nil && firstDirection?.isVertical == false)
-    }.shuffled(using: &random)
+    var optional = random.shuffled(
+      words.indices.filter {
+        !forced.contains($0)
+          && !($0 == 0 && firstDirection != nil && firstDirection?.isVertical == false)
+      })
     if order == .shortestFirst { optional.sort { words[$0].count < words[$1].count } }
     guard minimum <= forced.count + optional.count else { return nil }
-    let count = Int.random(
-      in: minimum...min(maximum, forced.count + optional.count), using: &random)
+    let count = random.nextInt(in: minimum...min(maximum, forced.count + optional.count))
     return forced + optional.prefix(count - forced.count)
   }
 }

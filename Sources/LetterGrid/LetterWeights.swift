@@ -102,7 +102,7 @@ public struct LetterWeights: Equatable, Sendable {
       }
       total = candidates.reduce(0) { $0 + $1.weight }
     }
-    var point = Double.random(in: 0..<total, using: &random)
+    var point = random.nextDouble(below: total)
     for candidate in candidates {
       point -= candidate.weight
       if point < 0 { return candidate.letter }

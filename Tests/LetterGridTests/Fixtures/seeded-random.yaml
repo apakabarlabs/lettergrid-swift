@@ -1,0 +1,52 @@
+- name: the raw sequence
+  seed: 42
+  next:
+    - 13679457532755275413
+    - 2949826092126892291
+    - 5139283748462763858
+    - 6349198060258255764
+    - 701532786141963250
+    - 16015981125662989062
+    - 4028864712777624925
+    - 14769051326987775908
+- name: integers below a small bound
+  seed: 42
+  below: 7
+  integers: [5, 1, 1, 2, 0, 6, 1, 5]
+- name: integers below a bound near a third of the range, so a third of draws are rejected
+  seed: 3
+  below: 6148914691236517206
+  integers:
+    - 4306045073909037187
+    - 3769129030866979243
+    - 448051348238495215
+    - 3912076744070251778
+    - 5464653835881186823
+    - 3019501144241994280
+    - 5463491491417979174
+    - 4294624275348946500
+- name: doubles below a total
+  seed: 7
+  double_below: 2.5
+  doubles:
+    - 0.9283117633104496
+    - 0.9560679841597242
+    - 1.8946847072432154
+    - 2.103100303759916
+    - 1.5025024587181584
+    - 2.0893940876460753
+    - 0.9193816211121203
+    - 2.252904460815372
+- name: integers in a closed range
+  seed: 11
+  from: 3
+  through: 9
+  integers: [5, 4, 7, 6, 4, 6, 3, 8]
+- name: picks from five elements
+  seed: 13
+  pick_from: 5
+  picks: [3, 1, 3, 1, 4, 1, 3, 1]
+- name: a shuffle of ten indices
+  seed: 99
+  shuffle: 10
+  order: [2, 1, 8, 3, 5, 6, 0, 9, 7, 4]

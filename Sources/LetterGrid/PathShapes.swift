@@ -66,6 +66,6 @@ struct PathShapes {
     after direction: Direction, count: Int, turns: Int, search: inout Search
   ) -> [Direction] {
     let ways = [direction] + (count > 1 && turns < rule.turns ? direction.perpendiculars : [])
-    return randomized ? ways.shuffled(using: &search.random) : ways
+    return randomized ? search.random.shuffled(ways) : ways
   }
 }

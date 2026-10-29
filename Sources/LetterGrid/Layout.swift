@@ -51,10 +51,10 @@ struct LayoutBuilder {
     var rows = max(minimumRows, standing.map { words[$0].count }.max() ?? 0)
     guard maximumRows.map({ rows <= $0 }) ?? true else { return nil }
     var placed: [Int: Placement] = [:]
-    let standingColumns = Array(0..<columns).shuffled(using: &random)
+    let standingColumns = random.shuffled(Array(0..<columns))
     for (index, column) in zip(standing, standingColumns) {
       let word = words[index]
-      let row = Int.random(in: 0...(rows - word.count), using: &random)
+      let row = random.nextInt(in: 0...(rows - word.count))
       placed[index] = Placement(word: word, start: Cell(row: row, column: column), direction: .down)
     }
     for index in lying.sorted(by: { words[$0].count > words[$1].count }) {
@@ -64,14 +64,14 @@ struct LayoutBuilder {
         rows += 1
         spots = self.spots(for: words[index], rows: rows, beside: placed)
       }
-      placed[index] = spots.randomElement(using: &random)
+      placed[index] = random.pick(spots)
     }
-    for index in lying.shuffled(using: &random) {
+    for index in random.shuffled(lying) {
       let others = placed.filter { $0.key != index }
       let crossing = spots(for: words[index], rows: rows, beside: others).filter { spot in
         !crossings(of: spot, with: others).isEmpty
       }
-      if let spot = crossing.randomElement(using: &random) {
+      if let spot = random.pick(crossing) {
         placed[index] = spot
       }
     }

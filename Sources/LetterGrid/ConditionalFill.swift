@@ -13,7 +13,7 @@ enum ConditionalFill {
     var random = SeededRandom(seed: seed)
     for _ in 0..<64 {
       var letters = board.letters
-      for (character, cell) in zip(required, available.shuffled(using: &random)) {
+      for (character, cell) in zip(required, random.shuffled(available)) {
         letters[cell.row][cell.column] = character
       }
       let filled = Board(letters: letters, placements: board.placements)
@@ -46,8 +46,9 @@ enum ConditionalFill {
     var random = SeededRandom(seed: seed)
     var search = DecoySearch(
       required: required, placements: placements, rules: rules, blank: blank,
-      free: (0..<rows).flatMap { row in (0..<columns).map { Cell(row: row, column: $0) } }
-        .filter { !occupied.contains($0) }.shuffled(using: &random),
+      free: random.shuffled(
+        (0..<rows).flatMap { row in (0..<columns).map { Cell(row: row, column: $0) } }
+          .filter { !occupied.contains($0) }),
       letters: letters)
     return search.place(at: 0) ? search.chosen : nil
   }

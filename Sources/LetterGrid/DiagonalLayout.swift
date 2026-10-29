@@ -41,7 +41,7 @@ struct DiagonalLayoutBuilder {
       }
       let occupied = Set(placed.flatMap(\.cells))
       let crossing = choices.filter { !occupied.isDisjoint(with: $0.cells) }
-      guard let chosen = (crossing.isEmpty ? choices : crossing).randomElement(using: &random)
+      guard let chosen = random.pick(crossing.isEmpty ? choices : crossing)
       else {
         fatalError("A word needs at least one placement")
       }

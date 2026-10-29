@@ -97,11 +97,12 @@ struct PathPacking {
     let alone = [Placement?](repeating: nil, count: words.count)
     let choices = words.indices.map { index in
       let allowedRules = index == 0 ? firstRule.map { [$0] } ?? rules : rules
-      return candidates(for: words[index], rules: allowedRules) { placement in
-        var chosen = alone
-        chosen[index] = placement
-        return compatibility.accepts(chosen)
-      }.shuffled(using: &random)
+      return random.shuffled(
+        candidates(for: words[index], rules: allowedRules) { placement in
+          var chosen = alone
+          chosen[index] = placement
+          return compatibility.accepts(chosen)
+        })
     }
     guard choices.allSatisfy({ !$0.isEmpty }) else { return .impossible }
     var search = Search(

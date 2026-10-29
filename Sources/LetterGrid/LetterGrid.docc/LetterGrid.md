@@ -128,6 +128,8 @@ and the extra copies; requests reject layouts that cannot provide them within th
   words; an exhausted score never counts as clean, and fully scored fills outrank incomplete ones.
 - The library keeps one generation. A seed gives the same board within one library version
   only; an app that must keep a board across updates saves its letters and placements.
+- Every random choice draws from ``SeededRandom`` through its own methods, never through the
+  standard library's algorithms; its page states each algorithm for a port.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.
   ``BoardGenerationLimits/standard`` exposes the unchanged default search bounds.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced

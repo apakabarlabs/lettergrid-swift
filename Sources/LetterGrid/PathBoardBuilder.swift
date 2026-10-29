@@ -53,8 +53,8 @@ struct PathBoardBuilder {
     var nextRow = 0
     for index in words.indices {
       guard
-        let chosen = choices[index].filter({ $0.direction.isVertical == vertical.contains(index) })
-          .randomElement(using: &random)
+        let chosen = random.pick(
+          choices[index].filter({ $0.direction.isVertical == vertical.contains(index) }))
       else { return nil }
       let moved = chosen.cells.map { Cell(row: $0.row + nextRow, column: $0.column) }
       placements.append(Placement(word: words[index], cells: moved))
@@ -110,8 +110,8 @@ struct PathBoardBuilder {
   ) -> [Placement] {
     let categories = Set(chosenRules.flatMap(\.startDirections).map(\.isVertical))
     var found: [Placement] = []
-    for rule in chosenRules.shuffled(using: &random) {
-      for direction in rule.startDirections.shuffled(using: &random) {
+    for rule in random.shuffled(chosenRules) {
+      for direction in random.shuffled(rule.startDirections) {
         if found.contains(where: { $0.direction.isVertical == direction.isVertical }) { continue }
         let directed = WordRule(startDirections: [direction], turns: rule.turns)
         if let placement = candidate(for: word, rule: directed, filler: filler, using: &random) {
@@ -185,9 +185,8 @@ struct PathBoardBuilder {
       }
       let shared = candidates.map { $0.cells.filter { occupied[$0] != nil }.count }.max() ?? 0
       guard
-        let chosen = candidates.filter({
-          $0.cells.filter { occupied[$0] != nil }.count == shared
-        }).randomElement(using: &random)
+        let chosen = random.pick(
+          candidates.filter({ $0.cells.filter { occupied[$0] != nil }.count == shared }))
       else {
         preconditionFailure("A path always fits after growing the board")
       }

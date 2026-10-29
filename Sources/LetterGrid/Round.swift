@@ -14,7 +14,7 @@ public enum HintOrder: String, Sendable, Decodable {
         ($0 ^ UInt64($1.value)) &* 0x100_0000_01B3
       }
       var random = SeededRandom(seed: seed)
-      return Array(1..<max(word.count, 1)).shuffled(using: &random)
+      return random.shuffled(Array(1..<max(word.count, 1)))
     }
   }
 }

@@ -4,6 +4,11 @@
 
 ### Added
 
+- `SeededRandom.nextInt(below:)`, `nextInt(in:)`, `nextDouble(below:)`, `shuffled(_:)` and
+  `pick(_:)`. Generation draws through them instead of the standard library's random
+  algorithms, which Swift does not promise to keep and other platforms do not share. They
+  reproduce today's draws exactly, so seeded boards are unchanged; the `SeededRandom` DocC
+  page states each algorithm for a port.
 - `Placement(validating:cells:)` reports a saved path that is not a word path as
   `Board.Failure.invalidPlacement` instead of trapping, so a corrupted save can be
   restored through checked initializers only.

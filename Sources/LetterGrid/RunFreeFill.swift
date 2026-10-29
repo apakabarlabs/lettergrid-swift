@@ -173,7 +173,7 @@ struct RunFreeFill {
       : weights.orderedLetters(
         using: &random, neighbours: neighbours)
     for letter in missing.sorted(by: { String($0) < String($1) }) {
-      ordered.insert(letter, at: Int.random(in: 0...ordered.count, using: &random))
+      ordered.insert(letter, at: random.nextInt(in: 0...ordered.count))
     }
     return ordered
   }
