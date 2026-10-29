@@ -48,4 +48,16 @@ struct LetterWeightsTests {
     #expect(ordered.first == "A")
   }
 
+  @Test func anUnderflowingPenaltySharedByEveryLetterKeepsTheirWeightRatio() throws {
+    let weights = try LetterWeights(
+      ["a": 1.5, "b": 1], sameNeighbour: Double.leastNonzeroMagnitude)
+    var random = SeededRandom(seed: 7)
+    let draws = 4000
+
+    let first = (0..<draws).filter { _ in
+      weights.orderedLetters(using: &random, neighbours: ["A": 2, "B": 2]).first == "A"
+    }.count
+
+    #expect(abs(Double(first) / Double(draws) - 0.6) < 0.03)
+  }
 }

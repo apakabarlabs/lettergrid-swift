@@ -15,11 +15,12 @@ public struct LetterWeights: Equatable, Sendable {
     }
 
     func times(_ factor: Double, count: Int) -> WideNumber {
+      let wideFactor = WideNumber(factor)
       var result = self
       for _ in 0..<count {
-        let product = result.significand * factor
+        let product = result.significand * wideFactor.significand
         result.significand = product.significand
-        result.exponent += Int(product.exponent)
+        result.exponent += wideFactor.exponent + Int(product.exponent)
       }
       return result
     }
