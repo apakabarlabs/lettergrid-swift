@@ -19,7 +19,7 @@ public struct LetterWeights: Equatable, Sendable {
   private let weights: [Double]
   public let sameNeighbour: Double
 
-  var letterCount: Int { Set(letters).count }
+  var letterCount: Int { letters.count }
 
   public init(_ weights: [String: Double], sameNeighbour: Double = 1) throws {
     guard !weights.isEmpty else { throw Failure.empty }
@@ -34,8 +34,13 @@ public struct LetterWeights: Equatable, Sendable {
       }
       guard weight.isFinite else { throw Failure.notFinite(key) }
       guard weight > 0 else { throw Failure.notPositive(key) }
-      letters.append(letter)
-      orderedWeights.append(weight)
+      if let index = letters.firstIndex(of: letter) {
+        orderedWeights[index] += weight
+        guard orderedWeights[index].isFinite else { throw Failure.notFinite(key) }
+      } else {
+        letters.append(letter)
+        orderedWeights.append(weight)
+      }
     }
     self.letters = letters
     self.weights = orderedWeights

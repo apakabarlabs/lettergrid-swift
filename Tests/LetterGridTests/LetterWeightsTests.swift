@@ -10,6 +10,18 @@ struct LetterWeightsTests {
     }
   }
 
+  @Test func keysEqualAfterUppercasingAreOneLetterWithTheirWeightsAdded() throws {
+    let merged = try LetterWeights(["a": 1, "A": 2, "b": 3])
+    #expect(merged.letterCount == 2)
+    #expect(merged == (try LetterWeights(["a": 3, "b": 3])))
+  }
+
+  @Test func mergedKeysWhoseWeightsOverflowAreRejected() {
+    #expect(throws: LetterWeights.Failure.notFinite("a")) {
+      try LetterWeights(["A": .greatestFiniteMagnitude, "a": .greatestFiniteMagnitude])
+    }
+  }
+
   @Test func finiteWeightsWhoseSumOverflowsStillProduceEveryLetter() throws {
     let weights = try LetterWeights([
       "a": Double.greatestFiniteMagnitude, "b": Double.greatestFiniteMagnitude,

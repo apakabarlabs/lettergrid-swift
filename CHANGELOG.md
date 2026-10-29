@@ -8,6 +8,14 @@
   `Board.Failure.invalidPlacement` instead of trapping, so a corrupted save can be
   restored through checked initializers only.
 
+### Fixed
+
+- `LetterWeights` keys that are equal after uppercasing, such as `a` and `A`, form one
+  letter with their weights added, instead of two entries of one letter. The letter's share
+  of draws is unchanged, but such weights now equal the merged table (`["a": 1, "A": 2]`
+  equals `["a": 3]`), their seeded boards change, and a sum that overflows throws
+  `notFinite` instead of being drawn from.
+
 ### Changed
 
 - Generation fills boards with straight word rules faster while preserving seeded
