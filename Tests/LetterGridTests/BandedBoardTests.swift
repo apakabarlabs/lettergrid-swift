@@ -142,15 +142,9 @@ struct BandedBoardTests {
   }
 
   private func containsTargetRun(_ board: Board) -> Bool {
-    let occupied = Set(board.placements.flatMap(\.cells))
-    let letters = board.letters.enumerated().map { row, letters in
-      letters.enumerated().map { column, letter -> Character? in
-        occupied.contains(Cell(row: row, column: column)) ? letter : nil
-      }
-    }
     return LetterRuns(
       placements: board.placements, columns: board.columns, rows: board.rows
-    ).containsForbiddenRun(in: letters)
+    ).containsForbiddenRun(in: board.placementLetters)
   }
 
   private func prepared(

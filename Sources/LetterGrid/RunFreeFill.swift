@@ -38,6 +38,17 @@ struct RunFreeFill {
     }
   }
 
+  private struct WordChecks {
+    let targets: FillWordCheck
+    let noise: FillWordCheck?
+
+    func isClean(filling cell: Cell, letters: [[Character?]]) -> Bool {
+      guard targets.isClean(filling: cell, letters: letters) else { return false }
+      guard let noise else { return true }
+      return noise.isClean(filling: cell, letters: letters)
+    }
+  }
+
   let board: Board
   let weights: LetterWeights
   let rules: [WordRule]
@@ -70,16 +81,12 @@ struct RunFreeFill {
   }
 
   private func template(requiring symbols: Set<Character>) -> Template {
-    let occupied = Set(board.placements.flatMap(\.cells))
-    var letters = board.letters.map { $0.map(Optional.some) }
+    let letters = board.placementLetters
     var empty: [Cell] = []
     for row in 0..<board.rows {
       for column in 0..<board.columns {
         let cell = Cell(row: row, column: column)
-        if !occupied.contains(cell) {
-          letters[row][column] = nil
-          empty.append(cell)
-        }
+        if letters[row][column] == nil { empty.append(cell) }
       }
     }
     return Template(
@@ -93,6 +100,7 @@ struct RunFreeFill {
     strategy: Strategy, using random: inout SeededRandom
   ) -> SearchResult {
     var letters = template.letters
+    let checks = checks(for: template, eliminatingNoise: strategy.eliminatesNoise)
     let empty = template.empty
     var frames: [Frame] = []
     var position = 0
@@ -136,11 +144,20 @@ struct RunFreeFill {
       remaining -= 1
       letters[cell.row][cell.column] = letter
       guard !runs.hasForbiddenRun(through: cell, in: letters),
-        isClean(letters, in: template.targets)
+        checks.isClean(filling: cell, letters: letters)
       else { continue }
-      if !strategy.eliminatesNoise || isClean(letters, in: dictionary) { position += 1 }
+      position += 1
     }
     return best.map(SearchResult.filled) ?? .unsettled
+  }
+
+  private func checks(for template: Template, eliminatingNoise: Bool) -> WordChecks {
+    WordChecks(
+      targets: FillWordCheck(
+        board: board, index: template.targets, rules: rules, fixed: template.letters),
+      noise: eliminatingNoise
+        ? FillWordCheck(board: board, index: dictionary, rules: rules, fixed: template.letters)
+        : nil)
   }
 
   private func choices(
@@ -170,12 +187,6 @@ struct RunFreeFill {
       best = candidate
       leastNoise = noise
     }
-  }
-
-  private func isClean(_ letters: [[Character?]], in index: WordIndex) -> Bool {
-    index.longest == 0
-      || board.strayWordCount(
-        in: index, rules: rules, lessThan: 1, letters: { letters[$0.row][$0.column] }) == 0
   }
 
   private func completed(_ letters: [[Character?]]) -> Board {
@@ -251,6 +262,15 @@ struct LetterRuns {
 }
 
 extension Board {
+  var placementLetters: [[Character?]] {
+    let occupied = Set(placements.flatMap(\.cells))
+    return letters.enumerated().map { row, letters in
+      letters.enumerated().map { column, letter in
+        occupied.contains(Cell(row: row, column: column)) ? letter : nil
+      }
+    }
+  }
+
   var hasAddedEqualPair: Bool {
     let occupied = Set(placements.flatMap(\.cells))
     let axes = Direction.lineAxes

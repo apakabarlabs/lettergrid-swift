@@ -1,7 +1,11 @@
+enum NoiseSearch {
+  static let maximumVisits = 100_000
+}
+
 extension Board {
   func strayWordCount(
     in dictionary: WordIndex, rules: [WordRule], lessThan limit: Int = Int.max,
-    maximumVisits: Int = 100_000, letters: ((Cell) -> Character?)? = nil
+    maximumVisits: Int = NoiseSearch.maximumVisits, letters: ((Cell) -> Character?)? = nil
   ) -> Int {
     var words: Set<String> = []
     var removed: [Int: Int] = [:]

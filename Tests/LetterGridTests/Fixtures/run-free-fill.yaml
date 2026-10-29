@@ -1,0 +1,75 @@
+baseline_revision: 5a7c1d9d986ac7d0aeb041be919d677841765f81
+seeds: [1, 7, 37]
+filler: {a: 1, d: 1, x: 1, q: 1, z: 1}
+dictionary: [AAA, AXA, ADA, DAD, XAX]
+cases:
+- name: forward
+  turns: [0]
+  extra_dictionary: []
+  words: [CAT, DOG, SUN]
+  directions: [right, down]
+  symbols: []
+  boards:
+    1: CATDQ/XZXAZ/DOGQD/ZQXAZ/SUNDX
+    7: CATDZ/ZQXAQ/DOGZX/QXAQA/SUNZD
+    37: CATDA/XZXQZ/DOGAD/QZDXQ/SUNZA
+- name: every-direction
+  turns: [0]
+  extra_dictionary: []
+  words: [CAT, DOG, SUN]
+  directions: [right, down, down_right, down_left, left, up, up_left, up_right]
+  symbols: []
+  boards:
+    1: CATDQ/XZXAZ/DOGQD/ZQXAZ/SUNDX
+    7: CATDZ/ZQXAQ/DOGZX/QXAQA/SUNZD
+    37: CATDA/XZXQZ/DOGDX/QZQZA/SUNXD
+- name: separator
+  turns: [0]
+  extra_dictionary: []
+  words: [C-T, DOG, SUN]
+  directions: [right, down, down_right, down_left, left, up, up_left, up_right]
+  symbols: ['-']
+  boards:
+    1: C-TDZ/XAQXQ/DOG-A/QXDZD/SUNAX
+    7: C-TDZ/AZQAQ/DOGXD/QZ-QA/SUNDZ
+    37: C-TDX/XQAZQ/DOGXD/-XAQZ/SUNXD
+- name: reachable-targets
+  words: [ADX, DAQ, ZAX]
+  directions: [right, down, down_right, down_left, left, up, up_left, up_right]
+  symbols: []
+  turns: [0]
+  extra_dictionary: [DXQ, ZAD, AQD, QDX]
+  boards:
+    1: ADXZQ/ZZXAD/DAQZQ/QZZAZ/ZAXQX
+    7: ADXDX/XZXAQ/DAQAA/DQQZQ/ZAXQX
+    37: ADXZA/ZAZDQ/DAQAZ/QQZXQ/ZAXDZ
+- name: forward-reachable-targets
+  words: [ADX, DAQ, ZAX]
+  directions: [right, down]
+  symbols: []
+  turns: [0]
+  extra_dictionary: [DXQ, ZAD, AQD, QDX]
+  boards:
+    1: ADXZX/ZZQAQ/DAQZX/QZZAQ/ZAXZD
+    7: ADXZQ/XZDAX/DAQZQ/QQZDX/ZAXQA
+    37: ADXDA/XZZDX/DAQAZ/QQZZQ/ZAXDX
+- name: turns-unfillable
+  words: [ADX, DAQ, ZAX]
+  directions: [right, down, down_right, down_left, left, up, up_left, up_right]
+  symbols: []
+  turns: [0, 1]
+  extra_dictionary: [DXQ, ZAD, AQD, QDX]
+  boards:
+    1: <unfilled>
+    7: <unfilled>
+    37: <unfilled>
+- name: turns
+  words: [CAT, DOG, SUN]
+  directions: [right, down, down_right, down_left, left, up, up_left, up_right]
+  symbols: []
+  turns: [0, 1]
+  extra_dictionary: [DXQ, ZAD, AQD, QDX]
+  boards:
+    1: CATDQ/ZQXZX/DOGDQ/ZAXZX/SUNDQ
+    7: CATDZ/ZQXQX/DOGZA/XZQXQ/SUNAZ
+    37: CATDA/ZQZQX/DOGDZ/QZXQX/SUNDA
