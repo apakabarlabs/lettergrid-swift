@@ -1,0 +1,12 @@
+- name: a drag equally along two axes takes the first allowed one
+  rows: [CATS, ORXE, WEYA, ZZZL]
+  from: [0, 0]
+  toward: [2, 2]
+  ways: [right, down]
+  text: CAT
+- name: the same drag with the axes listed the other way round
+  rows: [CATS, ORXE, WEYA, ZZZL]
+  from: [0, 0]
+  toward: [2, 2]
+  ways: [down, right]
+  text: COW

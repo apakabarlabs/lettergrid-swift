@@ -1,4 +1,6 @@
+import Foundation
 import Testing
+import Yams
 
 @testable import LetterGrid
 
@@ -27,13 +29,27 @@ struct SelectionTests {
     #expect(board.text(along: cells) == "COW")
   }
 
-  @Test func aDragEquallyAlongTwoAxesTakesTheFirstAllowedOne() {
-    let (start, end) = (Cell(row: 0, column: 0), Cell(row: 2, column: 2))
-    let across = board.selection(from: start, toward: end, along: [.right, .down])
-    let downward = board.selection(from: start, toward: end, along: [.down, .right])
+  private struct Case: Decodable {
+    let name: String
+    let rows: [String]
+    let from: [Int]
+    let toward: [Int]
+    let ways: [Direction]
+    let text: String
+  }
 
-    #expect(board.text(along: across) == "CAT")
-    #expect(board.text(along: downward) == "COW")
+  @Test func dragsSelectTheCellsEveryPortAgreesOn() throws {
+    let url = try #require(
+      Bundle.module.url(forResource: "selections", withExtension: "yaml", subdirectory: "Fixtures"))
+    let cases = try YAMLDecoder().decode(
+      [Case].self, from: String(contentsOf: url, encoding: .utf8))
+    for item in cases {
+      let board = Board(letters: item.rows.map(Array.init), placements: [])
+      let cells = board.selection(
+        from: Cell(row: item.from[0], column: item.from[1]),
+        toward: Cell(row: item.toward[0], column: item.toward[1]), along: item.ways)
+      #expect(board.text(along: cells) == item.text, "\(item.name)")
+    }
   }
 
   @Test func aDragBackwardsSelectsOnlyTheStartWhenOnlyForwardIsAllowed() {
