@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Generation `0.19` fills boards with straight word rules faster while preserving seeded
+  results.
+- Generators built with `rules:` and `maxRows` prepare requests faster by checking each
+  path shape once before shifting it across the board. Accepted requests and seeded
+  placements stay the same.
+
 ## [0.19.0] - 2026-10-28
 
 ### Changed

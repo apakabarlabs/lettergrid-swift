@@ -1,3 +1,5 @@
+baseline_revision: ffb3c9e46809a4be91ebc408c3aa5f949d87cd5c
+cases:
 - name: two short words lie in the two rows of a square
   columns: 2
   rows: 2
@@ -5,6 +7,10 @@
   downWords: [0, 2]
   words: [AB, CD]
   outcome: placed
+  goldens:
+    '0': AB=0,1;1,1|CD=0,0;1,0
+    '7': AB=1,0;1,1|CD=0,0;0,1
+    '37': AB=0,1;1,1|CD=0,0;1,0
 - name: a search allowed no step settles nothing even where a layout exists
   columns: 2
   rows: 2
@@ -13,6 +19,7 @@
   words: [AB, CD]
   nodeLimit: 0
   outcome: undetermined
+  goldens: {'0': undetermined, '7': undetermined, '37': undetermined}
 - name: a word longer than any straight line has no path
   columns: 2
   rows: 2
@@ -27,6 +34,10 @@
   downWords: [0, 2]
   words: [ABC]
   outcome: placed
+  goldens:
+    '0': ABC=0,1;1,1;1,0
+    '7': ABC=1,0;1,1;0,1
+    '37': ABC=0,1;1,1;1,0
 - name: two words share the cell where their common letter stands
   columns: 3
   rows: 3
@@ -34,6 +45,10 @@
   downWords: [1, 1]
   words: [ABC, DBE]
   outcome: placed
+  goldens:
+    '0': ABC=0,1;1,1;2,1|DBE=1,0;1,1;1,2
+    '7': ABC=1,0;1,1;1,2|DBE=0,1;1,1;2,1
+    '37': ABC=0,1;1,1;2,1|DBE=1,0;1,1;1,2
 - name: a third word finds no row left clear of the crossing column
   columns: 3
   rows: 3
@@ -55,6 +70,8 @@
   downWords: [0, 2]
   words: [AB, BA]
   outcome: impossible
+  checksShifts: true
+  goldens: {'0': impossible, '7': impossible, '37': impossible}
 - name: a word read backwards inside a longer one has no cells of its own
   columns: 3
   rows: 1
@@ -62,6 +79,7 @@
   downWords: [0, 0]
   words: [ABC, BA]
   outcome: impossible
+  checksShifts: true
 - name: two words on the same four cells leave one inside the other
   columns: 2
   rows: 2
@@ -103,3 +121,122 @@
   downWords: [1, 2]
   words: [FIXTURE, VENEER, BEDDING]
   outcome: placed
+  goldens:
+    '0': FIXTURE=0,0;1,0;2,0;3,0;4,0;5,0;6,0|VENEER=0,5;1,4;2,3;3,2;4,1;5,0|BEDDING=0,6;1,6;2,6;3,6;4,6;5,6;6,6
+    '7': FIXTURE=6,0;6,1;6,2;6,3;6,4;6,5;6,6|VENEER=0,5;1,5;2,5;3,5;4,5;5,5|BEDDING=2,0;2,1;2,2;2,3;2,4;2,5;2,6
+    '37': FIXTURE=0,5;1,5;2,5;3,5;4,5;5,5;6,5|VENEER=6,1;6,2;6,3;6,4;6,5;6,6|BEDDING=0,0;1,0;2,0;3,0;4,0;5,0;6,0
+- name: a repeated letter follows three turns starting upwards on a rectangle
+  columns: 5
+  rows: 4
+  rules: [{directions: [up_right], turns: 3}]
+  downWords: [0, 0]
+  words: [ABACAD]
+  outcome: placed
+  checksShifts: true
+  goldens:
+    '0': ABACAD=3,3;2,4;1,3;2,2;1,1;0,0
+    '7': ABACAD=1,1;0,2;1,3;2,2;3,1;2,0
+    '37': ABACAD=2,3;1,4;0,3;1,2;2,1;3,2
+- name: a palindrome has both compatible and incompatible bent shapes
+  columns: 4
+  rows: 4
+  rules:
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 0}
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 1}
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 2}
+  downWords: [0, 1]
+  words: [AAAA]
+  outcome: placed
+  checksShifts: true
+  mixedShapes: true
+  goldens:
+    '0': AAAA=3,2;3,1;2,1;2,0
+    '7': AAAA=0,3;0,2;0,1;1,1
+    '37': AAAA=1,3;2,3;2,2;3,2
+- name: a required first rule and overlapping rules preserve candidate order
+  columns: 5
+  rows: 5
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right], turns: 0}
+  - {directions: [down], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [left, up], turns: 1}
+  firstRule: {directions: [left, up], turns: 1}
+  downWords: [0, 2]
+  words: [ABAC, DEFG]
+  outcome: placed
+  checksShifts: true
+  goldens:
+    '0': ABAC=1,2;0,2;0,1;0,0|DEFG=1,4;1,3;2,3;3,3
+    '7': ABAC=2,2;2,1;1,1;0,1|DEFG=0,3;1,3;2,3;3,3
+    '37': ABAC=1,2;0,2;0,3;0,4|DEFG=4,2;4,1;4,0;3,0
+- name: leftwards paths retain their positions beyond seven cells
+  columns: 8
+  rows: 9
+  rules: [{directions: [left], turns: 0}]
+  downWords: [0, 0]
+  words: [CAT, DOG, SUN]
+  outcome: placed
+  checksShifts: true
+  goldens:
+    '0': CAT=7,7;7,6;7,5|DOG=0,2;0,1;0,0|SUN=8,5;8,4;8,3
+    '7': CAT=3,5;3,4;3,3|DOG=2,3;2,2;2,1|SUN=5,6;5,5;5,4
+    '37': CAT=7,2;7,1;7,0|DOG=3,4;3,3;3,2|SUN=6,6;6,5;6,4
+- name: upwards paths retain their positions
+  columns: 4
+  rows: 5
+  rules: [{directions: [up], turns: 0}]
+  downWords: [3, 3]
+  words: [CAT, DOG, SUN]
+  outcome: placed
+  goldens:
+    '0': CAT=4,2;3,2;2,2|DOG=4,1;3,1;2,1|SUN=4,3;3,3;2,3
+    '7': CAT=3,0;2,0;1,0|DOG=4,3;3,3;2,3|SUN=3,1;2,1;1,1
+    '37': CAT=4,1;3,1;2,1|DOG=2,3;1,3;0,3|SUN=3,0;2,0;1,0
+- name: completion rejects target runs after choosing compatible shapes
+  columns: 4
+  rows: 4
+  rules:
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 0}
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 1}
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 2}
+  - {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 3}
+  firstRule: {directions: [right, down, down_right, down_left, left, up, up_left, up_right], turns: 3}
+  downWords: [0, 1]
+  words: [ABACAD]
+  avoidsTargetRuns: true
+  outcome: placed
+  goldens:
+    '0': ABACAD=1,3;0,3;0,2;0,1;1,1;1,0
+    '7': ABACAD=1,2;2,2;2,1;2,0;1,0;1,1
+    '37': ABACAD=2,0;1,0;1,1;1,2;2,2;2,3
+- name: an unplaced target is readable in only some shapes of the other word
+  columns: 4
+  rows: 4
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right], turns: 0}
+  - {directions: [right, down], turns: 1}
+  downWords: [0, 2]
+  words: [ABC, AC]
+  outcome: placed
+  checksShifts: true
+  mixedShapes: true
+  goldens:
+    '0': ABC=0,0;1,1;2,2|AC=2,1;2,2
+    '7': ABC=1,2;2,2;3,2|AC=2,0;3,1
+    '37': ABC=0,1;1,1;1,0|AC=2,1;2,2
+- name: completion preserves room for an alphabetic and a separator copy
+  columns: 3
+  rows: 3
+  rules: [{directions: [right, down], turns: 0}]
+  downWords: [1, 1]
+  words: [AÉ, C-D]
+  conditionalCharacters: [É]
+  avoidsTargetRuns: true
+  outcome: placed
+  goldens:
+    '0': AÉ=2,1;2,2|C-D=0,0;1,0;2,0
+    '7': AÉ=2,0;2,1|C-D=0,2;1,2;2,2
+    '37': AÉ=0,2;1,2|C-D=2,0;2,1;2,2

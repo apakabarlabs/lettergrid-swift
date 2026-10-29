@@ -92,22 +92,23 @@ struct PathPacking {
       let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
         .first(where: { !used.contains($0) })
     else { return .impossible }
+    let compatibility = PlacementCompatibility(
+      columns: columns, rows: rows, rules: rules, words: words, blank: blank)
     let alone = [Placement?](repeating: nil, count: words.count)
     let choices = words.indices.map { index in
-      candidates(for: words[index], rules: index == 0 ? firstRule.map { [$0] } ?? rules : rules)
-        .filter { candidate in
-          var chosen = alone
-          chosen[index] = candidate.placement
-          return standApart(chosen, words: words, blank: blank)
-        }
-        .shuffled(using: &random)
+      let allowedRules = index == 0 ? firstRule.map { [$0] } ?? rules : rules
+      return candidates(for: words[index], rules: allowedRules) { placement in
+        var chosen = alone
+        chosen[index] = placement
+        return compatibility.accepts(chosen)
+      }.shuffled(using: &random)
     }
     guard choices.allSatisfy({ !$0.isEmpty }) else { return .impossible }
     var search = Search(
       words: words.map(Array.init), choices: choices,
       order: words.indices.sorted { choices[$0].count < choices[$1].count },
       downWords: downWords, nodeLimit: nodeLimit,
-      standApart: { standApart($0, words: words, blank: blank) }, completes: completes,
+      standApart: compatibility.accepts, completes: completes,
       letters: Array(repeating: nil, count: rows * columns),
       uses: Array(repeating: 0, count: rows * columns),
       chosen: Array(repeating: nil, count: words.count))
@@ -115,7 +116,9 @@ struct PathPacking {
     return search.exhausted ? .undetermined : .impossible
   }
 
-  private func candidates(for word: String, rules: [WordRule]) -> [Candidate] {
+  private func candidates(
+    for word: String, rules: [WordRule], accepting: (Placement) -> Bool
+  ) -> [Candidate] {
     var seen: Set<[Cell]> = []
     var found: [Candidate] = []
     for rule in rules {
@@ -129,6 +132,7 @@ struct PathPacking {
           let height = (shape.map(\.row).max() ?? 0) + 1
           let width = (shape.map(\.column).max() ?? 0) + 1
           guard height <= rows, width <= columns else { continue }
+          guard accepting(Placement(word: word, cells: shape)) else { continue }
           for row in 0...(rows - height) {
             for column in 0...(columns - width) {
               let cells = shape.map { Cell(row: $0.row + row, column: $0.column + column) }
@@ -143,60 +147,5 @@ struct PathPacking {
       }
     }
     return found
-  }
-
-  private func standApart(_ chosen: [Placement?], words: [String], blank: Character) -> Bool {
-    let placements = chosen.compactMap { $0 }
-    var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
-    for placement in placements {
-      for (cell, letter) in zip(placement.cells, placement.word) {
-        letters[cell.row][cell.column] = letter
-      }
-    }
-    let areas = placements.map { Set($0.cells) }
-    let nested = areas.indices.contains { inner in
-      areas.indices.contains { $0 != inner && areas[inner].isSubset(of: areas[$0]) }
-    }
-    guard !nested else { return false }
-    let board = Board(letters: letters, placements: placements)
-    let counts = letterCounts(letters, blank: blank)
-    guard
-      placements.allSatisfy({
-        standsAlone($0.word, among: counts) || board.hasSingleOccurrence(of: $0.word, rules: rules)
-      })
-    else { return false }
-    return zip(chosen, words).allSatisfy { placement, word in
-      placement != nil || !spells(word, from: counts)
-        || leavesRoom(for: word, on: board, beside: areas)
-    }
-  }
-
-  private func letterCounts(_ letters: [[Character]], blank: Character) -> [Character: Int] {
-    var counts: [Character: Int] = [:]
-    for row in letters {
-      for letter in row where letter != blank { counts[letter, default: 0] += 1 }
-    }
-    return counts
-  }
-
-  private func spells(_ word: String, from counts: [Character: Int]) -> Bool {
-    var needed: [Character: Int] = [:]
-    for letter in word { needed[letter, default: 0] += 1 }
-    return needed.allSatisfy { counts[$0.key, default: 0] >= $0.value }
-  }
-
-  private func standsAlone(_ word: String, among counts: [Character: Int]) -> Bool {
-    Set(word).count == word.count && word.allSatisfy { counts[$0] == 1 }
-  }
-
-  private func leavesRoom(for word: String, on board: Board, beside areas: [Set<Cell>]) -> Bool {
-    var paths: Set<[Cell]> = []
-    for reading in PathSearch(board: board, rules: rules, maximumReadings: 3)
-      .readings(in: WordIndex([word]))
-    where !paths.contains(Array(reading.cells.reversed())) {
-      paths.insert(reading.cells)
-    }
-    guard let path = paths.first else { return true }
-    return paths.count == 1 && !areas.contains { Set(path).isSubset(of: $0) }
   }
 }
