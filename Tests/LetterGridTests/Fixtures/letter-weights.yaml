@@ -1,0 +1,17 @@
+alike:
+- name: a composed and a decomposed accent are one letter
+  first: {"\U000000E9": 1, z: 1}
+  second: {"e\U00000301": 1, z: 1}
+- name: letter case does not change the alphabet
+  first: {a: 1, B: 2}
+  second: {A: 1, b: 2}
+shares:
+- name: an underflowing penalty shared by every letter keeps their weight ratio
+  weights: {a: 1.5, b: 1}
+  sameNeighbour: 5e-324
+  neighbours: {A: 2, B: 2}
+  seed: 7
+  draws: 4000
+  letter: A
+  share: 0.6
+  tolerance: 0.03

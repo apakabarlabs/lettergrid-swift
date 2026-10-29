@@ -1,4 +1,6 @@
+import Foundation
 import Testing
+import Yams
 
 @testable import LetterGrid
 
@@ -48,31 +50,64 @@ struct LetterWeightsTests {
     #expect(ordered.first == "A")
   }
 
-  @Test(arguments: [
-    (["\u{E9}": 1.0, "z": 1.0], ["e\u{301}": 1.0, "z": 1.0]),
-    (["a": 1.0, "B": 2.0], ["A": 1.0, "b": 2.0]),
-  ])
-  func weightsThatNormaliseAlikeAreEqualAndDrawAlike(
-    first: [String: Double], second: [String: Double]
-  ) throws {
-    let (left, right) = (try LetterWeights(first), try LetterWeights(second))
-    var leftRandom = SeededRandom(seed: 3)
-    var rightRandom = SeededRandom(seed: 3)
+  @Test func weightsThatNormaliseAlikeAreEqualAndDrawAlike() throws {
+    for item in try WeightCases.load().alike {
+      let left = try LetterWeights(item.first)
+      let right = try LetterWeights(item.second)
+      var leftRandom = SeededRandom(seed: 3)
+      var rightRandom = SeededRandom(seed: 3)
 
-    #expect(left == right)
-    #expect(left.orderedLetters(using: &leftRandom) == right.orderedLetters(using: &rightRandom))
+      #expect(left == right, "\(item.name)")
+      #expect(
+        left.orderedLetters(using: &leftRandom) == right.orderedLetters(using: &rightRandom),
+        "\(item.name)")
+    }
   }
 
-  @Test func anUnderflowingPenaltySharedByEveryLetterKeepsTheirWeightRatio() throws {
-    let weights = try LetterWeights(
-      ["a": 1.5, "b": 1], sameNeighbour: Double.leastNonzeroMagnitude)
-    var random = SeededRandom(seed: 7)
-    let draws = 4000
+  @Test func firstDrawsFollowTheRecordedShares() throws {
+    for item in try WeightCases.load().shares {
+      let weights = try LetterWeights(item.weights, sameNeighbour: item.sameNeighbour)
+      let neighbours = Dictionary(
+        uniqueKeysWithValues: item.neighbours.map { (Character($0.key), $0.value) })
+      var random = SeededRandom(seed: item.seed)
 
-    let first = (0..<draws).filter { _ in
-      weights.orderedLetters(using: &random, neighbours: ["A": 2, "B": 2]).first == "A"
-    }.count
+      let hits = (0..<item.draws).filter { _ in
+        weights.orderedLetters(using: &random, neighbours: neighbours).first
+          == Character(item.letter)
+      }.count
 
-    #expect(abs(Double(first) / Double(draws) - 0.6) < 0.03)
+      #expect(abs(Double(hits) / Double(item.draws) - item.share) < item.tolerance, "\(item.name)")
+    }
   }
+}
+
+private struct WeightCases: Decodable {
+  let alike: [AlikeWeights]
+  let shares: [DrawShare]
+
+  static func load() throws -> WeightCases {
+    let url = try #require(
+      Bundle.module.url(
+        forResource: "letter-weights", withExtension: "yaml", subdirectory: "Fixtures"))
+    let text = try String(contentsOf: url, encoding: .utf8)
+    return try YAMLDecoder().decode(WeightCases.self, from: text)
+  }
+}
+
+private struct AlikeWeights: Decodable {
+  let name: String
+  let first: [String: Double]
+  let second: [String: Double]
+}
+
+private struct DrawShare: Decodable {
+  let name: String
+  let weights: [String: Double]
+  let sameNeighbour: Double
+  let neighbours: [String: Int]
+  let seed: UInt64
+  let draws: Int
+  let letter: String
+  let share: Double
+  let tolerance: Double
 }
