@@ -23,8 +23,7 @@ struct NoiseScoreTests {
     let filler = try LetterWeights(
       Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) }))
     let request = try BoardGenerator(
-      columns: 7, rows: 7, rules: rules, filler: filler,
-      layoutsPerAttempt: 4, attempts: 2, fillsPerAttempt: 2
+      columns: 7, rows: 7, rules: rules, filler: filler
     ).request(for: ["DIRECT", "SQUARE", "SAW"])
     let board = request.board(seed: 7, dictionary: dictionary)
     let occupied = Set(board.placements.flatMap(\.cells))

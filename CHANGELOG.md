@@ -23,6 +23,13 @@
 
 ### Changed
 
+- One search lays out every request: straight and turned words, with and without a height
+  limit, go through the packing search that bounded turned requests already used. It now
+  prefers places where words share letters, searches again in another order (up to eight
+  times) when a layout shares none although the words could, and without `maxRows` grows
+  the board to the lowest height it finds within a smaller per-height budget. Boards of every
+  kind change. `accepts(_:firstRule:)` now also returns false when the words cannot meet the
+  vertical quota, and requests refuse them before searching.
 - A board is built from its target layout and filled once. Generation no longer builds,
   scores and discards a complete 0.18 board for every seed, nor adds symbol copies to it
   by 64 random tries before refilling. Packed boards keep their layouts. An unbounded
@@ -45,6 +52,9 @@
   Apps move to a new release together and do not rebuild boards of an earlier one; an app
   that must keep a board across updates saves its letters and placements. Remove the
   argument and any stored version.
+- `BoardGenerationLimits` and the `layoutsPerAttempt:`, `attempts:` and `fillsPerAttempt:`
+  parameters of `BoardGenerator`: the one search has no sampling or fill attempts to bound.
+  Remove the arguments.
 
 ## [0.19.0] - 2026-10-28
 

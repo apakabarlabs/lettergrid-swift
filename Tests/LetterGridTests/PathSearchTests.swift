@@ -31,11 +31,10 @@ struct PathSearchTests {
     #expect(prepared.words.contains("PLANET"))
     let filler = try LetterWeights(["a": 1, "n": 1, "o": 1, "r": 1, "s": 1, "t": 1])
     let turned = try BoardGenerator(
-      columns: 7, rows: 7, rules: rules, filler: filler, attempts: 3, fillsPerAttempt: 3
+      columns: 7, rows: 7, rules: rules, filler: filler
     ).request(for: ["PLANET", "ORBIT"], firstRule: rules[2])
     let straight = try BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, attempts: 3,
-      fillsPerAttempt: 3
+      columns: 7, rows: 7, directions: [.right, .down], filler: filler
     ).request(for: ["PLANET", "ORBIT"])
     for seed in UInt64(1)...12 {
       #expect(

@@ -23,7 +23,7 @@ enum TurnedBoards {
     let dictionary = BoardDictionary(words)
     let generator = BoardGenerator(
       columns: 7, rows: 7, rules: workload.rules, filler: workload.weights,
-      downWords: 1...2, attempts: 4, fillsPerAttempt: 10)
+      downWords: 1...2)
     try measure(generator: generator, words: words, dictionary: dictionary)
     try BoundedBoards.run(
       words: words, rules: workload.rules, weights: workload.weights)
@@ -85,9 +85,9 @@ enum TurnedBoards {
     ) { index in
       requests[index].board(seed: UInt64(index + 1), dictionary: dictionary).rows
     }
-    let fallbacks = fallbackCount(requests, dictionary: dictionary)
+    let isolated = isolatedFillCount(requests, dictionary: dictionary)
     FileHandle.standardOutput.write(
-      Data("turned fallbacks: \(fallbacks) of \(requests.count)\n".utf8))
+      Data("turned boards filled without target letters: \(isolated) of \(requests.count)\n".utf8))
     var seed: UInt64 = 0
     LetterGridBenchmarks.measure(
       "turned board minimum=7x7 rules=28 dictionary=7000", iterations: requests.count
@@ -106,7 +106,7 @@ enum TurnedBoards {
     }
   }
 
-  private static func fallbackCount(
+  private static func isolatedFillCount(
     _ requests: [BoardRequest], dictionary: BoardDictionary
   ) -> Int {
     requests.enumerated().filter { offset, request in

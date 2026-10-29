@@ -18,28 +18,18 @@ struct LayoutTests {
     }
   }
 
-  @Test func sampledCatTapDogLayoutsShareLettersWithoutExtraRows() throws {
-    let builder = LayoutBuilder(
-      columns: 5, minimumRows: 5, directions: [.right, .down], downWords: 1...1)
+  @Test func everySeedOfCatTapDogSharesLettersWithoutExtraRows() throws {
+    let request = try BoardGenerator(
+      columns: 5, rows: 5, directions: [.right, .down],
+      filler: try LetterWeights(["x": 1, "y": 1, "z": 1]), downWords: 1...1
+    ).request(for: ["CAT", "TAP", "DOG"])
     for seed: UInt64 in 1...100 {
-      var random = SeededRandom(seed: seed)
-      let layout = try #require(
-        builder.lowestLayout(for: ["CAT", "TAP", "DOG"], tries: 40, using: &random))
-      #expect(layout.rows == 5)
-      #expect(layout.sharedCells > 0, "seed \(seed)")
-      #expect(layout.placements.map(\.word) == ["CAT", "TAP", "DOG"])
-      #expect(layout.placements.filter { $0.direction == .down }.count == 1)
+      let board = request.board(seed: seed)
+      let cells = board.placements.flatMap(\.cells)
+      #expect(board.rows == 5)
+      #expect(Set(cells).count < cells.count, "seed \(seed)")
+      #expect(board.placements.map(\.word) == ["CAT", "TAP", "DOG"])
+      #expect(board.placements.filter { $0.direction == .down }.count == 1)
     }
-  }
-
-  @Test func sharedCellsCountExtraUsesIncludingMultipleWordsAtOneCell() {
-    let layout = Layout(
-      rows: 3,
-      placements: [
-        Placement(word: "CAT", start: Cell(row: 0, column: 0), direction: .right),
-        Placement(word: "CUP", start: Cell(row: 0, column: 0), direction: .down),
-        Placement(word: "CAR", start: Cell(row: 0, column: 0), direction: .downRight),
-      ])
-    #expect(layout.sharedCells == 2)
   }
 }

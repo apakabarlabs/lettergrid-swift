@@ -11,13 +11,11 @@ struct SeparatorBoardTests {
     let words: [String]
     let turns: Int
     let bounded: Bool
-    let fallback: Bool
     let columns: Int?
     let rows: Int?
     let rejects: Bool?
     let conditional: [String]?
     let weights: [String: Double]?
-    let layouts: Int?
   }
 
   @Test func separatorsHaveDecoysAndRemainCellsOfTheFoundPath() throws {
@@ -36,8 +34,6 @@ struct SeparatorBoardTests {
       columns: example.columns ?? 7, rows: example.rows ?? 7,
       maxRows: example.bounded ? example.rows ?? 7 : nil,
       rules: [rule], filler: try LetterWeights(example.weights ?? ["x": 1, "q": 1]),
-      layoutsPerAttempt: example.layouts ?? 40,
-      attempts: example.fallback ? 0 : 2, fillsPerAttempt: 2,
       conditionalCharacters: conditional)
     if example.rejects == true {
       #expect(throws: BoardGenerator.Failure.self) { try generator.request(for: example.words) }

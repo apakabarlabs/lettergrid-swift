@@ -3,26 +3,6 @@ import Testing
 @testable import LetterGrid
 
 struct BoundedHeightTests {
-  @Test func repeatedCompactionDoesNotLockAnAlreadyShiftedPathToTheRight() throws {
-    let cells = [
-      Cell(row: 0, column: 0), Cell(row: 0, column: 1),
-      Cell(row: 1, column: 1), Cell(row: 1, column: 2),
-    ]
-    let shifted = cells.map { Cell(row: $0.row + 2, column: $0.column + 2) }
-    let rule = WordRule(startDirections: [.right], turns: 2)
-    let builder = PathBoardBuilder(
-      columns: 5, minimumRows: 5, rules: [rule])
-    func layout(_ path: [Cell], seed: UInt64) -> Layout {
-      var random = SeededRandom(seed: seed)
-      return builder.lowestLayout(
-        Layout(rows: 5, placements: [Placement(word: "ABCD", cells: path)]), tries: 1,
-        using: &random)
-    }
-    for seed in UInt64(0)..<12 {
-      #expect(layout(cells, seed: seed) == layout(shifted, seed: seed))
-    }
-  }
-
   @Test(arguments: [-1, 0, 4])
   func aMaximumBelowTheMinimumIsRejected(maximum: Int) throws {
     let generator = BoardGenerator(
@@ -34,19 +14,19 @@ struct BoundedHeightTests {
 
   @Test func impossiblePackingFailsBeforeAPlayableRequestExists() throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 1, maxRows: 1, directions: [.right], filler: try filler(), attempts: 0)
+      columns: 3, rows: 1, maxRows: 1, directions: [.right], filler: try filler())
     #expect(throws: BoardGenerator.Failure.noRoom(words: ["CAT", "DOG"], columns: 3, rows: 1)) {
       try generator.request(for: ["CAT", "DOG"])
     }
     let unrestricted = BoardGenerator(
-      columns: 3, rows: 1, directions: [.right], filler: try filler(), attempts: 0)
+      columns: 3, rows: 1, directions: [.right], filler: try filler())
     #expect(try unrestricted.request(for: ["CAT", "DOG"]).board(seed: 1).rows > 1)
   }
 
   @Test func aHeightRangeCanFitAWordTallerThanItsMinimum() throws {
     let request = try BoardGenerator(
       columns: 3, rows: 2, maxRows: 5, directions: [.down], filler: filler(),
-      downWords: 1...1, attempts: 0
+      downWords: 1...1
     ).request(for: ["CAT"])
     for seed in UInt64(0)..<12 {
       let board = request.board(seed: seed)
@@ -59,7 +39,7 @@ struct BoundedHeightTests {
   @Test func anIntroductionTriesItsOtherAllowedDirectionWithinTheBounds() throws {
     let rule = WordRule(startDirections: [.down, .right])
     let request = try BoardGenerator(
-      columns: 6, rows: 2, maxRows: 2, rules: [rule], filler: filler(), attempts: 0
+      columns: 6, rows: 2, maxRows: 2, rules: [rule], filler: filler()
     ).request(for: ["ABCDEF"], firstRule: rule)
     let board = request.board(seed: 1)
     #expect(board.rows == 2)
@@ -67,8 +47,7 @@ struct BoundedHeightTests {
     #expect(rule.matches(board.placements[0]))
   }
 
-  @Test(arguments: [0, 4])
-  func theArmenianThirteenthLevelKeepsItsWordsAndSquare(attempts: Int) throws {
+  @Test func theArmenianThirteenthLevelKeepsItsWordsAndSquare() throws {
     let groups: [[Direction]] = [
       [.right, .down], [.downRight], [.downLeft], [.left], [.up], [.upLeft], [.upRight],
     ]
@@ -78,7 +57,7 @@ struct BoundedHeightTests {
     let request = try BoardGenerator(
       columns: 7, rows: 7, maxRows: 7, rules: rules,
       filler: LetterWeights(["ա": 1, "ե": 1, "ի": 1, "ո": 1, "ւ": 1, "ք": 1]),
-      downWords: 1...2, layoutsPerAttempt: 40, attempts: attempts, fillsPerAttempt: 10
+      downWords: 1...2
     ).request(for: words, firstRule: introduced)
     let dictionary = BoardDictionary(Set(words + ["ԳԱՀ", "ԳԵՏ", "ԱԶԳ"]))
     for seed in UInt64(0)..<16 {
@@ -89,13 +68,12 @@ struct BoundedHeightTests {
   }
 
   @Test(arguments: Direction.allCases, 0...3)
-  func boundedFallbackHonoursEveryStartAndExactTurnCount(
+  func boundedGenerationHonoursEveryStartAndExactTurnCount(
     direction: Direction, turns: Int
   ) throws {
     let rule = WordRule(startDirections: [direction], turns: turns)
     let request = try BoardGenerator(
-      columns: 7, rows: 7, maxRows: 7, rules: [rule], filler: filler(),
-      attempts: 0, fillsPerAttempt: 0
+      columns: 7, rows: 7, maxRows: 7, rules: [rule], filler: filler()
     ).request(for: ["ABCDEF"], firstRule: rule)
     for seed in UInt64(0)..<4 {
       let board = request.board(seed: seed)
@@ -106,15 +84,14 @@ struct BoundedHeightTests {
     }
   }
 
-  @Test(arguments: [0, 1])
-  func cumulativeRulesKeepTheirQuotaAndIntroductionWithNoFillBudget(attempts: Int) throws {
+  @Test func cumulativeRulesKeepTheirQuotaAndIntroduction() throws {
     let rules = (0...3).map { WordRule(startDirections: Direction.allCases, turns: $0) }
     let introduced = WordRule(startDirections: [.upRight], turns: 3)
     let available = rules + [introduced]
     let words = ["PLANET", "ORBIT", "SUN"]
     let request = try BoardGenerator(
       columns: 7, rows: 7, maxRows: 7, rules: available, filler: filler(),
-      downWords: 1...2, attempts: attempts, fillsPerAttempt: 0
+      downWords: 1...2
     ).request(for: words, firstRule: introduced)
     for seed in UInt64(0)..<12 {
       let board = request.board(seed: seed)
@@ -144,7 +121,7 @@ struct BoundedHeightTests {
     let ways: [Direction] = [.right, .down]
     let request = try BoardGenerator(
       columns: 7, rows: 7, maxRows: 7, directions: ways, filler: weights,
-      downWords: 1...2, attempts: 2, fillsPerAttempt: 2
+      downWords: 1...2
     ).request(for: words)
     for seed in UInt64(0)..<4 {
       let board = request.board(seed: seed, dictionary: dictionary)

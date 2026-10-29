@@ -25,13 +25,15 @@ struct PathPacking {
     var nodes = 0
     var exhausted = false
 
+    var sharedCells: Int { uses.reduce(0) { $0 + max($1 - 1, 0) } }
+
     mutating func place(at depth: Int) -> Bool {
       guard depth < order.count else {
         return downWords.contains(vertical) && completes(chosen.compactMap { $0 })
       }
       let index = order[depth]
       let remaining = order.count - depth - 1
-      for candidate in choices[index] {
+      for candidate in crossingFirst(choices[index], word: words[index]) {
         nodes += 1
         guard nodes <= nodeLimit else {
           exhausted = true
@@ -51,6 +53,17 @@ struct PathPacking {
         if exhausted { return false }
       }
       return false
+    }
+
+    private func crossingFirst(_ candidates: [Candidate], word: [Character]) -> [Candidate] {
+      let shared = candidates.map { candidate in
+        zip(candidate.slots, word).reduce(0) { $0 + (letters[$1.0] == $1.1 ? 1 : 0) }
+      }
+      guard shared.contains(where: { $0 > 0 }) else { return candidates }
+      return candidates.indices.sorted {
+        shared[$0] > shared[$1] || (shared[$0] == shared[$1] && $0 < $1)
+      }
+      .map { candidates[$0] }
     }
 
     private func fits(_ candidate: Candidate, word: [Character]) -> Bool {
@@ -80,12 +93,17 @@ struct PathPacking {
   var firstRule: WordRule?
   var downWords: ClosedRange<Int> = 0...Int.max
   var nodeLimit = 2_000_000
+  var crossingRestarts = 8
   var completes: @Sendable ([Placement]) -> Bool = { _ in true }
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {
     precondition(
-      firstRule.map(rules.contains) ?? true,
-      "The first word's rule must be one of the rules every reading is checked against.")
+      firstRule.map { first in
+        rules.contains {
+          $0.turns == first.turns && Set(first.startDirections).isSubset(of: $0.startDirections)
+        }
+      } ?? true,
+      "The first word's rule must lie within one of the rules every reading is checked against.")
     var random = SeededRandom(seed: seed)
     let used = Set(words.joined())
     guard !words.isEmpty,
@@ -94,27 +112,50 @@ struct PathPacking {
     else { return .impossible }
     let compatibility = PlacementCompatibility(
       columns: columns, rows: rows, rules: rules, words: words, blank: blank)
-    let alone = [Placement?](repeating: nil, count: words.count)
-    let choices = words.indices.map { index in
-      let allowedRules = index == 0 ? firstRule.map { [$0] } ?? rules : rules
-      return random.shuffled(
-        candidates(for: words[index], rules: allowedRules) { placement in
-          var chosen = alone
-          chosen[index] = placement
-          return compatibility.accepts(chosen)
-        })
+    let all = standingAlone(words, compatibility: compatibility)
+    guard all.allSatisfy({ !$0.isEmpty }) else { return .impossible }
+    let canCross = words.indices.contains { first in
+      words.indices.contains { $0 > first && !Set(words[first]).isDisjoint(with: words[$0]) }
     }
-    guard choices.allSatisfy({ !$0.isEmpty }) else { return .impossible }
-    var search = Search(
-      words: words.map(Array.init), choices: choices,
-      order: words.indices.sorted { choices[$0].count < choices[$1].count },
-      downWords: downWords, nodeLimit: nodeLimit,
-      standApart: compatibility.accepts, completes: completes,
-      letters: Array(repeating: nil, count: rows * columns),
-      uses: Array(repeating: 0, count: rows * columns),
-      chosen: Array(repeating: nil, count: words.count))
-    if search.place(at: 0) { return .placed(search.chosen.compactMap { $0 }) }
-    return search.exhausted ? .undetermined : .impossible
+    var best: (placements: [Placement], shared: Int)?
+    var spent = 0
+    for _ in 0..<max(1, crossingRestarts) {
+      let choices = all.map { random.shuffled($0) }
+      var search = Search(
+        words: words.map(Array.init), choices: choices,
+        order: words.indices.sorted { choices[$0].count < choices[$1].count },
+        downWords: downWords, nodeLimit: nodeLimit - spent,
+        standApart: compatibility.accepts, completes: completes,
+        letters: Array(repeating: nil, count: rows * columns),
+        uses: Array(repeating: 0, count: rows * columns),
+        chosen: Array(repeating: nil, count: words.count))
+      guard search.place(at: 0) else {
+        if let best { return .placed(best.placements) }
+        return search.exhausted ? .undetermined : .impossible
+      }
+      spent += search.nodes
+      let shared = search.sharedCells
+      if best.map({ shared > $0.shared }) ?? true {
+        best = (search.chosen.compactMap { $0 }, shared)
+      }
+      if shared > 0 || !canCross { break }
+    }
+    guard let best else { return .impossible }
+    return .placed(best.placements)
+  }
+
+  private func standingAlone(
+    _ words: [String], compatibility: PlacementCompatibility
+  ) -> [[Candidate]] {
+    let alone = [Placement?](repeating: nil, count: words.count)
+    return words.indices.map { index in
+      let allowedRules = index == 0 ? firstRule.map { [$0] } ?? rules : rules
+      return candidates(for: words[index], rules: allowedRules) { placement in
+        var chosen = alone
+        chosen[index] = placement
+        return compatibility.accepts(chosen)
+      }
+    }
   }
 
   private func candidates(

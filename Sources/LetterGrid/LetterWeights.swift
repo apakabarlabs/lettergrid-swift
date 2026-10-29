@@ -73,13 +73,6 @@ public struct LetterWeights: Equatable, Sendable {
     return ordered
   }
 
-  func randomLetter(
-    using random: inout SeededRandom, neighbours: [Character: Int] = [:]
-  ) -> Character {
-    var candidates = candidates(neighbours: neighbours)
-    return draw(from: &candidates, using: &random)
-  }
-
   private func candidates(neighbours: [Character: Int]) -> [Candidate] {
     zip(letters, weights).map { letter, weight in
       let count = Double(neighbours[letter] ?? 0)

@@ -53,7 +53,7 @@ a wall-clock deadline across application suspension.
 - Generation forbids added runs of three equal letters along any straight direction.
   Runs contained in one target word remain, but filler cannot extend them. Filling first
   tries to avoid equal neighbours, then permits pairs when that search fails. Requests
-  retain a checked fallback and throw `unsettled` if bounded preparation cannot find one.
+  retain a run-free fallback and throw `unsettled` if preparation cannot find one.
 - Directions are opt-in. The vertical quota counts only `.up` and `.down`, including turned
   words whose first segment runs up or down; their serialized
   names are the case names, while diagonals use `down_right`, `down_left`, `up_left` and `up_right`.
@@ -64,38 +64,37 @@ a wall-clock deadline across application suspension.
   uppercasing and words contained in other targets. When opposite directions are enabled,
   reverse containment is also rejected. The filler needs a letter absent from all targets,
   and directions must satisfy the vertical quota and any required first direction.
-- Dimensions and `layoutsPerAttempt` must be positive. The vertical minimum, `attempts`
-  and `fillsPerAttempt` must be nonnegative. Invalid settings throw
-  ``BoardGenerator/Failure/invalidConfiguration``; incompatible words throw
+- Dimensions must be positive, rules valid and the vertical minimum nonnegative; invalid
+  settings throw ``BoardGenerator/Failure/invalidConfiguration``. Incompatible words throw
   ``BoardGenerator/Failure/noRoom(words:columns:rows:)``.
-- An optional `maxRows` must be at least `rows`. Set both to the same value for an exact
-  height. Bounded requests prepare a checked fallback within that height before returning;
-  failure to find one within the preparation budget throws `noRoom`, even if a different
-  packing might exist. Zero attempts or fills still require fallback preparation. With `rules:`,
-  generation instead searches every allowed path for any number of words: `noRoom` then
-  means that no layout exists, and ``BoardGenerator/Failure/unsettled(words:columns:rows:)``
-  that the search ran out first. `unsettled` also reports words that do fit, but only in
-  layouts where the targets themselves put three equal letters in a line, and words whose
-  layout no filler can complete without such a line. ``BoardGenerator/accepts(_:firstRule:)`` checks the word
-  conditions without a board; a set it rejects always throws, and a set it accepts may still
-  have no layout. Read the resulting height from `board.rows`.
-  Both straight and turned paths support the limit; without it the board grows downwards.
-- Each generation attempt samples `layoutsPerAttempt` layouts, preferring fewer rows and
-  then more shared cells. Ties keep the first sample. Search is bounded by `attempts` and
-  `fillsPerAttempt`; zero attempts selects the fallback directly. The unbounded fallback separates
-  words into bands and fills gaps with letters absent from the targets. Target uniqueness
-  remains guaranteed, but dictionary filtering and the maximum possible crossings do not.
+- One search lays out every request, straight or turned: it tries every allowed path of every
+  word, lets no target lie entirely on another target's cells, and prefers places where a
+  word shares letters with the words already placed. When a layout comes out with no shared
+  letter although the words have letters in common, it searches again in another order, up
+  to eight times, and keeps the layout that shares most. Each board seed repeats the search in
+  its own order, so seeds vary where the words lie.
+- An optional `maxRows` must be at least `rows`; set both to the same value for an exact
+  height. Within a height limit the search is complete: `noRoom` means that no layout exists,
+  and ``BoardGenerator/Failure/unsettled(words:columns:rows:)`` that the search ran out first.
+  `unsettled` also reports words that do fit, but only in layouts where the targets themselves
+  put three equal letters in a line, and words whose layout no filler can complete without
+  such a line. Without `maxRows` the board grows downwards to the lowest height the search
+  places the words at within a smaller budget per height.
+  ``BoardGenerator/accepts(_:firstRule:)`` checks the word conditions and the vertical quota
+  without a board; a set it rejects always throws, and a set it accepts may still have no
+  layout. Read the resulting height from `board.rows`.
 - Filler weights must be positive and finite. `sameNeighbour` in `(0, 1]` multiplies a letter's
-  weight once per equal neighbour in the eight surrounding cells, in searched and fallback
-  boards. Its default is `1`; extreme weights are rescaled when needed for valid sampling.
+  weight once per equal neighbour in the eight surrounding cells. Its default is `1`; extreme
+  weights are rescaled when needed for valid sampling.
 
 ### Restoring and pacing
 
 Generation retains nonletter characters as ordinary target-path cells and adds at least
 one copy of each outside all target paths. `conditionalCharacters` applies the same rule to
 caller-selected letters. Ordinary weighted fill excludes these characters, so an absent
-conditional character never appears on the board. Checked fallbacks retain target uniqueness
-and the extra copies; requests reject layouts that cannot provide them within the search budget.
+conditional character never appears on the board. The run-free fallback chosen during
+preparation keeps target uniqueness and the extra copies; requests reject layouts that cannot
+provide them.
 
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
@@ -113,25 +112,16 @@ and the extra copies; requests reject layouts that cannot provide them within th
   segment and `turns` counts its direction changes. Save `cells`, not only `start` and
   `direction`, for turned words. Hints, introduction and selection follow cells; a drag that
   revisits an earlier cell backtracks to it.
-- With `rules:` and `maxRows`, generation searches every allowed path, lets no target lie
-  entirely on another target's cells, and repeats the search for each board seed in its own
-  order. All other rule-based requests inspect at most
-  256 shapes and 100,000 search nodes per initial direction and rule and can reject a word when
-  that bounded search finds no unique path. A prepared request then freezes its checked shapes
-  and board seeds change positions and filler; if all rules have zero turns, generation
-  delegates to the straight generator. A checked fallback guarantees target uniqueness;
-  dictionary filtering is best effort as with straight boards. Selection keeps its
-  start-anchored direction snapping for straight rules.
-- Generation keeps the best unique-target ordinary fill within its search budget, preferring
-  fewer distinct stray words. It uses the isolated filler only if no ordinary fill has unique
-  targets. Noise scoring has a deterministic node budget and prunes already counted dictionary
-  words; an exhausted score never counts as clean, and fully scored fills outrank incomplete ones.
+- Selection keeps its start-anchored direction snapping for straight rules.
+- The fill keeps targets unique and prefers fewer distinct stray words from the dictionary,
+  which is best effort. Noise scoring has a deterministic node budget and prunes already
+  counted dictionary words; an exhausted score never counts as clean, and fully scored fills
+  outrank incomplete ones.
 - The library keeps one generation. A seed gives the same board within one library version
   only; an app that must keep a board across updates saves its letters and placements.
 - Every random choice draws from ``SeededRandom`` through its own methods, never through the
   standard library's algorithms; its page states each algorithm for a port.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.
-  ``BoardGenerationLimits/standard`` exposes the unchanged default search bounds.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced
   motion. The caller owns timing and presentation.
 
@@ -151,7 +141,6 @@ and the extra copies; requests reject layouts that cannot provide them within th
 - ``BoardGenerator``
 - ``BoardRequest``
 - ``WordRule``
-- ``BoardGenerationLimits``
 - ``BoardDictionary``
 - ``LetterWeights``
 - ``SeededRandom``

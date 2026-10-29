@@ -18,7 +18,7 @@ struct LetterGridBenchmarks {
     guard arguments.isEmpty else { throw BoundedProfile.Failure.arguments }
     boardScans()
     largeDictionary()
-    try fallbackBoards()
+    try smallAlphabetBoards()
     hints()
     try packedRequests()
     try OrdinaryBoards.run()
@@ -63,16 +63,16 @@ struct LetterGridBenchmarks {
   }
 
   @MainActor
-  private static func fallbackBoards() throws {
+  private static func smallAlphabetBoards() throws {
     for count in [4, 16, 26] {
       let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ".prefix(count))
       let weights = Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) })
       let generator = BoardGenerator(
         columns: 7, rows: 7, directions: [.right, .down],
-        filler: try LetterWeights(weights, sameNeighbour: 0.2), attempts: 0)
+        filler: try LetterWeights(weights, sameNeighbour: 0.2))
       let request = try generator.request(for: ["SUN", "MOON"])
       var seed: UInt64 = 0
-      measure("fallback alphabet=\(count)", iterations: 100) {
+      measure("board alphabet=\(count)", iterations: 100) {
         seed += 1
         let board = request.board(seed: seed)
         return board.rows + board.letters.flatMap { $0 }.filter { $0 == "A" }.count

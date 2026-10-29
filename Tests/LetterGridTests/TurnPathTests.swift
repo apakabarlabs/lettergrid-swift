@@ -107,7 +107,7 @@ struct TurnPathIntegrationTests {
     let rule = WordRule(startDirections: [direction], turns: turns)
     let generator = BoardGenerator(
       columns: 7, rows: 7, rules: [rule],
-      filler: try LetterWeights(["x": 1, "q": 1]), attempts: 1, fillsPerAttempt: 1)
+      filler: try LetterWeights(["x": 1, "q": 1]))
     let board = try generator.request(for: ["ABCDEF"], firstRule: rule).board(seed: 12)
     #expect(rule.matches(board.placements[0]))
     #expect(board.occurrences(of: "ABCDEF", rules: [rule]) == 1)
@@ -127,8 +127,7 @@ struct TurnPathIntegrationTests {
     let rule = WordRule(startDirections: [.right, .down])
     let generator = BoardGenerator(
       columns: 4, rows: 4, rules: [rule],
-      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...1,
-      attempts: 1, fillsPerAttempt: 1)
+      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...1)
     let board = try generator.request(for: ["CAT", "TAR"]).board(seed: 17)
     #expect(!Set(board.placements[0].cells).isDisjoint(with: board.placements[1].cells))
   }
@@ -158,7 +157,7 @@ struct TurnPathIntegrationTests {
       columns: 7, rows: 7, rules: rules,
       filler: try LetterWeights(["x": 1, "q": 1, "z": 1]),
       dictionary: ["PLANET", "ORBIT", "LUNAR", "STAR", "MOON", "SOLAR"],
-      downWords: 1...2, attempts: 2, fillsPerAttempt: 2)
+      downWords: 1...2)
     let board = try generator.request(for: words, firstRule: required).board(seed: 73)
     #expect(required.matches(board.placements[0]))
     #expect(board.placements.map(\.word) == words)
@@ -241,37 +240,15 @@ struct TurnPathIntegrationTests {
     #expect(firstTurns.count >= 3)
   }
 
-  @Test func aPreparedTurnedRequestKeepsItsShapeAcrossBoardSeeds() throws {
-    let rule = WordRule(startDirections: [.right], turns: 3)
-    let request = try BoardGenerator(
-      columns: 7, rows: 7, rules: [rule],
-      filler: LetterWeights(["x": 1, "q": 1]), layoutsPerAttempt: 1,
-      attempts: 1, fillsPerAttempt: 1
-    ).request(for: ["PLANET"], firstRule: rule)
-    let first = request.board(seed: 1).placements[0]
-    let second = request.board(seed: 2).placements[0]
-    let relativeFirst = first.cells.map {
-      Cell(row: $0.row - first.start.row, column: $0.column - first.start.column)
-    }
-    let relativeSecond = second.cells.map {
-      Cell(row: $0.row - second.start.row, column: $0.column - second.start.column)
-    }
-    #expect(relativeFirst == relativeSecond)
-  }
-
-  @Test func equalLengthWordsCanReceiveDifferentReproducibleShapes() throws {
+  @Test func aSeedRebuildsTheSameTurnedBoard() throws {
     let rule = WordRule(startDirections: [.right], turns: 3)
     let generator = BoardGenerator(
       columns: 7, rows: 7, rules: [rule],
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), attempts: 0)
-    let words = ["PLANET", "GALAXY", "COMETS", "NEBULA"]
-    var paths: Set<[Cell]> = []
-    for word in words {
+      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+    for word in ["PLANET", "GALAXY", "COMETS", "NEBULA"] {
       let first = try generator.request(for: [word], firstRule: rule).board(seed: 1)
       let repeated = try generator.request(for: [word], firstRule: rule).board(seed: 1)
       #expect(first == repeated)
-      paths.insert(first.placements[0].cells)
     }
-    #expect(paths.count > 1)
   }
 }

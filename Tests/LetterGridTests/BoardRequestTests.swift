@@ -14,7 +14,7 @@ struct BoardRequestTests {
     let request = try BoardGenerator(
       columns: 3, rows: 4, directions: [.down],
       filler: LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]),
-      downWords: 2...2, attempts: 0
+      downWords: 2...2
     ).request(for: ["CAT", "DOG"])
 
     let board = request.board(seed: 42)
@@ -56,16 +56,11 @@ struct BoardRequestTests {
     }
   }
 
-  @Test func invalidLimitsAndDirectionsAreRejectedBeforePreparingARequest() throws {
+  @Test func invalidQuotasAndDirectionsAreRejectedBeforePreparingARequest() throws {
     let filler = try LetterWeights(["x": 1])
     let generators = [
       BoardGenerator(columns: 5, rows: 5, directions: [], filler: filler),
       BoardGenerator(columns: 5, rows: 5, directions: [.right], filler: filler, downWords: -1...1),
-      BoardGenerator(
-        columns: 5, rows: 5, directions: [.right], filler: filler, layoutsPerAttempt: 0),
-      BoardGenerator(columns: 5, rows: 5, directions: [.right], filler: filler, attempts: -1),
-      BoardGenerator(
-        columns: 5, rows: 5, directions: [.right], filler: filler, fillsPerAttempt: -1),
     ]
     for generator in generators {
       #expect(throws: BoardGenerator.Failure.invalidConfiguration) {

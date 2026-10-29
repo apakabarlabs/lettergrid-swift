@@ -85,7 +85,7 @@ struct ReverseDirectionTests {
       columns: 7, rows: 7, directions: [.down, .up], filler: try LetterWeights(["x": 1]),
       downWords: 0...2)
 
-    #expect(throws: BoardGenerator.Failure.self) {
+    #expect(throws: BoardGenerator.Failure.noRoom(words: ["TAC", "CATS"], columns: 7, rows: 7)) {
       try generator.request(for: ["TAC", "CATS"])
     }
   }

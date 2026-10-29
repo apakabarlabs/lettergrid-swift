@@ -8,21 +8,19 @@ public struct BoardRequest: Equatable, Sendable {
   public let words: [String]
   public let firstDirection: Direction?
   public let firstRule: WordRule?
-  let pathLayout: Layout?
-  let boundedFallback: Layout?
+  let layout: Layout
   private let generator: BoardGenerator
   private var runFree: RunFreeFallback?
 
   init(
-    words: [String], firstDirection: Direction?, generator: BoardGenerator,
-    firstRule: WordRule? = nil, pathLayout: Layout? = nil, boundedFallback: Layout? = nil
+    words: [String], firstDirection: Direction?, generator: BoardGenerator, firstRule: WordRule?,
+    layout: Layout
   ) {
     self.words = words
     self.firstDirection = firstDirection
     self.generator = generator
     self.firstRule = firstRule
-    self.pathLayout = pathLayout
-    self.boundedFallback = boundedFallback
+    self.layout = layout
   }
 
   public func board(seed: UInt64, dictionary: Set<String>? = nil) -> Board {

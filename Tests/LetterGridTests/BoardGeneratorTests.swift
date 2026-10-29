@@ -72,7 +72,7 @@ struct BoardGeneratorTests {
     let generator = BoardGenerator(
       columns: 7, rows: 15, directions: directions,
       filler: try LetterWeights(["a": 1_000, "b": 1]), dictionary: ["AAA"],
-      downWords: 1...2, layoutsPerAttempt: 1, attempts: 1, fillsPerAttempt: 20)
+      downWords: 1...2)
     let words = ["PERSPECTIVE", "SUN", "MOON"]
     let board = try generator.board(for: words, seed: 1)
 
@@ -112,7 +112,7 @@ struct BoardGeneratorTests {
     }
   }
 
-  @Test func anImpossibleMinimumVerticalQuotaFailsForEveryLayoutBuilder() throws {
+  @Test func anImpossibleMinimumVerticalQuotaFails() throws {
     for firstDirection: Direction? in [nil, .right] {
       let generator = BoardGenerator(
         columns: 3, rows: 3, directions: [.right, .down], filler: filler,

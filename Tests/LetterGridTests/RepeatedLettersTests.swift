@@ -20,7 +20,7 @@ struct RepeatedLettersTests {
     #expect(!hasAddedRun(reference))
     let generator = BoardGenerator(
       columns: width, rows: 3, maxRows: 3, directions: [.down],
-      filler: try LetterWeights(["X": 1]), downWords: width...width, attempts: 0)
+      filler: try LetterWeights(["X": 1]), downWords: width...width)
     let board = try generator.request(for: words).board(seed: 42)
     #expect(!hasAddedRun(board))
   }
