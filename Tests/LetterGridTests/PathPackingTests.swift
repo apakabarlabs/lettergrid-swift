@@ -43,12 +43,13 @@ private struct PackingCase: Decodable {
     if avoidsRuns || !required.isEmpty {
       let (rows, columns) = (rows, columns)
       let rules = rules.map(\.wordRule)
-      packing.completes = { placements in
+      packing.completes = { placements, budget in
         let layout = Layout(rows: rows, placements: placements)
-        guard !avoidsRuns || !layout.hasForbiddenTargetRun(columns: columns) else { return false }
-        return required.isEmpty
-          || ConditionalFill.decoys(
-            required, beside: layout, columns: columns, rules: rules, seed: 0) != nil
+        guard !avoidsRuns || !layout.hasForbiddenTargetRun(columns: columns) else {
+          return .doesNotFit
+        }
+        return ConditionalFill.roomForDecoys(
+          required, beside: layout, columns: columns, rules: rules, budget: &budget)
       }
     }
     return packing

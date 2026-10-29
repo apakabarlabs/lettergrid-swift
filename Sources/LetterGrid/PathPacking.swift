@@ -5,6 +5,12 @@ struct PathPacking {
     case undetermined
   }
 
+  enum Completion {
+    case fits
+    case doesNotFit
+    case ranOut
+  }
+
   private struct Candidate {
     let slots: [Int]
     let placement: Placement
@@ -17,7 +23,7 @@ struct PathPacking {
     let downWords: ClosedRange<Int>
     let nodeLimit: Int
     let standApart: ([Placement?]) -> Bool
-    let completes: ([Placement]) -> Bool
+    let completes: ([Placement], inout Int) -> Completion
     var letters: [Character?]
     var uses: [Int]
     var chosen: [Placement?]
@@ -29,7 +35,17 @@ struct PathPacking {
 
     mutating func place(at depth: Int) -> Bool {
       guard depth < order.count else {
-        return downWords.contains(vertical) && completes(chosen.compactMap { $0 })
+        guard downWords.contains(vertical) else { return false }
+        var budget = nodeLimit - nodes
+        let completion = completes(chosen.compactMap { $0 }, &budget)
+        nodes = nodeLimit - budget
+        switch completion {
+        case .fits: return true
+        case .doesNotFit: return false
+        case .ranOut:
+          exhausted = true
+          return false
+        }
       }
       let index = order[depth]
       let remaining = order.count - depth - 1
@@ -94,7 +110,7 @@ struct PathPacking {
   var downWords: ClosedRange<Int> = 0...Int.max
   var nodeLimit = 2_000_000
   var crossingRestarts = 8
-  var completes: @Sendable ([Placement]) -> Bool = { _ in true }
+  var completes: @Sendable ([Placement], inout Int) -> Completion = { _, _ in .fits }
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {
     precondition(

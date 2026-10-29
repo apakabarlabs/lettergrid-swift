@@ -103,15 +103,17 @@ extension BoardGenerator {
     if maxRows == nil { packing.nodeLimit = Self.growingHeightNodeLimit }
     let required = requiredSymbols(in: words)
     let (columns, rules, avoidsRuns) = (columns, rules, requiresRunFreeTargets)
-    packing.completes = { placements in
+    packing.completes = { placements, budget in
       let layout = Layout(rows: height, placements: placements)
-      guard !avoidsRuns || !layout.hasForbiddenTargetRun(columns: columns) else { return false }
-      guard let needing = layout.charactersToCopyIfRoom(columns: columns) else { return false }
-      let symbols = required.intersection(needing)
-      guard !symbols.isEmpty else { return true }
-      return ConditionalFill.decoys(
-        symbols, beside: layout, columns: columns,
-        rules: rules, seed: 0) != nil
+      guard !avoidsRuns || !layout.hasForbiddenTargetRun(columns: columns) else {
+        return .doesNotFit
+      }
+      guard let needing = layout.charactersToCopyIfRoom(columns: columns) else {
+        return .doesNotFit
+      }
+      return ConditionalFill.roomForDecoys(
+        required.intersection(needing), beside: layout, columns: columns,
+        rules: rules, budget: &budget)
     }
     return packing
   }

@@ -15,6 +15,10 @@
 
 ### Fixed
 
+- The search for separator and conditional-character decoy cells counts its steps against
+  the packing's node budget. It used to run unbounded once per complete layout, so three
+  such characters on a large board could cost hundreds of thousands of uncounted steps; a
+  search that runs out now ends the request `unsettled`, not `noRoom`.
 - `LetterWeights` keys that are equal after uppercasing, such as `a` and `A`, form one
   letter with their weights added, instead of two entries of one letter. The letter's share
   of draws is unchanged, but such weights now equal the merged table (`["a": 1, "A": 2]`

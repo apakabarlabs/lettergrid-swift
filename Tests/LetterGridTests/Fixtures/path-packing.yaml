@@ -20,6 +20,22 @@ cases:
   nodeLimit: 0
   outcome: undetermined
   goldens: {'0': undetermined, '7': undetermined, '37': undetermined}
+- name: a decoy search that outruns the node budget settles nothing
+  columns: 3
+  rows: 2
+  rules: [{directions: [right], turns: 0}]
+  downWords: [0, 0]
+  words: [A-B]
+  nodeLimit: 1
+  outcome: undetermined
+- name: one more node lets the same decoy search place its copy
+  columns: 3
+  rows: 2
+  rules: [{directions: [right], turns: 0}]
+  downWords: [0, 0]
+  words: [A-B]
+  nodeLimit: 2
+  outcome: placed
 - name: a word longer than any straight line has no path
   columns: 2
   rows: 2

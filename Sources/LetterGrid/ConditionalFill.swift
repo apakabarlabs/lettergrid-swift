@@ -1,16 +1,16 @@
 enum ConditionalFill {
-  static func decoys(
+  static func roomForDecoys(
     _ characters: Set<Character>, beside layout: Layout, columns: Int, rules: [WordRule],
-    seed: UInt64
-  ) -> [Cell: Character]? {
+    budget: inout Int
+  ) -> PathPacking.Completion {
     let (placements, rows) = (layout.placements, layout.rows)
     let used = Set(placements.map(\.word).joined())
     let required = characters.intersection(used).sorted { String($0) < String($1) }
-    guard !required.isEmpty else { return [:] }
+    guard !required.isEmpty else { return .fits }
     guard
       let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
         .first(where: { !used.contains($0) })
-    else { return nil }
+    else { return .doesNotFit }
     var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
     for placement in placements {
       for (cell, letter) in zip(placement.cells, placement.word) {
@@ -18,14 +18,17 @@ enum ConditionalFill {
       }
     }
     let occupied = Set(placements.flatMap(\.cells))
-    var random = SeededRandom(seed: seed)
+    var random = SeededRandom(seed: 0)
     var search = DecoySearch(
       required: required, placements: placements, rules: rules, blank: blank,
       free: random.shuffled(
         (0..<rows).flatMap { row in (0..<columns).map { Cell(row: row, column: $0) } }
           .filter { !occupied.contains($0) }),
-      letters: letters)
-    return search.place(at: 0) ? search.chosen : nil
+      letters: letters, budget: budget)
+    let found = search.place(at: 0)
+    budget = search.budget
+    if found { return .fits }
+    return search.budget < 0 ? .ranOut : .doesNotFit
   }
 }
 
@@ -36,19 +39,23 @@ private struct DecoySearch {
   let blank: Character
   let free: [Cell]
   var letters: [[Character]]
-  var chosen: [Cell: Character] = [:]
+  var budget: Int
+  var chosen: Set<Cell> = []
 
   mutating func place(at index: Int) -> Bool {
     guard index < required.count else {
       let board = Board(letters: letters, placements: placements)
       return placements.allSatisfy { board.hasSingleOccurrence(of: $0.word, rules: rules) }
     }
-    for cell in free where chosen[cell] == nil {
-      chosen[cell] = required[index]
+    for cell in free where !chosen.contains(cell) {
+      budget -= 1
+      guard budget >= 0 else { return false }
+      chosen.insert(cell)
       letters[cell.row][cell.column] = required[index]
       if place(at: index + 1) { return true }
-      chosen[cell] = nil
+      chosen.remove(cell)
       letters[cell.row][cell.column] = blank
+      if budget < 0 { return false }
     }
     return false
   }
