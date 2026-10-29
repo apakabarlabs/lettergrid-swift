@@ -15,6 +15,12 @@
 
 ### Fixed
 
+- `cellUppercased` returns every cell in NFC, so a decomposed accent or Hangul syllable
+  is stored and compared in one form. Characters are ordered by code point wherever
+  their order decides a draw, instead of by Swift's string comparison, which a port
+  comparing UTF-16 units would not reproduce. A YAML table pins segmentation, NFC,
+  uppercasing, letter classification and the hint order's seed for every port. Boards
+  from NFC input are unchanged.
 - Filler draws and drag selection use only arithmetic that IEEE 754 rounds the same way
   on every platform. The neighbour penalty is repeated multiplication instead of `pow`;
   the fallback for weights that overflow or underflow rescales by binary exponent instead

@@ -169,7 +169,7 @@ struct RunFreeFill {
     neighbours: [Character: Int], using random: inout SeededRandom
   ) -> [Character] {
     guard missing.count <= remaining else { return [] }
-    let copies = random.shuffled(missing.sorted(by: { String($0) < String($1) }))
+    let copies = random.shuffled(missing.sorted(by: { $0.precedesInCodePoints($1) }))
     guard missing.count < remaining else { return copies }
     let ordinary = weights.orderedLetters(using: &random, neighbours: neighbours)
       .filter { !missing.contains($0) }

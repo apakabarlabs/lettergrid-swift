@@ -21,8 +21,9 @@ let generator = BoardGenerator(
 let board = try generator.board(for: ["cat", "dog"], seed: 42)
 ```
 
-Words use ``Swift/String/cellUppercased``: a capital that expands to multiple
-characters leaves the original character in its single cell. Use this form when
+Words use ``Swift/String/cellUppercased``: each grapheme is one cell in NFC, and a
+capital that expands to multiple characters leaves the original character in its single
+cell. The fixture `cell-text.yaml` pins this for every port. Use this form when
 comparing application words with board words. The same seed and configuration produce
 the same board within one library version. Save letters and placements when a board
 must retain its layout across library updates.

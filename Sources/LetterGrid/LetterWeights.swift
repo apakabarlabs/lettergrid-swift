@@ -50,7 +50,7 @@ public struct LetterWeights: Equatable, Sendable {
     }
     var letters: [Character] = []
     var orderedWeights: [Double] = []
-    for (key, weight) in weights.sorted(by: { $0.key < $1.key }) {
+    for (key, weight) in weights.sorted(by: { $0.key.precedesInCodePoints($1.key) }) {
       guard key.count == 1, let letter = key.first?.cellUppercased, letter.isLetter else {
         throw Failure.notALetter(key)
       }

@@ -1,0 +1,40 @@
+- name: plain Latin
+  text: cat
+  cells: [C, A, T]
+  letters: [true, true, true]
+  hintOrder: [2, 1]
+- name: a decomposed accent becomes one composed cell
+  text: "e\U00000301te\U00000301"
+  cells: ["\U000000C9", T, "\U000000C9"]
+  letters: [true, true, true]
+  hintOrder: [2, 1]
+- name: a capital that expands keeps the original letter
+  text: straße
+  cells: [S, T, R, A, ß, E]
+  letters: [true, true, true, true, true, true]
+  hintOrder: [4, 5, 3, 2, 1]
+- name: the Armenian ligature keeps its cell
+  text: երևան
+  cells: [Ե, Ր, և, Ա, Ն]
+  letters: [true, true, true, true, true]
+  hintOrder: [1, 3, 4, 2]
+- name: Georgian takes its Mtavruli capitals
+  text: ძაღლი
+  cells: [Ძ, Ა, Ღ, Ლ, Ი]
+  letters: [true, true, true, true, true]
+  hintOrder: [1, 3, 4, 2]
+- name: the dotted i uppercases without a locale
+  text: istanbul
+  cells: [I, S, T, A, N, B, U, L]
+  letters: [true, true, true, true, true, true, true, true]
+  hintOrder: [7, 6, 4, 1, 2, 3, 5]
+- name: separators are cells but not letters
+  text: "a-b c'd"
+  cells: [A, "-", B, " ", C, "'", D]
+  letters: [true, false, true, false, true, false, true]
+  hintOrder: [3, 2, 1, 5, 4, 6]
+- name: decomposed Hangul jamo compose into one syllable
+  text: "\U00001100\U00001161\U000011A8"
+  cells: ["\U0000AC01"]
+  letters: [true]
+  hintOrder: []

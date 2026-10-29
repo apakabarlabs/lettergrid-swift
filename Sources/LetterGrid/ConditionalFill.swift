@@ -5,7 +5,7 @@ enum ConditionalFill {
   ) -> PathPacking.Completion {
     let (placements, rows) = (layout.placements, layout.rows)
     let used = Set(placements.map(\.word).joined())
-    let required = characters.intersection(used).sorted { String($0) < String($1) }
+    let required = characters.intersection(used).sorted { $0.precedesInCodePoints($1) }
     guard !required.isEmpty else { return .fits }
     guard
       let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
