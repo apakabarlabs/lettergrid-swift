@@ -74,7 +74,9 @@ a wall-clock deadline across application suspension.
   packing might exist. Zero attempts or fills still require fallback preparation. With `rules:`,
   generation instead searches every allowed path for any number of words: `noRoom` then
   means that no layout exists, and ``BoardGenerator/Failure/unsettled(words:columns:rows:)``
-  that the search ran out first. ``BoardGenerator/accepts(_:firstRule:)`` checks the word
+  that the search ran out first. `unsettled` also reports words that do fit, but only in
+  layouts where the targets themselves put three equal letters in a line, and words whose
+  layout no filler can complete without such a line. ``BoardGenerator/accepts(_:firstRule:)`` checks the word
   conditions without a board; a set it rejects always throws, and a set it accepts may still
   have no layout. Read the resulting height from `board.rows`.
   Both straight and turned paths support the limit; without it the board grows downwards.

@@ -12,8 +12,9 @@ public struct BoardGenerator: Equatable, Sendable {
         "Could not prepare a checked grid \(columns) wide with minimum height \(rows) for "
           + words.joined(separator: ", ")
       case .unsettled(let words, let columns, let rows):
-        "The search for a grid \(columns) wide and up to \(rows) high ran out before it found "
-          + "a layout or ruled one out for " + words.joined(separator: ", ")
+        "No grid \(columns) wide and up to \(rows) high was settled for "
+          + words.joined(separator: ", ")
+          + ": the search ran out, or every layout found leaves three equal letters in a line."
       case .invalidConfiguration:
         "Grid dimensions must be positive, directions nonempty, the vertical minimum "
           + "nonnegative, and search limits nonnegative with at least one layout per attempt. "
