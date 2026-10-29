@@ -207,7 +207,7 @@ extension BoardGenerator {
       columns: columns, rows: rows, maxRows: maxRows, directions: directions,
       filler: filler, dictionary: dictionary,
       downWords: downWords, layoutsPerAttempt: layoutsPerAttempt, attempts: attempts,
-      fillsPerAttempt: fillsPerAttempt)
+      fillsPerAttempt: fillsPerAttempt, conditionalCharacters: conditionalCharacters)
     generator.requiresRunFreeTargets = requiresRunFreeTargets
     if maxRows != nil, let firstRule {
       for direction in firstRule.startDirections {
