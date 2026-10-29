@@ -1,126 +1,93 @@
 # Changelog
 
-## [Unreleased]
+## [0.19.0] - 2026-10-29
 
-### Added
+To upgrade from 0.18:
 
-- `SeededRandom.nextInt(below:)`, `nextInt(in:)`, `nextDouble(below:)`, `shuffled(_:)` and
-  `pick(_:)`. Generation draws through them instead of the standard library's random
-  algorithms, which Swift does not promise to keep and other platforms do not share. They
-  reproduce today's draws exactly, so seeded boards are unchanged; the `SeededRandom` DocC
-  page states each algorithm for a port.
-- `Placement(validating:cells:)` reports a saved path that is not a word path as
-  `Board.Failure.invalidPlacement` instead of trapping, so a corrupted save can be
-  restored through checked initializers only.
-
-### Fixed
-
-- `cellUppercased` returns every cell in NFC, so a decomposed accent or Hangul syllable
-  is stored and compared in one form. Characters are ordered by code point wherever
-  their order decides a draw, instead of by Swift's string comparison, which a port
-  comparing UTF-16 units would not reproduce. A YAML table pins segmentation, NFC,
-  uppercasing, letter classification and the hint order's seed for every port. Boards
-  from NFC input are unchanged.
-- Filler draws and drag selection use only arithmetic that IEEE 754 rounds the same way
-  on every platform. The neighbour penalty is repeated multiplication instead of `pow`;
-  the fallback for weights that overflow or underflow rescales by binary exponent instead
-  of through `log` and `exp`; and a selection rounds its length half up and compares
-  squared lengths instead of using `hypot` and `cos`. Platform math libraries may differ
-  in the last bit, which could flip a draw near a boundary in a port. Boards and
-  selections are unchanged.
-- Ties no longer depend on how Swift sorts: the packing search takes words with equally many
-  places in their given order, and a drag exactly between two allowed directions takes the
-  one listed first. Swift does not promise a stable sort, so a port could have ordered
-  them differently. Boards and selections are unchanged.
-- The search for separator and conditional-character decoy cells counts its steps against
-  the packing's node budget. It used to run unbounded once per complete layout, so three
-  such characters on a large board could cost hundreds of thousands of uncounted steps; a
-  search that runs out now ends the request `unsettled`, not `noRoom`.
-- `LetterWeights` keys that are equal after uppercasing, such as `a` and `A`, form one
-  letter with their weights added, instead of two entries of one letter. The letter's share
-  of draws is unchanged, but such weights now equal the merged table (`["a": 1, "A": 2]`
-  equals `["a": 3]`), their seeded boards change, and a sum that overflows throws
-  `notFinite` instead of being drawn from.
+- Remove `generationVersion:`, `layoutsPerAttempt:`, `attempts:` and `fillsPerAttempt:`
+  from every `BoardGenerator` you create, and drop any stored generation version (see
+  Removed).
+- A seed gives a different board than it did in 0.18. If a player must see the same board
+  after updating the app, save the board itself (its letters and placements) before the
+  update and restore it with `Board(validating:placements:)`. A game that keeps only a
+  seed will show a new board.
+- `request(for:)` may throw `BoardGenerator.Failure.unsettled` (the words could not be
+  placed and filled within the generator's search limits) for some setups it accepted
+  before, for example a filler of a single letter (see Changed). Handle it like `noRoom`:
+  pick other words or a larger board.
+- If you compare your own word strings with board words, uppercase them with
+  `cellUppercased`: it now also normalises to Unicode NFC.
 
 ### Changed
 
-- Search budgets and tuning values live in `Sources/LetterGrid/generation.yaml`, which the
-  library reads once on first use: the supported turns, the packing node limits and
-  restarts, the shape and noise visit limits, the fill's seeds, steps and candidates, and
-  the path reveal's frame and travel share. A port reads the same file. The library now
-  depends on Yams. The direction table is pinned by the test fixture `directions.yaml`
-  rather than read at run time, since it is geometry and sits in every inner loop.
-  Values are unchanged, and so are boards.
-- Every character of the target words, letters and separators alike, stands on the board
-  at least twice, so a lone letter or a lone hyphen no longer gives a word away. A
-  character that the targets already hold twice gets no copy and needs no free cell, a
-  separator included; the others get one copy each, spread across the free cells rather
-  than gathered at the top, and the filler draws no further copy of a letter until its
-  required one stands. Layouts that leave fewer
-  free cells than copies are not chosen, so a bounded board without room throws `noRoom`
-  and a growing one grows. Where a copy can only stand next to its own letter, the board
-  takes that pair rather than giving up, as it already did when no pair-free fill exists.
-  Seeded boards change.
-- One search lays out every request: straight and turned words, with and without a height
-  limit, go through the packing search that bounded turned requests already used. It now
-  prefers places where words share letters, searches again in another order (up to eight
-  times) when a layout shares none although the words could, and without `maxRows` grows
-  the board to the lowest height it finds within a smaller per-height budget. Boards of every
-  kind change. `accepts(_:firstRule:)` now also returns false when the words cannot meet the
-  vertical quota, and requests refuse them before searching.
-- A board is built from its target layout and filled once. Generation no longer builds,
-  scores and discards a complete 0.18 board for every seed, nor adds symbol copies to it
-  by 64 random tries before refilling. Packed boards keep their layouts. An unbounded
-  turned board takes the first compacted layout of its seed, and a straight board the
-  first layout of its seed whose targets make no run and occur once each; before, the
-  layout followed whichever fill scored best, so such a seed can give a different board.
-  Words with symbols are refused as `unsettled` rather than `noRoom` when no seed of
-  preparation gets a run-free fill with their copies. `fillsPerAttempt` no longer changes
-  boards.
-- Generation fills boards with straight word rules faster while preserving seeded
-  results.
-- Generators built with `rules:` and `maxRows` prepare requests faster by checking each
-  path shape once before shifting it across the board. Accepted requests and seeded
-  placements stay the same.
+- Every character of the hidden words appears on the board at least twice, so a player
+  cannot find a word just by spotting a letter, space or hyphen that occurs only once. A
+  character that already occurs twice inside the hidden words gets no extra copy. The
+  copies take free cells, so a board with a fixed height (`maxRows`) and too few free
+  cells throws `noRoom`, and a board without `maxRows` grows taller.
+- The random letters around the hidden words never form three equal letters in a row,
+  column or diagonal, and avoid two equal neighbours whenever the board can be filled
+  without them. Three equal letters in a line remain only where a hidden word itself
+  has them.
+- `request(for:)` checks that a board with these properties can be filled before it
+  returns, and throws `unsettled` when it cannot. This includes filler alphabets that can
+  only fill the board with three equal letters in a line, such as a single filler letter.
+  `board(seed:)` still never throws.
+- `cellUppercased` returns each cell in Unicode NFC (composed form), so `e` followed by a
+  combining accent becomes the single character `é`.
+- All requests, with or without `maxRows`, place words with the same search. It prefers
+  positions where words share letters, and without `maxRows` it grows the board only to
+  the smallest height that fits. `accepts(_:firstRule:)` now also returns false when the
+  words cannot satisfy the generator's `downWords` range (how many words must run
+  vertically).
+- Requests from generators created with `rules:` and `maxRows` are prepared faster.
+- The library reads its internal search limits from a resource file bundled inside the
+  package, and parses it with the Yams package, which SwiftPM now fetches as a
+  dependency. No code change is needed.
 
 ### Removed
 
 - `BoardGenerationVersion` and the `generationVersion:` parameter of `BoardGenerator`. The
-  library keeps one generation, the one 0.19 named `.v0p19`; its seeded boards are unchanged.
-  Apps move to a new release together and do not rebuild boards of an earlier one; an app
-  that must keep a board across updates saves its letters and placements. Remove the
-  argument and any stored version.
+  library no longer reproduces the boards of earlier versions. Remove the argument and
+  any stored version:
+
+  ```swift
+  // 0.18
+  let generator = BoardGenerator(
+    columns: 7, rows: 7, directions: [.right, .down], filler: weights,
+    generationVersion: savedVersion)
+  // 0.19
+  let generator = BoardGenerator(
+    columns: 7, rows: 7, directions: [.right, .down], filler: weights)
+  ```
+
 - `BoardGenerationLimits` and the `layoutsPerAttempt:`, `attempts:` and `fillsPerAttempt:`
-  parameters of `BoardGenerator`: the one search has no sampling or fill attempts to bound.
-  Remove the arguments.
+  parameters of `BoardGenerator`. Generation no longer makes repeated attempts, so there
+  is nothing for them to limit. Remove the arguments.
 
-## [0.19.0] - 2026-10-28
+### Added
 
-### Changed
+- `SeededRandom.nextInt(below:)`, `nextInt(in:)`, `nextDouble(below:)`, `shuffled(_:)` and
+  `pick(_:)`: seeded random draws whose algorithms are spelled out in the `SeededRandom`
+  documentation, so that the same seed gives the same numbers in any reimplementation.
+- `Placement(validating:cells:)` throws `Board.Failure.invalidPlacement` for cells that do
+  not form a word path, instead of crashing, so a corrupted saved board can be rejected
+  safely.
 
-- New generators use generation `0.19` (`BoardGenerationVersion.v0p19`). Filler no longer
-  creates three equal letters in a horizontal, vertical or diagonal line, including
-  lines crossing target words. An existing run is allowed only when its three cells
-  follow one target's path; crossing several targets does not qualify. Filler cannot
-  extend a target's run. Filling first searches without equal neighbours. Pairs remain
-  allowed when that search rules out a pair-free fill or exhausts its budget; added
-  triples remain forbidden.
-- Every generation `0.19` request, with or without `maxRows`, prepares a fallback meeting
-  these constraints before returning. Preparation tries eight seeds; each
-  refill strategy tries at most 32 times the number of empty cells times the number of
-  available filler characters (ordinary letters and required extra copies), and scores
-  at most 20 complete candidates. Required copies are placed by the same search rather
-  than frozen beside a target. These extra
-  limits are fixed; existing generator limits still apply to the preceding layout
-  search. A request throws `unsettled` if preparation cannot find a checked fallback,
-  including for filler alphabets that previously needed runs. `board(seed:)` remains
-  nonthrowing and uses that fallback when its seeded refill runs out.
-- A seeded fill also keeps the fallback when it avoids added equal neighbours and the
-  new fill does not. When both have pairs or both avoid them, the fill with fewer distinct
-  stray dictionary words wins; ties retain the seeded fill.
-- Seed-only games must retain their saved generation version, for example
-  `generationVersion: .v0p18`. Explicit generations `0.9` through `0.18` keep their
-  released boards. Earlier library releases cannot decode the new `"0.19"` value.
+### Fixed
+
+- Board generation no longer depends on details that can differ between platforms
+  (floating-point math functions, the order of equal items after sorting, string
+  comparison), so the same seed builds the same board on every platform. This fix on its
+  own does not change boards on Apple platforms; the changes listed above do.
+- Words containing spaces, hyphens, apostrophes or characters you pass in
+  `conditionalCharacters:` could make `request(for:)` run for a very long time on a large
+  board. That work now counts toward the same search limit as placing the words, and
+  running out of it throws `unsettled`.
+- `LetterWeights` treats keys that differ only in case, such as `"a"` and `"A"`, as one
+  letter and adds their weights: `["a": 1, "A": 2]` now equals `["a": 3]`. Boards built
+  with such weights change, and weights whose merged sum overflows throw
+  `LetterWeights.Failure.notFinite`.
 
 ## [0.18.1] - 2026-10-27
 
