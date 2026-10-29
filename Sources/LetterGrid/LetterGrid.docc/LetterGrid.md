@@ -11,7 +11,8 @@ directions; dictionary filtering is best effort within the configured search lim
 
 ``Board`` and ``Placement`` describe letters and their positions. ``Round`` owns the
 selection, found words, hints and optional introduction and countdown. An application
-owns scores, levels, persistence and any deadline that must survive suspension.
+owns scores, levels, persistence and any deadline that must survive suspension. Create and
+control rounds on the main actor.
 
 ```swift
 let generator = BoardGenerator(
@@ -52,7 +53,8 @@ a wall-clock deadline across application suspension.
   Runs contained in one target word remain, but filler cannot extend them. Filling first
   tries to avoid equal neighbours, then permits pairs when that search fails. Requests
   retain a checked fallback and throw `unsettled` if bounded preparation cannot find one.
-- Directions are opt-in. The vertical quota counts only `.up` and `.down`; their serialized
+- Directions are opt-in. The vertical quota counts only `.up` and `.down`, including turned
+  words whose first segment runs up or down; their serialized
   names are the case names, while diagonals use `down_right`, `down_left`, `up_left` and `up_right`.
 - A palindrome occurs once even when both directions of its line are enabled, and can be
   selected from either end. Selection snaps to the nearest allowed direction. With diagonals
@@ -72,7 +74,8 @@ a wall-clock deadline across application suspension.
   generation `0.18` instead searches every allowed path for any number of words: `noRoom` then
   means that no layout exists, and ``BoardGenerator/Failure/unsettled(words:columns:rows:)``
   that the search ran out first. ``BoardGenerator/accepts(_:firstRule:)`` checks the word
-  conditions without a board; a set it rejects always throws.
+  conditions without a board; a set it rejects always throws, and a set it accepts may still
+  have no layout. Read the resulting height from `board.rows`.
   Both straight and turned paths support the limit. `.v0p9` rejects it; omitting it preserves
   the existing seed geometry and growing-board behavior.
 - Each generation attempt samples `layoutsPerAttempt` layouts, preferring fewer rows and
@@ -95,8 +98,19 @@ and the extra copies; requests reject layouts that cannot provide them within th
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
   generator and round. `firstRule` requires the first word to use one particular enabled rule.
+  Words may cross only on equal letters. `minimumLength` and `isValid` check a rule.
+- ``WordRule/canFit(length:columns:maximumRows:)`` checks whether one path fits an empty grid,
+  with no random choices or search budget, so its results can be cached per length and size.
+  A nil height limit allows vertical growth. It ignores letters, multiword packing and quotas,
+  so it does not promise that a board request succeeds.
+  ``WordRule/minimumTurns(toFit:startDirections:columns:maximumRows:)`` returns the fewest turns,
+  0 to 3, with which such a path fits, or `nil` when none does.
+- ``Board/occurrences(of:rules:)`` counts ordered paths, folding the two readings of a palindrome
+  into one. `strayWords(of:rules:)` scans dictionary prefixes along allowed paths.
 - ``Placement/init(word:cells:)`` retains a full ordered path; `direction` describes its first
-  segment and `turns` counts its direction changes. Hints, introduction and selection follow cells.
+  segment and `turns` counts its direction changes. Save `cells`, not only `start` and
+  `direction`, for turned words. Hints, introduction and selection follow cells; a drag that
+  revisits an earlier cell backtracks to it.
 - Generations `0.18` and `0.19` with `rules:` and `maxRows` search every allowed path, let no target lie
   entirely on another target's cells, and repeat the search for each board seed in its own
   order. All other rule-based requests, including `0.18` without `maxRows`, inspect at most
@@ -111,7 +125,8 @@ and the extra copies; requests reject layouts that cannot provide them within th
   generation accepts `.v0p12`, `.v0p13`, `.v0p17`, `.v0p18` and `.v0p19`. Since `0.13` it keeps the best unique-target ordinary fill
   within its search budget, preferring fewer distinct stray words. It uses the isolated filler only
   if no ordinary fill has unique targets. Noise scoring has a deterministic node budget and prunes
-  already counted dictionary words. `.current` names `.v0p19`, not a serialized moving alias.
+  already counted dictionary words; an exhausted score never counts as clean, and fully scored
+  fills outrank incomplete ones. `.current` names `.v0p19`, not a serialized moving alias.
   Explicit older versions retain their released seed behavior; `.v0p9`, `.v0p12` and `.v0p13`
   do not add conditional copies.
 - ``BoardDictionary`` prepares a reusable dictionary index for many requests.

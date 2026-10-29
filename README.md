@@ -15,72 +15,26 @@ let board = try generator.board(for: ["cat", "dog", "sun"], seed: 42)
 let round = Round(board: board, directions: [.right, .down])
 ```
 
-The library handles placement, selection, hints and an optional countdown. The app supplies
-its rules, levels, scores, persistence and colours. SwiftUI apps display the round with
-`LetterBoard` and `HiddenWordList` from `LetterGridUI`. Create and control rounds on the main actor.
+| The library | The app |
+|---|---|
+| placement, selection, hints, optional countdown | game rules, levels, scores, persistence, colours |
+
+SwiftUI apps draw the round with `LetterBoard` and `HiddenWordList` from `LetterGridUI`.
 
 ## Installation
 
-Requires Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
-Add the package dependency:
+Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 
 ```swift
 .package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.19.0")
-```
 
-Then add products to your target's dependencies:
-
-```swift
 .product(name: "LetterGrid", package: "lettergrid-swift"),
-.product(name: "LetterGridUI", package: "lettergrid-swift") // Only for SwiftUI.
+.product(name: "LetterGridUI", package: "lettergrid-swift") // only for SwiftUI
 ```
-
-API references: [LetterGrid](https://apakabarlabs.github.io/lettergrid-swift/documentation/lettergrid/)
-and [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentation/lettergridui/).
-
-## Generating boards
-
-- Directions are opt-in, including diagonals and reverse readings. `columns` is fixed;
-  `rows` is a minimum. The board grows downwards to fit the words; read its height from `board.rows`.
-- Set `maxRows: rows` for an exact height, or a larger `maxRows` for a height range.
-  Requests with a height limit retain a checked fallback within that limit. The limit must be at
-  least `rows`; it is available for both straight and turned paths, except `.v0p9` generation.
-  Without `maxRows`, the board may grow. Pin a saved game's generation version to retain
-  its released seeded layouts.
-- With `rules:` and a height limit, generations 0.18 and 0.19 search every path each rule allows, for
-  any number of words. `request(for:)` throws `noRoom` only when the words break a condition
-  below or no layout exists, and `unsettled` when the search ran out first. Earlier versions
-  search a bounded set of shapes, and their `noRoom` does not prove that no layout exists.
-- `accepts(_:firstRule:)` checks a word set without building a board: distinct words, none
-  inside another, a path for each word and filler letters left over. A set it rejects always
-  throws from `request(for:)`; a set it accepts may still have no layout.
-- Every accepted target occurs exactly once along the allowed directions. Removing other
-  words from an optional `BoardGenerator` dictionary (`Set<String>`, passed as `dictionary:`) is best effort:
-  bounded search falls back to a board that preserves the targets but may contain other words.
-- Targets need at least two letters and cannot duplicate or contain one another. The filler
-  must include a letter absent from all targets. Invalid inputs throw before generation.
-- Filler weights must be positive and finite. `LetterWeights.sameNeighbour` in `(0, 1]` reduces adjacent
-  repetitions; its default of `1` leaves weights unchanged.
-- Generation `0.19` forbids filler from creating three equal letters in a straight line,
-  including diagonals and lines crossing several target words. A run belonging to one
-  target word is retained, but filler cannot extend it. Filling first searches without
-  equal neighbouring letters, then permits pairs while still forbidding added triples.
-  Preparation retains a checked fallback. It throws `unsettled` if its bounded search
-  cannot prepare one; `board(seed:)` never returns a field with an added triple.
-- Compare words using `cellUppercased` rather than `uppercased()`: it keeps each character
-  in one cell even when its capital would expand.
-- In generations `0.17` through `0.19`, nonletter target characters occupy ordinary path cells. Each gets at least
-  one additional copy outside all target paths. `conditionalCharacters:` applies the same rule to
-  caller-selected letters: filler never places them when they are absent from the targets.
-  Conditional characters are excluded from ordinary weighted fill, and added without changing
-  target cells or target uniqueness. A checked fallback keeps these guarantees for every seed;
-  a request fails when no checked placement leaves room for the extra copies. In generation
-  0.18 with `rules:` and `maxRows`, the layout search keeps that room itself and every
-  arrangement of the copies is tried, so each seed gets its own board with them.
 
 ## Paths with turns
 
-Use `rules:` in both the generator and round to enable paths with zero to three turns:
+Pass the same `rules:` to the generator and the round.
 
 ```swift
 let straight = WordRule(startDirections: Direction.allCases)
@@ -89,48 +43,12 @@ let generator = BoardGenerator(
   columns: 7, rows: 7, rules: [straight, bent],
   filler: try LetterWeights(["x": 1, "q": 1]))
 let request = try generator.request(for: ["planet", "star"], firstRule: bent)
-let board = request.board(seed: 42)
-let round = Round(board: board, rules: [straight, bent])
+let round = Round(board: request.board(seed: 42), rules: [straight, bent])
 ```
 
-- A rule specifies the first segment and an exact turn count. Each turn is 90 degrees,
-  clockwise or counterclockwise; cells cannot repeat. `minimumLength` and `isValid` check rules.
-- `rule.canFit(length:columns:maximumRows:)` checks whether one path fits an empty grid.
-  It has no random choices or search budget; cache results for the lengths and dimensions
-  you use. A nil height limit allows vertical growth. Letter content, multiword packing
-  and quotas are not checked, so this does not guarantee that a board request will succeed.
-- `WordRule.minimumTurns(toFit:startDirections:columns:maximumRows:)` returns the fewest
-  turns (0 to 3) with which such a path fits, or `nil` when none does.
-- `firstRule` must be one of the generator's rules and applies to its first word. The vertical
-  quota counts words whose first segment runs up or down, including turned words.
-- Words may cross only on equal letters. Fallback dictionary filtering remains best effort.
-- In generation 0.18 with `maxRows`, no target may lie entirely on the cells of another, read in
-  any enabled direction, and each board seed searches the layout again in its own order, so
-  seeds vary where the words lie. Otherwise a prepared turned request freezes its checked shapes
-  and seeds vary their positions within the height; if every rule has zero turns, generation
-  uses the straight generator.
-- Turned generation keeps the unique-target weighted fill with the fewest distinct stray words
-  found within the configured attempts. A clean fill returns immediately. Letters absent from all
-  targets are used only when no ordinary fill has unique targets. Noise scoring prunes known words
-  and has a deterministic work limit; an exhausted score is not treated as a clean board.
-  Fully scored fills outrank incomplete scores; if every score is incomplete, the first
-  unique-target ordinary fill is retained.
-- Build `BoardDictionary(words)` once and pass it to `request.board(seed:dictionary:)` to reuse
-  its prepared index across boards. The existing `Set<String>` argument remains supported.
-- `Placement(word:cells:)` retains the ordered path. `direction` is its first segment;
-  `turns` counts its bends. Save `cells`, rather than only `start` and `direction`, for turned words.
-- `Board.occurrences(of:rules:)` counts ordered paths, folding the two readings of a palindrome
-  into one. `strayWords(of:rules:)` scans dictionary prefixes along allowed paths.
-- A round follows bends as drag samples arrive and backtracks to an earlier cell when revisited.
-  Its hints and introduction follow the same ordered cells.
-- `LetterHighlight(cells:cellSize:color:)` draws the full path. `LetterBoard.traceCells` draws
-  an externally paced trace above highlights and below letters in the supplied selection colour.
-  `PathReveal(cells:elapsed:duration:reduceMotion:)` supplies its growing prefix.
+## Saving a game
 
-## Saving and restoring
-
-The app serializes the board's letters and placements together with `round.progress`. A seed alone does
-not preserve a layout across library updates. Restore external data through checked initializers:
+A seed alone does not keep a layout across library updates. Save the board's letters and placements together with `round.progress`, and restore them through the checking initializers:
 
 ```swift
 let board = try Board(validating: letters, placements: placements)
@@ -138,22 +56,13 @@ let round = try Round(
   restoring: savedProgress, board: board, directions: [.right, .down], seconds: 60)
 ```
 
-These report invalid data without clearing it. Nonthrowing `Board(letters:placements:)` and
-`Round(board:directions:)` and its variants enforce valid inputs with preconditions.
+Boards saved by seed only stay reproducible when the game pins its `BoardGenerationVersion`.
 
-For seed-only data created with 0.9, use the `directions:` generator initializer with
-`generationVersion: .v0p9` and exactly its original settings and words. This retains the old
-fallback filler sequence. Rule-based generation accepts `.v0p12`, `.v0p13`, `.v0p17`, `.v0p18` and `.v0p19`;
-the first retains the 0.12 rejection and fallback policy. Codable values are `0.9`, `0.12`, `0.13`,
-`0.17`, `0.18` and `0.19`. Persist `BoardGenerationVersion.current`, whose value is `.v0p19`, rather than
-the text `current`.
-Explicit older versions retain their original fill, including targets with separators.
+## Documentation
 
-Rounds are untimed unless given `seconds`. Use `Countdown.run` to drive introduction and clock
-callbacks, or let the app own timing. The library countdown does not track elapsed time during suspension.
-
-See the API references above for round controls, countdown callbacks and view options,
-or the [changelog](https://github.com/apakabarlabs/lettergrid-swift/blob/main/CHANGELOG.md) for migration steps.
+- [LetterGrid](https://apakabarlabs.github.io/lettergrid-swift/documentation/lettergrid/): generation guarantees, height limits, filler, turns, versions, restoring
+- [LetterGridUI](https://apakabarlabs.github.io/lettergrid-swift/ui/documentation/lettergridui/): board views and highlights
+- [Changelog](https://github.com/apakabarlabs/lettergrid-swift/blob/main/CHANGELOG.md): migration steps between versions
 
 ## Build and test
 
@@ -162,3 +71,10 @@ or the [changelog](https://github.com/apakabarlabs/lettergrid-swift/blob/main/CH
     make test            # host tests, no device
     make bench           # release performance measurements
     make docs            # both DocC references, on macOS
+
+### Lines of Code Over Time
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history-light.svg">
+  <img src="https://raw.githubusercontent.com/apakabarlabs/lettergrid-swift/main/.github/loc-history.svg" alt="Lines of code over time">
+</picture>
