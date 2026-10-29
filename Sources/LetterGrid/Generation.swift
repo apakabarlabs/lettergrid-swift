@@ -28,12 +28,17 @@ struct Generation: Decodable {
     let travelShare: Double
   }
 
+  struct Selection: Decodable {
+    let diagonalSnapCosineSquared: Double
+  }
+
   let supportedTurns: [Int]
   let packing: Packing
   let shapes: Shapes
   let noise: Noise
   let fill: Fill
   let reveal: Reveal
+  let selection: Selection
 
   static let settings: Generation = {
     guard let url = Bundle.module.url(forResource: "generation", withExtension: "yaml") else {

@@ -179,8 +179,8 @@ public struct Board: Equatable, Sendable {
     let direction = best.way
     if ways.contains(where: \.isDiagonal) {
       let travelSquared = row * row + column * column
-      let eighthTurnCosineSquared = (2 + 2.0.squareRoot()) / 4
-      guard best.alignment * best.alignment >= eighthTurnCosineSquared * travelSquared else {
+      let snap = Generation.settings.selection.diagonalSnapCosineSquared
+      guard best.alignment * best.alignment >= snap * travelSquared else {
         return [start]
       }
     }

@@ -15,3 +15,5 @@ fill:
 reveal:
   frameSeconds: 0.12
   travelShare: 0.7
+selection:
+  diagonalSnapCosineSquared: 0.8535533905932737
