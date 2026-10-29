@@ -63,8 +63,9 @@ a wall-clock deadline across application suspension.
   enabled, a gesture must be within 22.5 degrees of an allowed direction.
 - Requests reject empty target lists, words shorter than two letters, duplicates after
   uppercasing and words contained in other targets. When opposite directions are enabled,
-  reverse containment is also rejected. The filler needs a letter absent from all targets,
-  and directions must satisfy the vertical quota and any required first direction.
+  reverse containment is also rejected. Directions must satisfy the vertical quota and any
+  required first direction. Filler may consist entirely of letters present in the targets;
+  preparation still checks target uniqueness, character copies and the rules against added runs.
 - Dimensions must be positive, rules valid and the vertical minimum nonnegative; invalid
   settings throw ``BoardGenerator/Failure/invalidConfiguration``. Incompatible words throw
   ``BoardGenerator/Failure/noRoom(words:columns:rows:)``.

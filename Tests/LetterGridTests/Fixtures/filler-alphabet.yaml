@@ -1,0 +1,9 @@
+- name: a vocabulary may use every filler letter
+  words: [AB, CD, EF]
+  weights: {A: 1, B: 1, C: 1, D: 1, E: 1, F: 1}
+  columns: 7
+  rows: 7
+  directions: [right, down]
+  vertical: [1, 2]
+  runDirections: [right, down, down_right, down_left]
+  seeds: [0, 1, 7, 19]

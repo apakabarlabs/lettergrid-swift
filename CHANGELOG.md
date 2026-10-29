@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.1] - 2026-10-29
+
+### Fixed
+
+- `accepts` and `request(for:)` no longer reject a word set just because its target words
+  collectively use every letter in the filler alphabet. For example, `AB`, `CD` and `EF`
+  can share a board filled from `ABCDEF`.
+  Target uniqueness, two cells per target character and the rules against added runs of
+  three equal letters still apply. `request(for:)` throws `BoardGenerator.Failure.unsettled`
+  if it cannot find a fill that meets those guarantees. Previously accepted requests keep
+  their seeded boards.
+
 ## [0.19.0] - 2026-10-29
 
 To upgrade from 0.18:
@@ -160,7 +172,7 @@ to `v0p9`, `v0p12`, `v0p13` or `v0p17`, makes the same boards as in 0.17.
   `cellUppercased` and checks that they are distinct and at least two letters long, that none
   contains another as text in the same direction, that each word alone has a path under the
   rules within `columns` and `maxRows`, or of any height when `maxRows` is `nil` (the first word
-  under `firstRule` when given), and that the filler has a letter no word uses. It does not
+  under `firstRule` when given). It does not
   check reversed text, `downWords` or the overlap rule above. When it returns `false`,
   `request(for:firstRule:)` throws `noRoom` under every version. When it returns `true`, a
   layout may still not exist.

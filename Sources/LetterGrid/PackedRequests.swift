@@ -1,7 +1,7 @@
 extension BoardGenerator {
   public func accepts(_ words: [String], firstRule: WordRule? = nil) -> Bool {
     let words = words.map(\.cellUppercased)
-    let excluded = Set(words.joined()).union(conditionalCharacters)
+    let excluded = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
     guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
       filler.letters(excluding: excluded) != nil
