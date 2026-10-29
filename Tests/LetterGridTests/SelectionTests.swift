@@ -27,6 +27,15 @@ struct SelectionTests {
     #expect(board.text(along: cells) == "COW")
   }
 
+  @Test func aDragEquallyAlongTwoAxesTakesTheFirstAllowedOne() {
+    let (start, end) = (Cell(row: 0, column: 0), Cell(row: 2, column: 2))
+    let across = board.selection(from: start, toward: end, along: [.right, .down])
+    let downward = board.selection(from: start, toward: end, along: [.down, .right])
+
+    #expect(board.text(along: across) == "CAT")
+    #expect(board.text(along: downward) == "COW")
+  }
+
   @Test func aDragBackwardsSelectsOnlyTheStartWhenOnlyForwardIsAllowed() {
     let cells = board.selection(
       from: Cell(row: 0, column: 3), toward: Cell(row: 0, column: 0), along: [.right, .down])

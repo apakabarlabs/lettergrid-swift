@@ -139,7 +139,9 @@ struct PathPacking {
       let choices = all.map { random.shuffled($0) }
       var search = Search(
         words: words.map(Array.init), choices: choices,
-        order: words.indices.sorted { choices[$0].count < choices[$1].count },
+        order: words.indices.sorted {
+          (choices[$0].count, $0) < (choices[$1].count, $1)
+        },
         downWords: downWords, nodeLimit: nodeLimit - spent,
         standApart: compatibility.accepts, completes: completes,
         letters: Array(repeating: nil, count: rows * columns),

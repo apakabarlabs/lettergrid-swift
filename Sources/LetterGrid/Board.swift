@@ -168,7 +168,9 @@ public struct Board: Equatable, Sendable {
       let projection = row * Double(way.rowStep) + column * Double(way.columnStep)
       return (way: way, alignment: projection / sqrt(length), distance: projection / length)
     }
-    guard let best = reach.filter({ $0.alignment > 0 }).max(by: { $0.alignment < $1.alignment })
+    let aligned = reach.filter { $0.alignment > 0 }
+    guard let closest = aligned.map(\.alignment).max(),
+      let best = aligned.first(where: { $0.alignment == closest })
     else {
       return [start]
     }

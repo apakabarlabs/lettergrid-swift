@@ -15,6 +15,10 @@
 
 ### Fixed
 
+- Ties no longer depend on how Swift sorts: the packing search takes words with equally many
+  places in their given order, and a drag exactly between two allowed directions takes the
+  one listed first. Swift does not promise a stable sort, so a port could have ordered
+  them differently. Boards and selections are unchanged.
 - The search for separator and conditional-character decoy cells counts its steps against
   the packing's node budget. It used to run unbounded once per complete layout, so three
   such characters on a large board could cost hundreds of thousands of uncounted steps; a
