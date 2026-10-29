@@ -19,13 +19,20 @@ public struct Placement: Hashable, Sendable {
   }
 
   public init(word: String, cells: [Cell]) {
-    precondition(cells.count == word.count && PathGeometry(cells) != nil, "Invalid word path")
+    do {
+      try self.init(validating: word, cells: cells)
+    } catch {
+      preconditionFailure("Invalid word path: \(error.localizedDescription)")
+    }
+  }
+
+  public init(validating word: String, cells: [Cell]) throws {
+    guard cells.count == word.count, cells.count > 1, PathGeometry(cells) != nil,
+      let direction = Direction.between(cells[0], cells[1])
+    else { throw Board.Failure.invalidPlacement(word) }
     self.word = word
     self.geometry = .path(cells)
     self.start = cells[0]
-    guard let direction = Direction.between(cells[0], cells[1]) else {
-      preconditionFailure("A word path starts with adjacent cells")
-    }
     self.direction = direction
   }
 

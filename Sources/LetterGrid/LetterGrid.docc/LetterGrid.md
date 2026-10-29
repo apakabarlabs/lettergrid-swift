@@ -32,7 +32,8 @@ through ``BoardRequest`` using `board(seed:dictionary:)`. The request retains it
 an optional dictionary can be supplied at build time. Empty word lists and invalid generator
 configuration are rejected before a request is returned.
 
-For external data, use ``Board/init(validating:placements:)`` and
+For external data, use ``Placement/init(validating:cells:)``,
+``Board/init(validating:placements:)`` and
 ``Round/init(restoring:board:directions:seconds:introduces:hintOrder:)``. These report invalid
 data without replacing it. Nonthrowing initializers enforce the same programmer invariants
 with preconditions. ``RoundProgress/validate(for:)`` can check a saved snapshot before its

@@ -51,6 +51,7 @@ let round = Round(board: request.board(seed: 42), rules: [straight, bent])
 A seed alone does not keep a layout across library updates. Save the board's letters and placements together with `round.progress`, and restore them through the checking initializers:
 
 ```swift
+let placements = try saved.map { try Placement(validating: $0.word, cells: $0.cells) }
 let board = try Board(validating: letters, placements: placements)
 let round = try Round(
   restoring: savedProgress, board: board, directions: [.right, .down], seconds: 60)

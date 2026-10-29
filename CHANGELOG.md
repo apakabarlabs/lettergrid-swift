@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- `Placement(validating:cells:)` reports a saved path that is not a word path as
+  `Board.Failure.invalidPlacement` instead of trapping, so a corrupted save can be
+  restored through checked initializers only.
+
 ### Changed
 
 - Generation fills boards with straight word rules faster while preserving seeded

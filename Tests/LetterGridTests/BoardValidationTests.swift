@@ -36,4 +36,22 @@ struct BoardValidationTests {
       try Board(validating: [Array("CAT")], placements: [cat, cat])
     }
   }
+
+  @Test(arguments: [
+    [], [Cell(row: 0, column: 0)], [Cell(row: 0, column: 0), Cell(row: 0, column: 1)],
+    [Cell(row: 0, column: 0), Cell(row: 0, column: 2), Cell(row: 0, column: 3)],
+    [Cell(row: 0, column: 0), Cell(row: 0, column: 1), Cell(row: 0, column: 0)],
+    [Cell(row: 0, column: 0), Cell(row: 0, column: 1), Cell(row: 1, column: 2)],
+  ])
+  func aSavedPathThatIsNoWordPathIsReportedInsteadOfTrapping(_ cells: [Cell]) {
+    #expect(throws: Board.Failure.invalidPlacement("CAT")) {
+      try Placement(validating: "CAT", cells: cells)
+    }
+  }
+
+  @Test func aValidSavedPathRestoresThePlacement() throws {
+    let cells = [Cell(row: 0, column: 0), Cell(row: 0, column: 1), Cell(row: 1, column: 1)]
+    #expect(
+      try Placement(validating: "CAT", cells: cells) == Placement(word: "CAT", cells: cells))
+  }
 }
