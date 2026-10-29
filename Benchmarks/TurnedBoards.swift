@@ -18,18 +18,25 @@ enum TurnedBoards {
   ]
 
   static func run() throws {
-    let words = try vocabulary()
+    let workload = try workload()
+    let words = workload.words
     let dictionary = BoardDictionary(words)
+    let generator = BoardGenerator(
+      columns: 7, rows: 7, rules: workload.rules, filler: workload.weights,
+      downWords: 1...2, attempts: 4, fillsPerAttempt: 10)
+    try measure(generator: generator, words: words, dictionary: dictionary)
+    try BoundedBoards.run(
+      words: words, rules: workload.rules, weights: workload.weights)
+  }
+
+  static func workload() throws -> TurnedWorkload {
+    let words = try vocabulary()
     let rules = (0...3).flatMap { turns in
       groups.map { WordRule(startDirections: $0, turns: turns) }
     }
     let weights = Dictionary(letters.map { (String($0), 1.0) }, uniquingKeysWith: +)
-    let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: rules, filler: try LetterWeights(weights, sameNeighbour: 0.2),
-      downWords: 1...2, attempts: 4, fillsPerAttempt: 10)
-    try measure(generator: generator, words: words, dictionary: dictionary)
-    try BoundedBoards.run(
-      words: words, rules: rules, weights: LetterWeights(weights, sameNeighbour: 0.2))
+    return TurnedWorkload(
+      words: words, rules: rules, weights: try LetterWeights(weights, sameNeighbour: 0.2))
   }
 
   private static func vocabulary() throws -> Set<String> {

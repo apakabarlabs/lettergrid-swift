@@ -5,6 +5,17 @@ import LetterGrid
 struct LetterGridBenchmarks {
   @MainActor
   static func main() throws {
+    let arguments = Array(CommandLine.arguments.dropFirst())
+    if arguments == ["--bounded"] {
+      let workload = try TurnedBoards.workload()
+      try BoundedBoards.run(words: workload.words, rules: workload.rules, weights: workload.weights)
+      return
+    }
+    if arguments.first == "--profile" {
+      try BoundedProfile.run(Array(arguments.dropFirst()))
+      return
+    }
+    guard arguments.isEmpty else { throw BoundedProfile.Failure.arguments }
     boardScans()
     largeDictionary()
     try fallbackBoards()
@@ -115,8 +126,9 @@ struct LetterGridBenchmarks {
   }
 
   @MainActor
+  @inline(never)
   static func measureWorst(
-    _ name: String, iterations: Int, operation: (Int) throws -> Int
+    _ name: String, iterations: Int, sampleLabel: String = "input", operation: (Int) throws -> Int
   ) rethrows {
     var slowest = 0.0
     var slowestInput = 0
@@ -132,7 +144,7 @@ struct LetterGridBenchmarks {
     }
     let line =
       "\(name): worst_single=\(String(format: "%.6f", slowest)) ms; "
-      + "input=\(slowestInput); samples=\(iterations); checksum=\(checksum)\n"
+      + "\(sampleLabel)=\(slowestInput); samples=\(iterations); checksum=\(checksum)\n"
     FileHandle.standardOutput.write(Data(line.utf8))
   }
 
