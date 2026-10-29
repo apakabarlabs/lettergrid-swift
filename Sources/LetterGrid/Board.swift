@@ -166,7 +166,9 @@ public struct Board: Equatable, Sendable {
     let reach = ways.map { way in
       let length = Double(way.rowStep * way.rowStep + way.columnStep * way.columnStep)
       let projection = row * Double(way.rowStep) + column * Double(way.columnStep)
-      return (way: way, alignment: projection / sqrt(length), distance: projection / length)
+      return (
+        way: way, alignment: projection / length.squareRoot(), distance: projection / length
+      )
     }
     let aligned = reach.filter { $0.alignment > 0 }
     guard let closest = aligned.map(\.alignment).max(),
@@ -176,10 +178,14 @@ public struct Board: Equatable, Sendable {
     }
     let direction = best.way
     if ways.contains(where: \.isDiagonal) {
-      let travel = hypot(row, column)
-      guard best.alignment / travel >= cos(.pi / 8) else { return [start] }
+      let travelSquared = row * row + column * column
+      let eighthTurnCosineSquared = (2 + 2.0.squareRoot()) / 4
+      guard best.alignment * best.alignment >= eighthTurnCosineSquared * travelSquared else {
+        return [start]
+      }
     }
-    let distance = Int(min(Double(max(rows, columns) - 1), best.distance.rounded()))
+    let nearest = (best.distance + 0.5).rounded(.down)
+    let distance = Int(min(Double(max(rows, columns) - 1), nearest))
     return (0...distance).map { start.moved(direction, by: $0) }.prefix(while: contains).map { $0 }
   }
 }

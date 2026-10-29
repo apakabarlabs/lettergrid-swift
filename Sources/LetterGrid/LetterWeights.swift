@@ -1,10 +1,32 @@
-import Foundation
-
 public struct LetterWeights: Equatable, Sendable {
   private struct Candidate {
     let letter: Character
     var weight: Double
-    let logarithm: Double
+    let wide: WideNumber
+  }
+
+  private struct WideNumber {
+    var significand: Double
+    var exponent: Int
+
+    init(_ value: Double) {
+      significand = value.significand
+      exponent = Int(value.exponent)
+    }
+
+    func times(_ factor: Double, count: Int) -> WideNumber {
+      var result = self
+      for _ in 0..<count {
+        let product = result.significand * factor
+        result.significand = product.significand
+        result.exponent += Int(product.exponent)
+      }
+      return result
+    }
+
+    func scaled(below exponent: Int) -> Double {
+      Double(sign: .plus, exponent: self.exponent - exponent, significand: significand)
+    }
   }
 
   public enum Failure: Error, Equatable {
@@ -75,12 +97,12 @@ public struct LetterWeights: Equatable, Sendable {
 
   private func candidates(neighbours: [Character: Int]) -> [Candidate] {
     zip(letters, weights).map { letter, weight in
-      let count = Double(neighbours[letter] ?? 0)
+      let count = neighbours[letter] ?? 0
+      var product = weight
+      for _ in 0..<count { product *= sameNeighbour }
       return Candidate(
-        letter: letter,
-        weight: weight * pow(sameNeighbour, count),
-        logarithm: log(weight) + count * log(sameNeighbour)
-      )
+        letter: letter, weight: product,
+        wide: WideNumber(weight).times(sameNeighbour, count: count))
     }
   }
 
@@ -89,9 +111,9 @@ public struct LetterWeights: Equatable, Sendable {
   ) -> Character {
     var total = candidates.reduce(0) { $0 + $1.weight }
     if !total.isFinite || total == 0 {
-      let largest = candidates.map(\.logarithm).max() ?? 0
+      let largest = candidates.map(\.wide.exponent).max() ?? 0
       for index in candidates.indices {
-        candidates[index].weight = exp(candidates[index].logarithm - largest)
+        candidates[index].weight = candidates[index].wide.scaled(below: largest)
       }
       total = candidates.reduce(0) { $0 + $1.weight }
     }

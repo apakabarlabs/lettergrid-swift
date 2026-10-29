@@ -15,6 +15,13 @@
 
 ### Fixed
 
+- Filler draws and drag selection use only arithmetic that IEEE 754 rounds the same way
+  on every platform. The neighbour penalty is repeated multiplication instead of `pow`;
+  the fallback for weights that overflow or underflow rescales by binary exponent instead
+  of through `log` and `exp`; and a selection rounds its length half up and compares
+  squared lengths instead of using `hypot` and `cos`. Platform math libraries may differ
+  in the last bit, which could flip a draw near a boundary in a port. Boards and
+  selections are unchanged.
 - Ties no longer depend on how Swift sorts: the packing search takes words with equally many
   places in their given order, and a drag exactly between two allowed directions takes the
   one listed first. Swift does not promise a stable sort, so a port could have ordered
