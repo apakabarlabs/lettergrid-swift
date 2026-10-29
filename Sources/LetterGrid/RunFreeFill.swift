@@ -1,4 +1,6 @@
 struct RunFreeFill {
+  static let completedCandidates = 20
+
   private enum SearchResult {
     case filled(Board)
     case impossible
@@ -111,7 +113,7 @@ struct RunFreeFill {
     let neighbours = LetterNeighbours(columns: board.columns, rows: board.rows)
     while remaining > 0 || position == empty.count {
       if position == empty.count {
-        guard completedCandidates < BoardGenerationLimits.standard.fillsPerAttempt else {
+        guard completedCandidates < Self.completedCandidates else {
           return best.map(SearchResult.filled) ?? .unsettled
         }
         completedCandidates += 1
