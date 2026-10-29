@@ -1,12 +1,12 @@
 - name: clean fill beats a weighted noisy alternative
-  letters: ABXXX
-  word: AB
+  letters: ABABXXX
+  word: ABAB
   weights: {X: 100, Y: 1, Z: 1}
   dictionary: [XY, YX, XZ, ZX]
   expectedNoise: 0
 - name: dictionary noise is minimized among pair-free fills
-  letters: ABXXX
-  word: AB
+  letters: ABABXXX
+  word: ABAB
   weights: {X: 100, Y: 1, Z: 1}
   dictionary: [XY, YX, XZ, ZX, YZ]
   expectedNoise: 1

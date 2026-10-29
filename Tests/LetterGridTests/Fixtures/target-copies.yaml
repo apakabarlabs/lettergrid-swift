@@ -1,0 +1,32 @@
+- name: a letter that occurs once in the targets gets one copy
+  words: [CAT, DOG, SUN]
+  columns: 7
+  rows: 7
+  bounded: true
+- name: a letter already occurring twice gets no copy
+  words: [TENT, DOG]
+  columns: 7
+  rows: 7
+  bounded: true
+- name: a separator gets a copy like a letter
+  words: [A-B, CAT, SUN]
+  columns: 7
+  rows: 7
+  bounded: true
+- name: a separator held twice needs no free cell
+  words: [A-B, B-A]
+  columns: 3
+  rows: 2
+  bounded: true
+- name: a bounded board with no free cell to spare is refused
+  words: [CAT]
+  columns: 3
+  rows: 1
+  bounded: true
+  rejects: true
+- name: a growing board grows until the copies fit
+  words: [CAT]
+  columns: 3
+  rows: 1
+  bounded: false
+  grows: true

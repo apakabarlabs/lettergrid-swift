@@ -23,6 +23,16 @@
 
 ### Changed
 
+- Every character of the target words, letters and separators alike, stands on the board
+  at least twice, so a lone letter or a lone hyphen no longer gives a word away. A
+  character that the targets already hold twice gets no copy and needs no free cell, a
+  separator included; the others get one copy each, spread across the free cells rather
+  than gathered at the top, and the filler draws no further copy of a letter until its
+  required one stands. Layouts that leave fewer
+  free cells than copies are not chosen, so a bounded board without room throws `noRoom`
+  and a growing one grows. Where a copy can only stand next to its own letter, the board
+  takes that pair rather than giving up, as it already did when no pair-free fill exists.
+  Seeded boards change.
 - One search lays out every request: straight and turned words, with and without a height
   limit, go through the packing search that bounded turned requests already used. It now
   prefers places where words share letters, searches again in another order (up to eight

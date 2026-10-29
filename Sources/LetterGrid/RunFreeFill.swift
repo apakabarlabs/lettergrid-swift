@@ -61,7 +61,7 @@ struct RunFreeFill {
     let symbols = conditionalCharacters.union(
       board.placements.map(\.word).joined().filter { !$0.isLetter })
     guard let ordinary = weights.letters(excluding: symbols) else { return nil }
-    let template = template(requiring: symbols)
+    let template = template()
     guard template.required.count <= template.empty.count else { return nil }
     let runs = LetterRuns(placements: board.placements, columns: board.columns, rows: board.rows)
     guard !runs.containsForbiddenRun(in: template.letters) else { return nil }
@@ -82,7 +82,7 @@ struct RunFreeFill {
     return nil
   }
 
-  private func template(requiring symbols: Set<Character>) -> Template {
+  private func template() -> Template {
     let letters = board.placementLetters
     var empty: [Cell] = []
     for row in 0..<board.rows {
@@ -91,9 +91,11 @@ struct RunFreeFill {
         if letters[row][column] == nil { empty.append(cell) }
       }
     }
+    var counts: [Character: Int] = [:]
+    for letter in letters.joined().compactMap({ $0 }) { counts[letter, default: 0] += 1 }
     return Template(
       letters: letters, empty: empty,
-      required: symbols.intersection(Set(board.placements.map(\.word).joined())),
+      required: Set(counts.filter { $0.value < 2 }.keys),
       targets: WordIndex(Set(board.placements.map(\.word))))
   }
 
@@ -109,7 +111,7 @@ struct RunFreeFill {
     var best: Board?
     var leastNoise = Int.max
     var completedCandidates = 0
-    var remaining = max(1, empty.count) * (weights.letterCount + template.required.count) * 32
+    var remaining = max(1, empty.count) * (weights.letterCount + 1) * 32
     let neighbours = LetterNeighbours(columns: board.columns, rows: board.rows)
     while remaining > 0 || position == empty.count {
       if position == empty.count {
@@ -167,15 +169,12 @@ struct RunFreeFill {
     neighbours: [Character: Int], using random: inout SeededRandom
   ) -> [Character] {
     guard missing.count <= remaining else { return [] }
-    var ordered =
-      missing.count == remaining
-      ? []
-      : weights.orderedLetters(
-        using: &random, neighbours: neighbours)
-    for letter in missing.sorted(by: { String($0) < String($1) }) {
-      ordered.insert(letter, at: random.nextInt(in: 0...ordered.count))
-    }
-    return ordered
+    let copies = random.shuffled(missing.sorted(by: { String($0) < String($1) }))
+    guard missing.count < remaining else { return copies }
+    let ordinary = weights.orderedLetters(using: &random, neighbours: neighbours)
+      .filter { !missing.contains($0) }
+    return random.nextInt(below: remaining) < missing.count
+      ? copies + ordinary : ordinary + copies
   }
 
   private func consider(_ candidate: Board, best: inout Board?, leastNoise: inout Int) {
@@ -317,5 +316,16 @@ extension Layout {
     }
     return LetterRuns(placements: placements, columns: columns, rows: rows)
       .containsForbiddenRun(in: letters)
+  }
+
+  func charactersToCopyIfRoom(columns: Int) -> Set<Character>? {
+    var letters: [Cell: Character] = [:]
+    for placement in placements {
+      for (cell, letter) in zip(placement.cells, placement.word) { letters[cell] = letter }
+    }
+    var counts: [Character: Int] = [:]
+    for letter in letters.values { counts[letter, default: 0] += 1 }
+    let needing = Set(counts.filter { $0.value < 2 }.keys)
+    return needing.count <= rows * columns - letters.count ? needing : nil
   }
 }

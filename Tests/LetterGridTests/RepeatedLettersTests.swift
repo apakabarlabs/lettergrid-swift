@@ -27,20 +27,20 @@ struct RepeatedLettersTests {
 
   @Test func anImpossibleAlphabetIsRefusedDuringPreparation() throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 3, maxRows: 3, directions: [.right],
+      columns: 4, rows: 4, maxRows: 4, directions: [.right],
       filler: try LetterWeights(["X": 1]))
-    #expect(throws: BoardGenerator.Failure.unsettled(words: ["AB"], columns: 3, rows: 3)) {
+    #expect(throws: BoardGenerator.Failure.unsettled(words: ["AB"], columns: 4, rows: 4)) {
       try generator.request(for: ["AB"])
     }
   }
 
-  @Test(arguments: [["TA", "TB", "TC"], ["ta", "tb", "tc"]])
+  @Test(arguments: [["TAB", "TBA", "TAA"], ["tab", "tba", "taa"]])
   func forbiddenTargetRunsAreARefillFailureRatherThanMissingGeometry(words: [String]) throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 2, maxRows: 2, directions: [.down],
+      columns: 3, rows: 3, maxRows: 3, directions: [.down],
       filler: try LetterWeights(["X": 1, "Y": 1, "Z": 1]))
     #expect(
-      throws: BoardGenerator.Failure.unsettled(words: ["TA", "TB", "TC"], columns: 3, rows: 2)
+      throws: BoardGenerator.Failure.unsettled(words: ["TAB", "TBA", "TAA"], columns: 3, rows: 3)
     ) {
       try generator.request(for: words)
     }

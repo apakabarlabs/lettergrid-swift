@@ -64,16 +64,10 @@ struct SeparatorBoardTests {
   private func checkCopies(
     on board: Board, symbols: Set<Character>, targets: Set<Character>, example: Example
   ) {
-    let occupied = Set(board.placements.flatMap(\.cells))
-    let free = (0..<board.rows).flatMap { row in
-      (0..<board.columns).map { Cell(row: row, column: $0) }
-    }.filter { !occupied.contains($0) }
     for symbol in symbols {
       let actual = board.letters.joined().filter { $0 == symbol }.count
       if targets.contains(symbol) {
-        let decoys = free.filter { board[$0] == symbol }.count
-        #expect(decoys >= 1, "\(example.name): \(symbol.debugDescription), decoys \(decoys)")
-        #expect(actual >= 2)
+        #expect(actual >= 2, "\(example.name): \(symbol.debugDescription), \(actual)")
       } else {
         #expect(actual == 0, "\(example.name): unexpected \(symbol.debugDescription)")
       }

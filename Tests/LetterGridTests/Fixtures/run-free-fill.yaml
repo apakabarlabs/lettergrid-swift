@@ -10,9 +10,9 @@ cases:
   directions: [right, down]
   symbols: []
   boards:
-    1: CATDQ/XZXAZ/DOGQD/ZQXAZ/SUNDX
-    7: CATDZ/ZQXAQ/DOGZX/QXAQA/SUNZD
-    37: CATDA/XZXQZ/DOGAD/QZDXQ/SUNZA
+    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
+    7: CATZT/XUNOX/DOGCQ/QAXDS/SUNZG
+    37: CATZQ/QSQDN/DOGOG/ATAUD/SUNCA
 - name: every-direction
   turns: [0]
   extra_dictionary: []
@@ -20,9 +20,9 @@ cases:
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: []
   boards:
-    1: CATDQ/XZXAZ/DOGQD/ZQXAZ/SUNDX
-    7: CATDZ/ZQXAQ/DOGZX/QXAQA/SUNZD
-    37: CATDA/XZXQZ/DOGDX/QZQZA/SUNXD
+    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
+    7: CATZT/XUNOX/DOGCQ/QAXDS/SUNZG
+    37: CATZQ/QSQDN/DOGOG/ATAUD/SUNCA
 - name: separator
   turns: [0]
   extra_dictionary: []
@@ -30,9 +30,9 @@ cases:
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: ['-']
   boards:
-    1: C-TDZ/XAQXQ/DOG-A/QXDZD/SUNAX
-    7: C-TDZ/AZQAQ/DOGXD/QZ-QA/SUNDZ
-    37: C-TDX/XQAZQ/DOGXD/-XAQZ/SUNXD
+    1: C-TOG/ASDXU/DOGZC/T-AXQ/SUNZN
+    7: C-TZT/XUNOA/DOGCQ/Q-XDS/SUNZG
+    37: C-TZA/QSQDN/DOGOG/-TAUD/SUNCA
 - name: reachable-targets
   words: [ADX, DAQ, ZAX]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
@@ -40,9 +40,9 @@ cases:
   turns: [0]
   extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: ADXZQ/ZZXAD/DAQZQ/QZZAZ/ZAXQX
-    7: ADXDX/XZXAQ/DAQAA/DQQZQ/ZAXQX
-    37: ADXZA/ZAZDQ/DAQAZ/QQZXQ/ZAXDZ
+    1: ADXAD/ZZQZX/DAQXA/QQZXQ/ZAXDZ
+    7: ADXZX/XZXAD/DAQZD/DQQAX/ZAXZA
+    37: ADXAD/XZZDZ/DAQZX/ZZAZD/ZAXQX
 - name: forward-reachable-targets
   words: [ADX, DAQ, ZAX]
   directions: [right, down]
@@ -50,9 +50,9 @@ cases:
   turns: [0]
   extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: ADXZX/ZZQAQ/DAQZX/QZZAQ/ZAXZD
-    7: ADXZQ/XZDAX/DAQZQ/QQZDX/ZAXQA
-    37: ADXDA/XZZDX/DAQAZ/QQZZQ/ZAXDX
+    1: ADXDX/XZZAZ/DAQXD/XZAZQ/ZAXDA
+    7: ADXAD/XZZXZ/DAQXA/XZZDQ/ZAXQA
+    37: ADXDX/XZDAZ/DAQXD/XZXZA/ZAXQX
 - name: turns-unfillable
   words: [ADX, DAQ, ZAX]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
@@ -70,6 +70,6 @@ cases:
   turns: [0, 1]
   extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: CATDQ/ZQXZX/DOGDQ/ZAXZX/SUNDQ
-    7: CATDZ/ZQXQX/DOGZA/XZQXQ/SUNAZ
-    37: CATDA/ZQZQX/DOGDZ/QZXQX/SUNDA
+    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
+    7: CATZT/XUNOX/DOGCQ/ZAXDS/SUNZG
+    37: CATZQ/QSQDN/DOGAO/CTXUD/SUNGA

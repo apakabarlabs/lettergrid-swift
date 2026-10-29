@@ -63,9 +63,9 @@
   bounded: true
   conditional: ["é"]
   weights: {x: 1, q: 1, é: 100000}
-- name: a tight board lays the words out with room for the extra separator
+- name: a tight board lays the words out with room for the extra copies
   words: ["a-b", "cde", "-e"]
   turns: 0
   bounded: true
-  columns: 4
+  columns: 6
   rows: 2

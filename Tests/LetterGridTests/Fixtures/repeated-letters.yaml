@@ -18,15 +18,15 @@
   turns: 1
 - name: pairs are unnecessary with two filler letters in a single row
   words: [AB]
-  columns: 6
+  columns: 8
   rows: 1
   weights: {X: 1, Y: 1}
   turns: 0
   avoidsPairs: true
 - name: pairs are unnecessary along every axis of a square
   words: [AB]
-  columns: 2
-  rows: 2
-  weights: {X: 1, Y: 1}
+  columns: 4
+  rows: 4
+  weights: {X: 1, Y: 1, Z: 1, W: 1}
   turns: 0
   avoidsPairs: true
