@@ -1,0 +1,17 @@
+supportedTurns: [0, 3]
+packing:
+  nodeLimit: 2000000
+  growingHeightNodeLimit: 20000
+  crossingRestarts: 8
+shapes:
+  shapeLimit: 256
+  visitLimit: 100000
+noise:
+  visitLimit: 100000
+fill:
+  seeds: 8
+  stepsPerChoice: 32
+  completedCandidates: 20
+reveal:
+  frameSeconds: 0.12
+  travelShare: 0.7

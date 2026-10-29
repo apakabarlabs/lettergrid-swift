@@ -14,7 +14,8 @@ let package = Package(
     .package(url: "https://github.com/jpsim/Yams.git", from: "6.2.2"),
   ],
   targets: [
-    .target(name: "LetterGrid"),
+    .target(
+      name: "LetterGrid", dependencies: ["Yams"], resources: [.copy("generation.yaml")]),
     .target(name: "LetterGridUI", dependencies: ["LetterGrid"]),
     .testTarget(
       name: "LetterGridTests", dependencies: ["LetterGrid", "Yams"], resources: [.copy("Fixtures")]),

@@ -1,0 +1,8 @@
+- {name: right, rowStep: 0, columnStep: 1, opposite: left}
+- {name: down, rowStep: 1, columnStep: 0, opposite: up}
+- {name: down_right, rowStep: 1, columnStep: 1, opposite: up_left}
+- {name: down_left, rowStep: 1, columnStep: -1, opposite: up_right}
+- {name: left, rowStep: 0, columnStep: -1, opposite: right}
+- {name: up, rowStep: -1, columnStep: 0, opposite: down}
+- {name: up_left, rowStep: -1, columnStep: -1, opposite: down_right}
+- {name: up_right, rowStep: -1, columnStep: 1, opposite: down_left}

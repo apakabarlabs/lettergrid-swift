@@ -14,9 +14,9 @@ struct PathShapes {
   let columns: Int
   let length: Int
   let rule: WordRule
-  var maximumShapes = 256
+  var maximumShapes = Generation.settings.shapes.shapeLimit
   var maximumRows: Int?
-  var visitedLimit: Int? = 100_000
+  var visitedLimit: Int? = Generation.settings.shapes.visitLimit
   var randomized = true
 
   func cells(seed: UInt64 = 0) -> [[Cell]] {

@@ -37,7 +37,8 @@ public struct WordRule: Hashable, Sendable {
     }
   }
 
-  public static let supportedTurns = 0...3
+  public static let supportedTurns =
+    Generation.settings.supportedTurns[0]...Generation.settings.supportedTurns[1]
 
   public var isValid: Bool { !startDirections.isEmpty && Self.supportedTurns.contains(turns) }
   public var minimumLength: Int { isValid ? turns + 2 : Int.max }

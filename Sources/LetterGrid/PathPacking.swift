@@ -108,8 +108,8 @@ struct PathPacking {
   let rules: [WordRule]
   var firstRule: WordRule?
   var downWords: ClosedRange<Int> = 0...Int.max
-  var nodeLimit = 2_000_000
-  var crossingRestarts = 8
+  var nodeLimit = Generation.settings.packing.nodeLimit
+  var crossingRestarts = Generation.settings.packing.crossingRestarts
   var completes: @Sendable ([Placement], inout Int) -> Completion = { _, _ in .fits }
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {

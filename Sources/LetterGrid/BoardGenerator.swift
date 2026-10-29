@@ -95,7 +95,7 @@ public struct BoardGenerator: Equatable, Sendable {
       throw Failure.unsettled(words: words, columns: columns, rows: maxRows ?? rows)
     }
     let dictionary = preparedDictionary
-    for seed in UInt64(0)..<8 {
+    for seed in UInt64(0)..<UInt64(Generation.settings.fill.seeds) {
       if let fallback = RunFreeFill(
         board: request.targets(seed: seed), weights: filler, rules: rules,
         conditionalCharacters: conditionalCharacters, dictionary: dictionary.index

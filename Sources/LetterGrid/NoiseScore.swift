@@ -1,5 +1,5 @@
 enum NoiseSearch {
-  static let maximumVisits = 100_000
+  static let maximumVisits = Generation.settings.noise.visitLimit
 }
 
 extension Board {

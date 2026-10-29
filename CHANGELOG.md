@@ -44,6 +44,13 @@
 
 ### Changed
 
+- Search budgets and tuning values live in `Sources/LetterGrid/generation.yaml`, which the
+  library reads once on first use: the supported turns, the packing node limits and
+  restarts, the shape and noise visit limits, the fill's seeds, steps and candidates, and
+  the path reveal's frame and travel share. A port reads the same file. The library now
+  depends on Yams. The direction table is pinned by the test fixture `directions.yaml`
+  rather than read at run time, since it is geometry and sits in every inner loop.
+  Values are unchanged, and so are boards.
 - Every character of the target words, letters and separators alike, stands on the board
   at least twice, so a lone letter or a lone hyphen no longer gives a word away. A
   character that the targets already hold twice gets no copy and needs no free cell, a

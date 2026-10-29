@@ -95,7 +95,7 @@ extension BoardGenerator {
     return conditionalCharacters.union(used.filter { !$0.isLetter }).intersection(used)
   }
 
-  static let growingHeightNodeLimit = 20_000
+  static let growingHeightNodeLimit = Generation.settings.packing.growingHeightNodeLimit
 
   private func packing(height: Int, firstRule: WordRule?, words: [String]) -> PathPacking {
     var packing = PathPacking(

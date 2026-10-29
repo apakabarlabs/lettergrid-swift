@@ -1,5 +1,6 @@
 struct RunFreeFill {
-  static let completedCandidates = 20
+  static let completedCandidates = Generation.settings.fill.completedCandidates
+  static let stepsPerChoice = Generation.settings.fill.stepsPerChoice
 
   private enum SearchResult {
     case filled(Board)
@@ -111,7 +112,7 @@ struct RunFreeFill {
     var best: Board?
     var leastNoise = Int.max
     var completedCandidates = 0
-    var remaining = max(1, empty.count) * (weights.letterCount + 1) * 32
+    var remaining = max(1, empty.count) * (weights.letterCount + 1) * Self.stepsPerChoice
     let neighbours = LetterNeighbours(columns: board.columns, rows: board.rows)
     while remaining > 0 || position == empty.count {
       if position == empty.count {
