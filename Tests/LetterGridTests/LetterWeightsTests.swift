@@ -48,6 +48,21 @@ struct LetterWeightsTests {
     #expect(ordered.first == "A")
   }
 
+  @Test(arguments: [
+    (["\u{E9}": 1.0, "z": 1.0], ["e\u{301}": 1.0, "z": 1.0]),
+    (["a": 1.0, "B": 2.0], ["A": 1.0, "b": 2.0]),
+  ])
+  func weightsThatNormaliseAlikeAreEqualAndDrawAlike(
+    first: [String: Double], second: [String: Double]
+  ) throws {
+    let (left, right) = (try LetterWeights(first), try LetterWeights(second))
+    var leftRandom = SeededRandom(seed: 3)
+    var rightRandom = SeededRandom(seed: 3)
+
+    #expect(left == right)
+    #expect(left.orderedLetters(using: &leftRandom) == right.orderedLetters(using: &rightRandom))
+  }
+
   @Test func anUnderflowingPenaltySharedByEveryLetterKeepsTheirWeightRatio() throws {
     let weights = try LetterWeights(
       ["a": 1.5, "b": 1], sameNeighbour: Double.leastNonzeroMagnitude)

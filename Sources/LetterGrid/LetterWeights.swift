@@ -65,8 +65,9 @@ public struct LetterWeights: Equatable, Sendable {
         orderedWeights.append(weight)
       }
     }
-    self.letters = letters
-    self.weights = orderedWeights
+    let order = letters.indices.sorted { letters[$0].precedesInCodePoints(letters[$1]) }
+    self.letters = order.map { letters[$0] }
+    self.weights = order.map { orderedWeights[$0] }
     self.sameNeighbour = sameNeighbour
   }
 
