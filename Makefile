@@ -3,6 +3,7 @@ BENCH_CONFIGURATION ?= release
 BENCH_ARGS ?=
 TEST_CONFIGURATION ?= debug
 TEST_ARGS ?=
+TEST_TIMEOUT ?= 300
 TEST_COST_OUTPUT ?= .build/test-costs.json
 PROFILE_OPERATION ?= request
 PROFILE_INPUT ?= 0
@@ -36,7 +37,10 @@ test-build:
 	swift build --build-tests
 
 test:
-	swift test --configuration $(TEST_CONFIGURATION) $(TEST_ARGS) $(if $(TEST),--filter '$(TEST)',)
+	perl -e '$$limit = shift; $$child = fork; if (!$$child) { setpgrp(0, 0); exec @ARGV }' \
+		-e '$$SIG{ALRM} = sub { kill "TERM", -$$child; system "pkill", "-TERM", "-f", "$(CURDIR)/.build/.*LetterGridTests"; print STDERR "make test: stopped after $$limit s (TEST_TIMEOUT)\n"; exit 124 };' \
+		-e 'alarm $$limit; waitpid($$child, 0); exit($$? >> 8)' \
+		$(TEST_TIMEOUT) swift test --configuration $(TEST_CONFIGURATION) $(TEST_ARGS) $(if $(TEST),--filter '$(TEST)',)
 
 .PHONY: test-list test-help test-costs
 test-list:
