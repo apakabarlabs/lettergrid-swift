@@ -12,15 +12,14 @@ struct BoundedHeightTests {
     let rule = WordRule(startDirections: [.right], turns: 2)
     let builder = PathBoardBuilder(
       columns: 5, minimumRows: 5, rules: [rule])
-    let weights = try filler()
-    let limits = BoardGenerationLimits(attempts: 1, fillsPerAttempt: 1, layoutsPerAttempt: 1)
-    func board(_ path: [Cell], seed: UInt64) -> Board {
-      builder.board(
-        layout: Layout(rows: 5, placements: [Placement(word: "ABCD", cells: path)]),
-        filler: weights, dictionary: WordIndex([]), seed: seed, limits: limits)
+    func layout(_ path: [Cell], seed: UInt64) -> Layout {
+      var random = SeededRandom(seed: seed)
+      return builder.lowestLayout(
+        Layout(rows: 5, placements: [Placement(word: "ABCD", cells: path)]), tries: 1,
+        using: &random)
     }
     for seed in UInt64(0)..<12 {
-      #expect(board(cells, seed: seed) == board(shifted, seed: seed))
+      #expect(layout(cells, seed: seed) == layout(shifted, seed: seed))
     }
   }
 

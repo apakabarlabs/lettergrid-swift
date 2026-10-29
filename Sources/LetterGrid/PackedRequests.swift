@@ -48,16 +48,6 @@ extension BoardGenerator {
 
   var packs: Bool { usesPathRules && maxRows != nil }
 
-  func decoys(for layout: Layout, words: [String], seed: UInt64) -> [Cell: Character] {
-    let required = requiredSymbols(in: words)
-    guard packs, !required.isEmpty else { return [:] }
-    guard
-      let decoys = ConditionalFill.decoys(
-        required, beside: layout, columns: columns, rules: rules, seed: seed)
-    else { preconditionFailure("A packed layout leaves room for its conditional characters.") }
-    return decoys
-  }
-
   private func requiredSymbols(in words: [String]) -> Set<Character> {
     let used = Set(words.joined())
     return conditionalCharacters.union(used.filter { !$0.isLetter }).intersection(used)

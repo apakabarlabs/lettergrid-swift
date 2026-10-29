@@ -264,6 +264,21 @@ struct LetterRuns {
 }
 
 extension Board {
+  init(targets layout: Layout, columns: Int) {
+    let used = Set(layout.placements.map(\.word).joined())
+    guard
+      let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
+        .first(where: { !used.contains($0) })
+    else { preconditionFailure("Target words cannot use every private-use character") }
+    var letters = Array(repeating: Array(repeating: blank, count: columns), count: layout.rows)
+    for placement in layout.placements {
+      for (cell, letter) in zip(placement.cells, placement.word) {
+        letters[cell.row][cell.column] = letter
+      }
+    }
+    self.init(letters: letters, placements: layout.placements)
+  }
+
   var placementLetters: [[Character?]] {
     let occupied = Set(placements.flatMap(\.cells))
     return letters.enumerated().map { row, letters in

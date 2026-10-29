@@ -112,7 +112,7 @@ public struct BoardGenerator: Equatable, Sendable {
     let dictionary = preparedDictionary
     for seed in UInt64(0)..<8 {
       if let fallback = RunFreeFill(
-        board: request.board(seed: seed), weights: filler, rules: rules,
+        board: request.targets(seed: seed), weights: filler, rules: rules,
         conditionalCharacters: conditionalCharacters, dictionary: dictionary.index
       ).filled(seed: seed) {
         return request.avoidingRuns(
@@ -134,15 +134,8 @@ public struct BoardGenerator: Equatable, Sendable {
     }
     var generator = self
     generator.filler = ordinary
-    let request = try generator.checkedRequest(
+    return try generator.checkedRequest(
       for: words, firstDirection: firstDirection, firstRule: firstRule)
-    let required = symbols.intersection(Set(words.joined()))
-    guard !required.isEmpty, !packs else { return request }
-    guard
-      let fallback = ConditionalFill.adding(
-        required, to: request.board(seed: 0), rules: rules, seed: 0)
-    else { throw Failure.noRoom(words: words, columns: columns, rows: rows) }
-    return request.requiring(required, fallback: fallback)
   }
 
   private func checkedRequest(
@@ -238,75 +231,34 @@ extension BoardGenerator {
       generator: generator, firstRule: firstRule, boundedFallback: request.boundedFallback)
   }
 
-  func board(
-    for request: BoardRequest, seed: UInt64, dictionary: Set<String>?
-  ) -> Board {
-    let normalized = dictionary.map { Set($0.map(\.cellUppercased)) } ?? self.dictionary
-    let index = normalized == self.dictionary ? preparedDictionary.index : WordIndex(normalized)
-    return board(for: request, seed: seed, index: index)
-  }
-
-  func board(
-    for request: BoardRequest, seed: UInt64, dictionary: BoardDictionary
-  ) -> Board {
-    board(for: request, seed: seed, index: dictionary.index)
-  }
-
-  private func board(for request: BoardRequest, seed: UInt64, index: WordIndex) -> Board {
-    if let layout = packedLayout(for: request, seed: seed) {
-      return PathBoardBuilder(
-        columns: columns, minimumRows: rows, rules: rules,
-        maximumRows: maxRows, avoidsTargetRuns: requiresRunFreeTargets
-      )
-      .board(
-        layout: layout, filler: filler, dictionary: index, seed: seed,
-        limits: BoardGenerationLimits(
-          attempts: attempts, fillsPerAttempt: fillsPerAttempt,
-          layoutsPerAttempt: layoutsPerAttempt),
-        fixed: decoys(for: layout, words: request.words, seed: seed))
+  func targets(for request: BoardRequest, seed: UInt64) -> Board {
+    var random = SeededRandom(seed: seed)
+    if packs, let layout = packedLayout(for: request, seed: seed) {
+      return Board(targets: layout, columns: columns)
     }
-    return straightBoard(for: request, seed: seed, index: index)
-  }
-
-  private func straightBoard(for request: BoardRequest, seed: UInt64, index: WordIndex) -> Board {
-    let words = request.words
+    if let layout = request.pathLayout {
+      let builder = PathBoardBuilder(
+        columns: columns, minimumRows: rows, rules: rules, avoidsTargetRuns: requiresRunFreeTargets)
+      return Board(
+        targets: builder.lowestLayout(layout, tries: layoutsPerAttempt, using: &random),
+        columns: columns)
+    }
     let builder = LayoutBuilder(
       columns: columns, minimumRows: rows, directions: directions, downWords: downWords,
       firstDirection: request.firstDirection, maximumRows: maxRows)
-    var random = SeededRandom(seed: seed)
-    let targets = WordIndex(Set(words))
-    let acceptsNoise = maxRows != nil
-    let fillingIndex = acceptsNoise ? WordIndex([]) : index
-    var best: Board?
-    var leastNoise = Int.max
     for _ in 0..<attempts {
       guard
         let layout = builder.lowestLayout(
-          for: words, tries: layoutsPerAttempt, using: &random)
+          for: request.words, tries: layoutsPerAttempt, using: &random)
       else { break }
       if requiresRunFreeTargets, layout.hasForbiddenTargetRun(columns: columns) { continue }
-      let filler = BoardFiller(
-        layout: layout, columns: columns, directions: directions,
-        dictionary: fillingIndex, targets: targets)
-      guard
-        let board = filler.fill(with: self.filler, attempts: fillsPerAttempt, using: &random)
-      else { continue }
-      guard isClean(board, hiding: words, dictionary: fillingIndex) else { continue }
-      let noise =
-        acceptsNoise
-        ? board.strayWordCount(in: index, rules: rules, lessThan: leastNoise) : 0
-      if noise == 0 { return board }
-      if best == nil || noise < leastNoise {
-        best = board
-        leastNoise = noise
+      let targets = Board(targets: layout, columns: columns)
+      if targets.placements.allSatisfy({ targets.hasSingleOccurrence(of: $0.word, rules: rules) }) {
+        return targets
       }
     }
-    if let best { return best }
     if let fallback = request.boundedFallback {
-      guard let board = isolatedBoard(layout: fallback, words: words, using: &random) else {
-        preconditionFailure("A bounded request retains a checked unique-target fallback.")
-      }
-      return board
+      return Board(targets: fallback, columns: columns)
     }
     return bandedBoard(for: request, using: &random)
   }

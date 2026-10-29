@@ -23,6 +23,15 @@
 
 ### Changed
 
+- A board is built from its target layout and filled once. Generation no longer builds,
+  scores and discards a complete 0.18 board for every seed, nor adds symbol copies to it
+  by 64 random tries before refilling. Packed boards keep their layouts. An unbounded
+  turned board takes the first compacted layout of its seed, and a straight board the
+  first layout of its seed whose targets make no run and occur once each; before, the
+  layout followed whichever fill scored best, so such a seed can give a different board.
+  Words with symbols are refused as `unsettled` rather than `noRoom` when no seed of
+  preparation gets a run-free fill with their copies. `fillsPerAttempt` no longer changes
+  boards.
 - Generation fills boards with straight word rules faster while preserving seeded
   results.
 - Generators built with `rules:` and `maxRows` prepare requests faster by checking each
