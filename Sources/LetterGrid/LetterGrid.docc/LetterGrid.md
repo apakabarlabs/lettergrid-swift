@@ -90,12 +90,12 @@ a wall-clock deadline across application suspension.
 
 ### Restoring and pacing
 
-Generation retains nonletter characters as ordinary target-path cells and adds at least
-one copy of each outside all target paths. `conditionalCharacters` applies the same rule to
-caller-selected letters. Ordinary weighted fill excludes these characters, so an absent
-conditional character never appears on the board. The run-free fallback chosen during
-preparation keeps target uniqueness and the extra copies; requests reject layouts that cannot
-provide them.
+Every character of the target words, letters, nonletter characters and
+`conditionalCharacters` alike, occupies at least two cells of the board. A character that
+the target paths already hold twice gets no copy; any other gets one copy in a free cell.
+Ordinary weighted fill excludes nonletter and conditional characters, so a conditional
+character absent from the targets never appears on the board. Requests reject layouts
+that leave fewer free cells than copies.
 
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
