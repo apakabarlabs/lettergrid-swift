@@ -19,6 +19,7 @@ struct PackedRequestTests {
     let grows: Bool?
     let failure: String?
     let downWords: [Int]?
+    let legacyEquivalent: Bool?
     let words: [String]
     let accepted: Bool?
     let fits: Bool
@@ -30,6 +31,10 @@ struct PackedRequestTests {
     func request(from generator: BoardGenerator) throws -> BoardRequest {
       if leadingRules != nil { return try generator.request(for: words, leadingRules: leading) }
       return try generator.request(for: words, firstRule: firstRule?.wordRule)
+    }
+
+    func legacyRequest(from generator: BoardGenerator) throws -> BoardRequest {
+      return try generator.request(for: words, firstRule: leading.first)
     }
   }
 
@@ -62,6 +67,10 @@ struct PackedRequestTests {
       }
       let request = try item.request(from: generator)
       #expect(request.leadingRules == item.leading)
+      if item.legacyEquivalent == true {
+        let legacy = try item.legacyRequest(from: generator)
+        #expect(request == legacy, "\(item.name)")
+      }
       var layouts: Set<[Placement]> = []
       for seed in UInt64(1)...4 {
         let board = request.board(seed: seed)

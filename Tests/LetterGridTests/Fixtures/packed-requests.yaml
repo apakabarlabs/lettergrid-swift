@@ -69,6 +69,7 @@
   rules: [{directions: [right, down], turns: 0}]
   leadingRules: []
   words: [CAT, DOG, SUN]
+  legacyEquivalent: true
   fits: true
 - name: both leading words force the field to grow beyond its minimum height
   rules: [{directions: [right, down], turns: 0}]
@@ -129,3 +130,11 @@
   accepted: false
   failure: invalidConfiguration
   fits: false
+- name: one leading rule retains the legacy request and seeded boards
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right, down], turns: 1}
+  leadingRules: [{directions: [right, down], turns: 1}]
+  words: [PLANET, ORBIT, SUN]
+  legacyEquivalent: true
+  fits: true

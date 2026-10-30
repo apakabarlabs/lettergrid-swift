@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.20.0] - 2026-10-30
+
+Existing callers need no changes. Calls that worked in 0.19.1 produce the same board with
+the same words, settings and seed. The `firstRule:` and `firstDirection:` overloads remain
+available and are not deprecated; `leadingRules:` is a separate overload, not an additional
+argument to either.
+The new `leadingRules:` argument is required, so calls that omit it remain unambiguous.
+There is no serialized `BoardRequest` format to migrate.
+
+### Added
+
+- `BoardGenerator.request(for:leadingRules:)` assigns rule 0 to word 0, rule 1 to word 1,
+  and so on, for as many rules as you pass. Later words may use any rule from the
+  generator's `rules:`. This overload requires a generator created with `rules:`;
+  a generator created with `directions:` throws `BoardGenerator.Failure.invalidConfiguration`.
+  For example, require different directions for the first two of three words:
+
+  ```swift
+  let generator = BoardGenerator(
+    columns: 7, rows: 7,
+    rules: [WordRule(startDirections: [.right, .down], turns: 0)],
+    filler: try LetterWeights(["x": 1, "q": 1]))
+  let request = try generator.request(
+    for: ["cat", "dog", "sun"],
+    leadingRules: [
+      WordRule(startDirections: [.right], turns: 0),
+      WordRule(startDirections: [.down], turns: 0),
+    ])
+  let board = request.board(seed: 42)
+  ```
+
+  Each leading rule must have nonempty `startDirections` and a turn count from 0 through 3.
+  Some rule in the generator's `rules:` must contain all its directions and have the same
+  turn count; otherwise the call throws `BoardGenerator.Failure.invalidConfiguration`.
+  More leading rules than words, words that cannot meet the constraints, or constraints
+  incompatible with `downWords` throw `BoardGenerator.Failure.noRoom`. `downWords` still
+  counts all words whose first segment runs up or down. If the search cannot find a complete
+  board with unique targets and no added runs of three equal letters within the library's
+  built-in search limits, the call throws `BoardGenerator.Failure.unsettled`. These limits
+  are not caller-configurable. An empty list gives an equal request and the same boards
+  as `request(for:)` on the same generator.
+  For an existing `firstRule: rule` call, `leadingRules: [rule]` returns an equal request
+  and produces the same boards for the same seeds.
+- `BoardGenerator.accepts(_:leadingRules:)` returns `false` for leading rules that fail the
+  checks above, more rules than words, empty target lists, words shorter than two cells, duplicate
+  or contained target words, unusable filler, a word whose path cannot fit the dimensions,
+  or an incompatible `downWords` range. `true` means it passed only these preliminary checks:
+  `request` may still fail to place all words together or fill the remaining cells.
+- `BoardRequest.leadingRules` is a read-only array of the rules requested for the leading
+  words. With the old overloads it contains `[rule]` for `firstRule: rule`, a zero-turn rule
+  for `firstDirection: direction`, or `[]` when neither constraint is supplied. The existing
+  `BoardRequest.firstRule` property returns the first element, or `nil` for an empty list;
+  its behavior for old calls is unchanged. For the new overload, comparing `firstRule`
+  alone does not compare all constraints; request equality includes the whole array.
+  Every board built from that request follows all these rules.
+
 ## [0.19.1] - 2026-10-29
 
 ### Fixed
