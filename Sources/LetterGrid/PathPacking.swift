@@ -106,7 +106,7 @@ struct PathPacking {
   let columns: Int
   let rows: Int
   let rules: [WordRule]
-  var firstRule: WordRule?
+  var leadingRules: [WordRule] = []
   var downWords: ClosedRange<Int> = 0...Int.max
   var nodeLimit = Generation.settings.packing.nodeLimit
   var crossingRestarts = Generation.settings.packing.crossingRestarts
@@ -114,12 +114,13 @@ struct PathPacking {
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {
     precondition(
-      firstRule.map { first in
+      leadingRules.allSatisfy { first in
         rules.contains {
           $0.turns == first.turns && Set(first.startDirections).isSubset(of: $0.startDirections)
         }
-      } ?? true,
-      "The first word's rule must lie within one of the rules every reading is checked against.")
+      },
+      "Every leading rule must lie within a rule every reading is checked against.")
+    guard leadingRules.count <= words.count else { return .impossible }
     var random = SeededRandom(seed: seed)
     let used = Set(words.joined())
     guard !words.isEmpty,
@@ -167,7 +168,7 @@ struct PathPacking {
   ) -> [[Candidate]] {
     let alone = [Placement?](repeating: nil, count: words.count)
     return words.indices.map { index in
-      let allowedRules = index == 0 ? firstRule.map { [$0] } ?? rules : rules
+      let allowedRules = index < leadingRules.count ? [leadingRules[index]] : rules
       return candidates(for: words[index], rules: allowedRules) { placement in
         var chosen = alone
         chosen[index] = placement

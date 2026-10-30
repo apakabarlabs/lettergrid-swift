@@ -36,7 +36,7 @@ private struct PackingCase: Decodable {
   var packing: PathPacking {
     var packing = PathPacking(
       columns: columns, rows: rows, rules: rules.map(\.wordRule),
-      firstRule: firstRule?.wordRule, downWords: downWords[0]...downWords[1])
+      leadingRules: firstRule.map { [$0.wordRule] } ?? [], downWords: downWords[0]...downWords[1])
     if let nodeLimit { packing.nodeLimit = nodeLimit }
     let required = requiredSymbols
     let avoidsRuns = avoidsTargetRuns == true

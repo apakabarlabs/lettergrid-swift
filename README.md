@@ -26,7 +26,7 @@ SwiftUI apps draw the round with `LetterBoard` and `HiddenWordList` from `Letter
 Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.19.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.20.0")
 
 .product(name: "LetterGrid", package: "lettergrid-swift"),
 .product(name: "LetterGridUI", package: "lettergrid-swift") // only for SwiftUI
@@ -45,6 +45,22 @@ let generator = BoardGenerator(
 let request = try generator.request(for: ["planet", "star"], firstRule: bent)
 let round = Round(board: request.board(seed: 42), rules: [straight, bent])
 ```
+
+To require different rules for the first few words, pass `leadingRules:`. Each rule applies
+to the word at the same index; later words may use any enabled rule. A leading rule can
+narrow an enabled rule's starting directions while keeping its turn count.
+
+```swift
+let request = try generator.request(
+  for: ["planet", "star", "sun"],
+  leadingRules: [
+    WordRule(startDirections: [.right]),
+    WordRule(startDirections: [.right], turns: 2),
+  ])
+```
+
+Use `accepts(_:leadingRules:)` for the preliminary word and quota checks. As with
+`firstRule:`, accepted words may still fail the placement or fill search in `request`.
 
 ## Saving a game
 

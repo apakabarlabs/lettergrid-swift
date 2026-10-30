@@ -1,5 +1,10 @@
 extension BoardGenerator {
   public func accepts(_ words: [String], firstRule: WordRule? = nil) -> Bool {
+    accepts(words, leadingRules: firstRule.map { [$0] } ?? [])
+  }
+
+  public func accepts(_ words: [String], leadingRules: [WordRule]) -> Bool {
+    guard leadingRules.count <= words.count, leadingRules.allSatisfy(enables) else { return false }
     let words = words.map(\.cellUppercased)
     let excluded = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
     guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
@@ -7,7 +12,7 @@ extension BoardGenerator {
       filler.letters(excluding: excluded) != nil
     else { return false }
     let fitting = words.indices.map { index in
-      (index == 0 ? firstRule.map { [$0] } ?? rules : rules).flatMap { rule in
+      (index < leadingRules.count ? [leadingRules[index]] : rules).flatMap { rule in
         rule.startDirections.map { WordRule(startDirections: [$0], turns: rule.turns) }
       }.filter { $0.canFit(length: words[index].count, columns: columns, maximumRows: maxRows) }
     }
@@ -18,21 +23,21 @@ extension BoardGenerator {
   }
 
   func packedRequest(
-    for words: [String], firstDirection: Direction?, firstRule: WordRule?, maxRows: Int
+    for words: [String], firstDirection: Direction?, leadingRules: [WordRule], maxRows: Int
   ) throws -> BoardRequest {
-    guard accepts(words, firstRule: firstRule) else {
+    guard accepts(words, leadingRules: leadingRules) else {
       throw Failure.noRoom(words: words, columns: columns, rows: rows)
     }
     if self.maxRows == nil {
       return try growingRequest(
-        for: words, firstDirection: firstDirection, firstRule: firstRule, tallest: maxRows)
+        for: words, firstDirection: firstDirection, leadingRules: leadingRules, tallest: maxRows)
     }
     var unsettled = false
     for height in rows...maxRows {
-      switch packing(height: height, firstRule: firstRule, words: words).pack(words) {
+      switch packing(height: height, leadingRules: leadingRules, words: words).pack(words) {
       case .placed(let placements):
         return BoardRequest(
-          words: words, firstDirection: firstDirection, generator: self, firstRule: firstRule,
+          words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
           layout: Layout(rows: height, placements: placements))
       case .impossible:
         continue
@@ -45,10 +50,10 @@ extension BoardGenerator {
   }
 
   private func growingRequest(
-    for words: [String], firstDirection: Direction?, firstRule: WordRule?, tallest: Int
+    for words: [String], firstDirection: Direction?, leadingRules: [WordRule], tallest: Int
   ) throws -> BoardRequest {
     func outcome(at height: Int) -> PathPacking.Outcome {
-      packing(height: height, firstRule: firstRule, words: words).pack(words)
+      packing(height: height, leadingRules: leadingRules, words: words).pack(words)
     }
     func placed(at height: Int) -> [Placement]? {
       guard case .placed(let placements) = outcome(at: height) else { return nil }
@@ -56,7 +61,7 @@ extension BoardGenerator {
     }
     if let placements = placed(at: rows) {
       return BoardRequest(
-        words: words, firstDirection: firstDirection, generator: self, firstRule: firstRule,
+        words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
         layout: Layout(rows: rows, placements: placements))
     }
     var found: (height: Int, placements: [Placement])
@@ -78,14 +83,16 @@ extension BoardGenerator {
       }
     }
     return BoardRequest(
-      words: words, firstDirection: firstDirection, generator: self, firstRule: firstRule,
+      words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
       layout: Layout(rows: found.height, placements: found.placements))
   }
 
   func packedLayout(for request: BoardRequest, seed: UInt64) -> Layout {
     let layout = request.layout
-    let outcome = packing(height: layout.rows, firstRule: request.firstRule, words: request.words)
-      .pack(request.words, seed: seed)
+    let outcome = packing(
+      height: layout.rows, leadingRules: request.leadingRules, words: request.words
+    )
+    .pack(request.words, seed: seed)
     guard case .placed(let placements) = outcome else { return layout }
     return Layout(rows: layout.rows, placements: placements)
   }
@@ -97,9 +104,10 @@ extension BoardGenerator {
 
   static let growingHeightNodeLimit = Generation.settings.packing.growingHeightNodeLimit
 
-  private func packing(height: Int, firstRule: WordRule?, words: [String]) -> PathPacking {
+  private func packing(height: Int, leadingRules: [WordRule], words: [String]) -> PathPacking {
     var packing = PathPacking(
-      columns: columns, rows: height, rules: rules, firstRule: firstRule, downWords: downWords)
+      columns: columns, rows: height, rules: rules, leadingRules: leadingRules, downWords: downWords
+    )
     if maxRows == nil { packing.nodeLimit = Self.growingHeightNodeLimit }
     let required = requiredSymbols(in: words)
     let (columns, rules, avoidsRuns) = (columns, rules, requiresRunFreeTargets)

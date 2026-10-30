@@ -101,6 +101,16 @@ that leave fewer free cells than copies.
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
   generator and round. `firstRule` requires the first word to use one particular enabled rule.
+  With a generator created using `rules:`, ``BoardGenerator/request(for:leadingRules:)``
+  assigns `leadingRules[i]` to `words[i]`, leaving later words free to use any enabled rule.
+  A leading rule can use a subset of an enabled rule's starting directions with the same
+  turn count. Invalid or disabled rules throw `invalidConfiguration`; more rules than words,
+  an impossible leading path or an incompatible vertical quota throw `noRoom`. The placement
+  and fill searches can still throw `noRoom` or `unsettled`, as for an unconstrained request.
+  ``BoardRequest/leadingRules`` retains every constraint for seeded builds;
+  `firstRule` returns its first element. An empty list adds no constraints.
+  ``BoardGenerator/accepts(_:leadingRules:)`` performs the preliminary word, geometry and
+  quota checks only, and returns false for invalid or disabled leading rules.
   Words may cross only on equal letters. `minimumLength` and `isValid` check a rule.
 - ``WordRule/canFit(length:columns:maximumRows:)`` checks whether one path fits an empty grid,
   with no random choices or search budget, so its results can be cached per length and size.

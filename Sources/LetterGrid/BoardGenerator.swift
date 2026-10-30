@@ -81,17 +81,51 @@ public struct BoardGenerator: Equatable, Sendable {
   public func request(
     for words: [String], firstDirection: Direction? = nil, firstRule: WordRule? = nil
   ) throws -> BoardRequest {
+    try validateConfiguration()
+    let leading: [WordRule]
+    if usesPathRules {
+      guard firstDirection == nil, firstRule.map({ rules.contains($0) }) ?? true
+      else { throw Failure.invalidConfiguration }
+      leading = firstRule.map { [$0] } ?? []
+    } else {
+      guard firstRule == nil else { throw Failure.invalidConfiguration }
+      guard firstDirection.map({ directions.contains($0) }) ?? true else {
+        throw Failure.noRoom(words: words.map(\.cellUppercased), columns: columns, rows: rows)
+      }
+      leading = firstDirection.map { [WordRule(startDirections: [$0])] } ?? []
+    }
+    return try preparedRequest(for: words, firstDirection: firstDirection, leadingRules: leading)
+  }
+
+  public func request(for words: [String], leadingRules: [WordRule]) throws -> BoardRequest {
+    try validateConfiguration()
+    guard usesPathRules, leadingRules.allSatisfy(enables) else {
+      throw Failure.invalidConfiguration
+    }
+    return try preparedRequest(for: words, firstDirection: nil, leadingRules: leadingRules)
+  }
+
+  func enables(_ rule: WordRule) -> Bool {
+    rule.isValid
+      && rules.contains {
+        $0.turns == rule.turns && Set(rule.startDirections).isSubset(of: $0.startDirections)
+      }
+  }
+
+  private func preparedRequest(
+    for words: [String], firstDirection: Direction?, leadingRules: [WordRule]
+  ) throws -> BoardRequest {
     let words = words.map(\.cellUppercased)
     var targets = self
     targets.requiresRunFreeTargets = true
     let request: BoardRequest
     do {
       request = try targets.targetRequest(
-        for: words, firstDirection: firstDirection, firstRule: firstRule)
+        for: words, firstDirection: firstDirection, leadingRules: leadingRules)
     } catch Failure.noRoom {
       targets.requiresRunFreeTargets = false
       _ = try targets.targetRequest(
-        for: words, firstDirection: firstDirection, firstRule: firstRule)
+        for: words, firstDirection: firstDirection, leadingRules: leadingRules)
       throw Failure.unsettled(words: words, columns: columns, rows: maxRows ?? rows)
     }
     let dictionary = preparedDictionary
@@ -108,43 +142,25 @@ public struct BoardGenerator: Equatable, Sendable {
   }
 
   private func targetRequest(
-    for words: [String], firstDirection: Direction?, firstRule: WordRule?
+    for words: [String], firstDirection: Direction?, leadingRules: [WordRule]
   ) throws -> BoardRequest {
     let symbols = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
-    guard !symbols.isEmpty else {
-      return try checkedRequest(for: words, firstDirection: firstDirection, firstRule: firstRule)
-    }
-    guard let ordinary = filler.letters(excluding: symbols) else {
-      throw Failure.noRoom(words: words, columns: columns, rows: rows)
-    }
     var generator = self
-    generator.filler = ordinary
-    return try generator.checkedRequest(
-      for: words, firstDirection: firstDirection, firstRule: firstRule)
+    if !symbols.isEmpty {
+      guard let ordinary = filler.letters(excluding: symbols) else {
+        throw Failure.noRoom(words: words, columns: columns, rows: rows)
+      }
+      generator.filler = ordinary
+    }
+    return try generator.packedRequest(
+      for: words, firstDirection: firstDirection, leadingRules: leadingRules,
+      maxRows: maxRows ?? rows + words.map(\.count).reduce(0, +))
   }
 
-  private func checkedRequest(
-    for words: [String], firstDirection: Direction?, firstRule: WordRule?
-  ) throws -> BoardRequest {
+  private func validateConfiguration() throws {
     guard columns > 0, rows > 0, !directions.isEmpty, downWords.lowerBound >= 0,
       rules.allSatisfy(\.isValid), maxRows.map({ $0 >= rows }) ?? true
     else { throw Failure.invalidConfiguration }
-    let words = words.map(\.cellUppercased)
-    let first: WordRule?
-    if usesPathRules {
-      guard firstDirection == nil, firstRule.map({ rules.contains($0) }) ?? true
-      else { throw Failure.invalidConfiguration }
-      first = firstRule
-    } else {
-      guard firstRule == nil else { throw Failure.invalidConfiguration }
-      guard firstDirection.map({ directions.contains($0) }) ?? true else {
-        throw Failure.noRoom(words: words, columns: columns, rows: rows)
-      }
-      first = firstDirection.map { WordRule(startDirections: [$0]) }
-    }
-    return try packedRequest(
-      for: words, firstDirection: firstDirection, firstRule: first,
-      maxRows: maxRows ?? rows + words.map(\.count).reduce(0, +))
   }
 }
 

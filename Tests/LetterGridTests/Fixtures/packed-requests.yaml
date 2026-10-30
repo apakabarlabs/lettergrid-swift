@@ -48,3 +48,84 @@
   - {directions: [left, up], turns: 1}
   words: [KERING, ROTÁL, LÁT]
   fits: false
+- name: a stage introduces right and down with one word in each direction
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [right], turns: 0}
+  - {directions: [down], turns: 0}
+  words: [CAT, DOG, SUN]
+  fits: true
+- name: leading turns survive a growing board and seeded repacking
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right, down], turns: 1}
+  leadingRules:
+  - {directions: [right], turns: 1}
+  - {directions: [down], turns: 1}
+  words: [PLANET, ORBIT, SUN]
+  grows: true
+  fits: true
+- name: an empty leading list leaves every word free
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: []
+  words: [CAT, DOG, SUN]
+  fits: true
+- name: both leading words force the field to grow beyond its minimum height
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [down], turns: 0}
+  - {directions: [down], turns: 0}
+  words: [ELEPHANT, WATERFALL, SUN]
+  grows: true
+  fits: true
+- name: every leading rule needs its own word
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [right], turns: 0}
+  - {directions: [down], turns: 0}
+  words: [CAT]
+  accepted: false
+  fits: false
+- name: a later leading word cannot fit its required straight direction
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right, down], turns: 1}
+  leadingRules:
+  - {directions: [down], turns: 0}
+  - {directions: [right], turns: 0}
+  words: [CAT, ELEPHANT, SUN]
+  accepted: false
+  fits: false
+- name: the vertical quota includes every leading word
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [right], turns: 0}
+  - {directions: [right], turns: 0}
+  - {directions: [right], turns: 0}
+  words: [CAT, DOG, SUN]
+  accepted: false
+  fits: false
+- name: individually fitting leading diagonals cannot cross on different letters
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  leadingRules:
+  - {directions: [down_right], turns: 0}
+  - {directions: [down_left], turns: 0}
+  words: [ABCDEFG, HIJKLMN, SUN]
+  downWords: [0, 0]
+  fits: false
+- name: a leading rule must be enabled by the generator
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [left], turns: 0}]
+  words: [CAT, DOG, SUN]
+  accepted: false
+  failure: invalidConfiguration
+  fits: false
+- name: a leading rule must have a direction
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [], turns: 0}]
+  words: [CAT, DOG, SUN]
+  accepted: false
+  failure: invalidConfiguration
+  fits: false

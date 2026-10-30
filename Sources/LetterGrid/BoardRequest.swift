@@ -7,19 +7,21 @@ public struct BoardRequest: Equatable, Sendable {
 
   public let words: [String]
   public let firstDirection: Direction?
-  public let firstRule: WordRule?
+  public var firstRule: WordRule? { leadingRules.first }
+  public let leadingRules: [WordRule]
   let layout: Layout
   private let generator: BoardGenerator
   private var runFree: RunFreeFallback?
 
   init(
-    words: [String], firstDirection: Direction?, generator: BoardGenerator, firstRule: WordRule?,
+    words: [String], firstDirection: Direction?, generator: BoardGenerator,
+    leadingRules: [WordRule],
     layout: Layout
   ) {
     self.words = words
     self.firstDirection = firstDirection
     self.generator = generator
-    self.firstRule = firstRule
+    self.leadingRules = leadingRules
     self.layout = layout
   }
 
