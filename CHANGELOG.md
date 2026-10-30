@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.22.0] - 2026-10-30
+
+Existing callers need no changes. Omitting the new limit, or passing `nil`, preserves
+0.21.0 generation, including seeded layouts. No saved-game migration is needed.
+
+### Added
+
+- Both `BoardGenerator` initializers accept `maxWordsPerDirection: Int? = nil`.
+  Set it to a positive number to cap how many targets start in each direction.
+  Turned words count by their first segment (`Placement.direction`); opposite
+  directions count separately. Leading words count toward the same cap.
+- The cap applies to `accepts`, `checkPlacement`, complete request preparation and
+  every seeded board, with fixed or growing height. A nonpositive cap makes
+  `accepts` return false and throwing checks report `invalidConfiguration`.
+  Insufficient direction capacity reports `noRoom`; layout and fill searches retain
+  their existing `noRoom` and `unsettled` failure modes. Preliminary acceptance alone
+  still does not guarantee a joint layout or successful fill.
+- `BoardRequest.maxWordsPerDirection` exposes its retained cap. Generator and request
+  equality include it. The existing `downWords` API remains available and independent:
+  when both constraints are supplied, a board must satisfy both.
+
 ## [0.21.0] - 2026-10-30
 
 Existing callers need no changes. `request` and `board(seed:)` keep their 0.20.0

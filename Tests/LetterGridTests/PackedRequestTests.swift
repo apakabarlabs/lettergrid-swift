@@ -19,6 +19,7 @@ struct PackedRequestTests {
     let grows: Bool?
     let failure: String?
     let downWords: [Int]?
+    let maxWordsPerDirection: Int?
     let legacyEquivalent: Bool?
     let words: [String]
     let accepted: Bool?
@@ -52,7 +53,8 @@ struct PackedRequestTests {
         columns: 7, rows: 7, maxRows: item.grows == true ? nil : 7, rules: rules,
         filler: try LetterWeights(["q": 1, "w": 1]),
         downWords: item.downWords.map { $0[0]...$0[1] }
-          ?? (item.words.count == 1 ? 0...1 : 1...2))
+          ?? (item.words.count == 1 ? 0...1 : 1...2),
+        maxWordsPerDirection: item.maxWordsPerDirection)
       #expect(
         generator.accepts(item.words, leadingRules: item.leading)
           == (item.accepted ?? true), "\(item.name)")
@@ -67,6 +69,7 @@ struct PackedRequestTests {
       }
       let request = try item.request(from: generator)
       #expect(request.leadingRules == item.leading)
+      #expect(request.maxWordsPerDirection == item.maxWordsPerDirection)
       if item.legacyEquivalent == true {
         let legacy = try item.legacyRequest(from: generator)
         #expect(request == legacy, "\(item.name)")
@@ -76,6 +79,7 @@ struct PackedRequestTests {
         let board = request.board(seed: seed)
         layouts.insert(board.placements)
         #expect(board.placements.map(\.word) == item.words, "\(item.name)")
+        checkDirectionLimit(board, for: item)
         #expect(
           generator.downWords.contains(board.placements.filter(\.direction.isVertical).count),
           "\(item.name)")
@@ -90,6 +94,13 @@ struct PackedRequestTests {
         }
       }
       #expect(layouts.count > 1, "\(item.name): every seed gave the same layout")
+    }
+  }
+
+  private func checkDirectionLimit(_ board: Board, for item: Case) {
+    if let maximum = item.maxWordsPerDirection {
+      let counts = Dictionary(grouping: board.placements, by: \.direction)
+      #expect(counts.values.allSatisfy { $0.count <= maximum }, "\(item.name)")
     }
   }
 }

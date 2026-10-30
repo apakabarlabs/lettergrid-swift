@@ -4,7 +4,9 @@ extension BoardGenerator {
   }
 
   public func accepts(_ words: [String], leadingRules: [WordRule]) -> Bool {
-    guard leadingRules.count <= words.count, leadingRules.allSatisfy(enables) else { return false }
+    guard hasValidDirectionLimit, leadingRules.count <= words.count,
+      leadingRules.allSatisfy(enables)
+    else { return false }
     let words = words.map(\.cellUppercased)
     let excluded = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
     guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
@@ -17,6 +19,15 @@ extension BoardGenerator {
       }.filter { $0.canFit(length: words[index].count, columns: columns, maximumRows: maxRows) }
     }
     guard fitting.allSatisfy({ !$0.isEmpty }) else { return false }
+    if let maximum = maxWordsPerDirection {
+      let possible = fitting.map { Set($0.map { $0.startDirections[0] }) }
+      let directions = possible.reduce(into: Set<Direction>()) { $0.formUnion($1) }
+      guard (words.count - 1) / maximum < directions.count,
+        directions.allSatisfy({ direction in
+          possible.filter { $0 == [direction] }.count <= maximum
+        })
+      else { return false }
+    }
     let mustStand = fitting.filter { $0.allSatisfy { $0.startDirections[0].isVertical } }.count
     let canStand = fitting.filter { $0.contains { $0.startDirections[0].isVertical } }.count
     return mustStand <= downWords.upperBound && canStand >= downWords.lowerBound
@@ -106,7 +117,9 @@ extension BoardGenerator {
 
   private func packing(height: Int, leadingRules: [WordRule], words: [String]) -> PathPacking {
     var packing = PathPacking(
-      columns: columns, rows: height, rules: rules, leadingRules: leadingRules, downWords: downWords
+      columns: columns, rows: height, rules: rules, leadingRules: leadingRules,
+      downWords: downWords,
+      maxWordsPerDirection: maxWordsPerDirection
     )
     if maxRows == nil { packing.nodeLimit = Self.growingHeightNodeLimit }
     let required = requiredSymbols(in: words)

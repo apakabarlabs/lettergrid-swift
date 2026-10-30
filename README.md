@@ -26,7 +26,7 @@ SwiftUI apps draw the round with `LetterBoard` and `HiddenWordList` from `Letter
 Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.20.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.22.0")
 
 .product(name: "LetterGrid", package: "lettergrid-swift"),
 .product(name: "LetterGridUI", package: "lettergrid-swift") // only for SwiftUI
@@ -68,6 +68,14 @@ same `firstDirection:`, `firstRule:` or `leadingRules:` constraints as `request`
 Success does not guarantee that filler can complete the board: call `request` for
 the selected words and handle its failure before presenting a board. This API is
 available from 0.21.0.
+
+From 0.22.0, either generator initializer accepts `maxWordsPerDirection: 2` to limit
+how many targets start in each direction. Turned words count by their first segment;
+opposite directions count separately. The default `nil` preserves 0.21.0 generation.
+This limit also applies to leading words and every seeded build, independently of
+the existing `downWords` vertical quota. A supplied limit must be positive; otherwise
+throwing checks report `invalidConfiguration`. Insufficient direction capacity reports
+`noRoom`. As before, preliminary acceptance does not guarantee a complete board.
 
 ## Saving a game
 

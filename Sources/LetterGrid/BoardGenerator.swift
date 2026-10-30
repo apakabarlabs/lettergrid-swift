@@ -17,7 +17,8 @@ public struct BoardGenerator: Equatable, Sendable {
           + ": the search ran out, or every layout found leaves three equal letters in a line."
       case .invalidConfiguration:
         "Grid dimensions must be positive, directions nonempty, rules valid and the vertical "
-          + "minimum nonnegative. A maximum height must be at least the minimum."
+          + "minimum nonnegative. A maximum height must be at least the minimum. "
+          + "A per-direction word limit must be positive."
       }
     }
   }
@@ -30,6 +31,7 @@ public struct BoardGenerator: Equatable, Sendable {
   public let conditionalCharacters: Set<Character>
   public let dictionary: Set<String>
   public let downWords: ClosedRange<Int>
+  public let maxWordsPerDirection: Int?
   public private(set) var rules: [WordRule]
   private(set) var usesPathRules = false
   private(set) var requiresRunFreeTargets = false
@@ -40,6 +42,7 @@ public struct BoardGenerator: Equatable, Sendable {
       && lhs.directions == rhs.directions
       && lhs.filler == rhs.filler && lhs.dictionary == rhs.dictionary
       && lhs.downWords == rhs.downWords && lhs.rules == rhs.rules
+      && lhs.maxWordsPerDirection == rhs.maxWordsPerDirection
       && lhs.usesPathRules == rhs.usesPathRules
       && lhs.conditionalCharacters == rhs.conditionalCharacters
       && lhs.requiresRunFreeTargets == rhs.requiresRunFreeTargets
@@ -48,7 +51,7 @@ public struct BoardGenerator: Equatable, Sendable {
   public init(
     columns: Int, rows: Int, maxRows: Int? = nil, directions: [Direction], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
-    conditionalCharacters: Set<Character> = []
+    conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
   ) {
     self.columns = columns
     self.rows = rows
@@ -58,6 +61,7 @@ public struct BoardGenerator: Equatable, Sendable {
     self.dictionary = Set(dictionary.map(\.cellUppercased))
     self.preparedDictionary = BoardDictionary(self.dictionary)
     self.downWords = downWords
+    self.maxWordsPerDirection = maxWordsPerDirection
     self.rules = [WordRule(startDirections: directions)]
     self.conditionalCharacters = Set(conditionalCharacters.map(\.cellUppercased))
   }
@@ -65,7 +69,7 @@ public struct BoardGenerator: Equatable, Sendable {
   public init(
     columns: Int, rows: Int, maxRows: Int? = nil, rules: [WordRule], filler: LetterWeights,
     dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
-    conditionalCharacters: Set<Character> = []
+    conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
   ) {
     self.init(
       columns: columns, rows: rows, maxRows: maxRows,
@@ -73,7 +77,7 @@ public struct BoardGenerator: Equatable, Sendable {
         rules.contains { $0.startDirections.contains(way) }
       },
       filler: filler, dictionary: dictionary, downWords: downWords,
-      conditionalCharacters: conditionalCharacters)
+      conditionalCharacters: conditionalCharacters, maxWordsPerDirection: maxWordsPerDirection)
     self.rules = rules
     self.usesPathRules = true
   }
@@ -196,9 +200,11 @@ public struct BoardGenerator: Equatable, Sendable {
 
   private func validateConfiguration() throws {
     guard columns > 0, rows > 0, !directions.isEmpty, downWords.lowerBound >= 0,
-      rules.allSatisfy(\.isValid), maxRows.map({ $0 >= rows }) ?? true
+      rules.allSatisfy(\.isValid), maxRows.map({ $0 >= rows }) ?? true, hasValidDirectionLimit
     else { throw Failure.invalidConfiguration }
   }
+
+  var hasValidDirectionLimit: Bool { maxWordsPerDirection.map { $0 > 0 } ?? true }
 }
 
 extension BoardGenerator {

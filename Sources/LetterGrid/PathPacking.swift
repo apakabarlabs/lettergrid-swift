@@ -21,6 +21,7 @@ struct PathPacking {
     let choices: [[Candidate]]
     let order: [Int]
     let downWords: ClosedRange<Int>
+    let maxWordsPerDirection: Int?
     let nodeLimit: Int
     let standApart: ([Placement?]) -> Bool
     let completes: ([Placement], inout Int) -> Completion
@@ -28,6 +29,7 @@ struct PathPacking {
     var uses: [Int]
     var chosen: [Placement?]
     var vertical = 0
+    var directionCounts: [Direction: Int] = [:]
     var nodes = 0
     var exhausted = false
 
@@ -57,18 +59,32 @@ struct PathPacking {
         }
         let counted = vertical + (candidate.placement.direction.isVertical ? 1 : 0)
         guard counted <= downWords.upperBound, counted + remaining >= downWords.lowerBound,
-          fits(candidate, word: words[index])
+          hasDirectionRoom(candidate), fits(candidate, word: words[index])
         else { continue }
         apply(candidate, word: words[index])
         chosen[index] = candidate.placement
         vertical = counted
+        countDirection(candidate, by: 1)
         if standApart(chosen), place(at: depth + 1) { return true }
+        countDirection(candidate, by: -1)
         vertical -= candidate.placement.direction.isVertical ? 1 : 0
         chosen[index] = nil
         remove(candidate)
         if exhausted { return false }
       }
       return false
+    }
+
+    private func hasDirectionRoom(_ candidate: Candidate) -> Bool {
+      maxWordsPerDirection.map {
+        directionCounts[candidate.placement.direction, default: 0] < $0
+      } ?? true
+    }
+
+    private mutating func countDirection(_ candidate: Candidate, by change: Int) {
+      if maxWordsPerDirection != nil {
+        directionCounts[candidate.placement.direction, default: 0] += change
+      }
     }
 
     private func crossingFirst(_ candidates: [Candidate], word: [Character]) -> [Candidate] {
@@ -108,6 +124,7 @@ struct PathPacking {
   let rules: [WordRule]
   var leadingRules: [WordRule] = []
   var downWords: ClosedRange<Int> = 0...Int.max
+  var maxWordsPerDirection: Int?
   var nodeLimit = Generation.settings.packing.nodeLimit
   var crossingRestarts = Generation.settings.packing.crossingRestarts
   var completes: @Sendable ([Placement], inout Int) -> Completion = { _, _ in .fits }
@@ -143,7 +160,8 @@ struct PathPacking {
         order: words.indices.sorted {
           (choices[$0].count, $0) < (choices[$1].count, $1)
         },
-        downWords: downWords, nodeLimit: nodeLimit - spent,
+        downWords: downWords, maxWordsPerDirection: maxWordsPerDirection,
+        nodeLimit: nodeLimit - spent,
         standApart: compatibility.accepts, completes: completes,
         letters: Array(repeating: nil, count: rows * columns),
         uses: Array(repeating: 0, count: rows * columns),

@@ -7,6 +7,77 @@
   - {directions: [right, down], turns: 1}
   words: [STAIRCASE, DOMESTICITY, HABITATION]
   fits: true
+- name: two words per direction force the third word into another direction
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [right], turns: 0}
+  - {directions: [right], turns: 0}
+  words: [CAT, DOG, SUN]
+  downWords: [0, 3]
+  maxWordsPerDirection: 2
+  fits: true
+- name: a direction limit also applies to growing requests
+  rules: [{directions: [right, down], turns: 1}]
+  leadingRules:
+  - {directions: [right], turns: 1}
+  - {directions: [right], turns: 1}
+  words: [PLANET, ORBIT, SUN]
+  grows: true
+  downWords: [0, 3]
+  maxWordsPerDirection: 2
+  fits: true
+- name: zero is not a valid direction limit
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  maxWordsPerDirection: 0
+  accepted: false
+  failure: invalidConfiguration
+  fits: false
+- name: a negative direction limit is invalid
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  maxWordsPerDirection: -1
+  accepted: false
+  failure: invalidConfiguration
+  fits: false
+- name: one word in each of two directions cannot accommodate three words
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  maxWordsPerDirection: 1
+  accepted: false
+  fits: false
+- name: a leading prefix cannot exceed one direction's capacity
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules:
+  - {directions: [right], turns: 0}
+  - {directions: [right], turns: 0}
+  - {directions: [right], turns: 0}
+  words: [CAT, DOG, SUN]
+  maxWordsPerDirection: 2
+  accepted: false
+  fits: false
+- name: opposite vertical directions each have their own capacity
+  rules: [{directions: [up, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  downWords: [3, 3]
+  maxWordsPerDirection: 2
+  fits: true
+- name: a vertical quota and direction cap must both hold
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  downWords: [3, 3]
+  maxWordsPerDirection: 2
+  fits: false
+- name: an unlimited direction remains available when no cap is supplied
+  rules: [{directions: [right], turns: 0}]
+  words: [CAT, DOG, SUN]
+  downWords: [0, 0]
+  fits: true
+- name: the largest positive cap does not overflow capacity checks
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, SUN]
+  maxWordsPerDirection: 9223372036854775807
+  fits: true
 - name: five words share one field
   rules:
   - {directions: [right, down], turns: 0}

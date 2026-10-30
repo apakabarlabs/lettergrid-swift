@@ -70,6 +70,15 @@ a wall-clock deadline across application suspension.
 - Directions are opt-in. The vertical quota counts only `.up` and `.down`, including turned
   words whose first segment runs up or down; their serialized
   names are the case names, while diagonals use `down_right`, `down_left`, `up_left` and `up_right`.
+- Both generator initializers accept ``BoardGenerator/maxWordsPerDirection``: an optional
+  positive maximum number of targets starting in each direction. Turned words count by
+  their first segment, as reported by ``Placement/direction``; opposite directions count
+  separately. Leading words count toward the same limit. The default `nil` is unlimited
+  and preserves 0.21.0 generation. This constraint is independent of `downWords`
+  and applies to preliminary checks, joint placement, preparation and seeded repacking.
+  ``BoardRequest/maxWordsPerDirection`` retains the requested limit. A nonpositive limit
+  makes `accepts` return false and throwing preparation or placement checks report
+  `invalidConfiguration`; words exceeding the available direction capacity throw `noRoom`.
 - A palindrome occurs once even when both directions of its line are enabled, and can be
   selected from either end. Selection snaps to the nearest allowed direction. With diagonals
   enabled, a gesture must be within 22.5 degrees of an allowed direction.

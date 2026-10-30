@@ -9,6 +9,7 @@ public struct BoardRequest: Equatable, Sendable {
   public let firstDirection: Direction?
   public var firstRule: WordRule? { leadingRules.first }
   public let leadingRules: [WordRule]
+  public var maxWordsPerDirection: Int? { generator.maxWordsPerDirection }
   let layout: Layout
   private let generator: BoardGenerator
   private var runFree: RunFreeFallback?
