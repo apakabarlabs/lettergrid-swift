@@ -1,6 +1,7 @@
 SWIFT_SOURCES = Sources Tests Benchmarks Package.swift
 BENCH_CONFIGURATION ?= release
 BENCH_ARGS ?=
+BENCH_RUN_FLAGS ?=
 TEST_CONFIGURATION ?= debug
 TEST_ARGS ?=
 TEST_TIMEOUT ?= 300
@@ -9,6 +10,10 @@ PROFILE_OPERATION ?= request
 PROFILE_INPUT ?= 0
 PROFILE_REPETITIONS ?= 20
 PROFILE_TIME ?= 120s
+PREPARATION_INPUT ?= BenchmarkInputs/preparation.yaml
+PREPARATION_WORDS ?=
+PREPARATION_FOLD ?=
+PREPARATION_VOCABULARY_INPUT ?= BenchmarkInputs/vocabulary.yaml
 
 .DEFAULT_GOAL := build
 
@@ -56,7 +61,16 @@ build: lint test
 	swift build
 
 bench:
-	swift run -c $(BENCH_CONFIGURATION) LetterGridBenchmarks $(BENCH_ARGS)
+	swift run -c $(BENCH_CONFIGURATION) $(BENCH_RUN_FLAGS) LetterGridBenchmarks $(BENCH_ARGS)
+
+.PHONY: bench-preparation bench-preparation-vocabulary
+bench-preparation:
+	swift run -c $(BENCH_CONFIGURATION) $(BENCH_RUN_FLAGS) LetterGridBenchmarks --preparation '$(PREPARATION_INPUT)'
+
+bench-preparation-vocabulary:
+	@test -n '$(PREPARATION_WORDS)' || { echo 'PREPARATION_WORDS is required'; exit 1; }
+	swift run -c $(BENCH_CONFIGURATION) $(BENCH_RUN_FLAGS) LetterGridBenchmarks --preparation-vocabulary \
+		'$(PREPARATION_VOCABULARY_INPUT)' '$(PREPARATION_WORDS)' $(PREPARATION_FOLD)
 
 .PHONY: profile-build profile-run profile-launch profile-record profile-record-help profile-toc profile-export
 profile-record-help:

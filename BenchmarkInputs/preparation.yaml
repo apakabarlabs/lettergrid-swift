@@ -1,0 +1,40 @@
+- name: straight ordinary words
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  weights: {A: 8, E: 12, I: 7, O: 8, U: 3, T: 9, N: 7, S: 6, R: 6, H: 6, D: 4, L: 4, C: 3, M: 2, W: 2}
+  sameNeighbour: 0.2
+  downWords: [1, 2]
+  words:
+  - [HOUSE, HOME, DOOR]
+  - [ROOF, FLOOR, WALL]
+  - [KEY, YARD, GATE]
+  - [CAT, DOG, SUN]
+  - [APPLE, BREAD, CHAIR]
+  - [WINDOW, TABLE, DESK]
+- name: a placed layout need not admit a run-free fill
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  weights: {X: 1}
+  downWords: [1, 2]
+  words: [[CAT, DOG, SUN]]
+- name: leading paths with one turn
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [right, down], turns: 1}
+  leadingRules: [{directions: [right], turns: 1}, {directions: [down], turns: 1}]
+  weights: {A: 8, E: 12, I: 7, O: 8, U: 3, T: 9, N: 7, S: 6, R: 6, H: 6, D: 4, L: 4, C: 3, M: 2, W: 2}
+  sameNeighbour: 0.2
+  downWords: [1, 2]
+  words:
+  - [PLANET, ORBIT, SUN]
+  - [STAIRCASE, DOMESTICITY, HABITATION]
+  - [FIXTURE, VENEER, BEDDING]
+  - [APPLE, BREAD, CHAIR]

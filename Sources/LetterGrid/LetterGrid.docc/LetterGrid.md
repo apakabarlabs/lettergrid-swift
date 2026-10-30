@@ -33,6 +33,18 @@ through ``BoardRequest`` using `board(seed:dictionary:)`. The request retains it
 an optional dictionary can be supplied at build time. Empty word lists and invalid generator
 configuration are rejected before a request is returned.
 
+For candidate selection, ``BoardGenerator/checkPlacement(for:firstDirection:firstRule:)``
+and ``BoardGenerator/checkPlacement(for:leadingRules:)`` search target paths without
+filling the remaining cells. They enforce the same word, path, quota, character-copy
+and target-run constraints as request preparation. They return no request or board.
+A successful placement check can still be followed by `unsettled` from the full
+`request` when filler cannot complete the layout. Prepare the selected words and
+handle that failure before presenting a board. Existing `request` calls continue
+to retain a checked fallback for nonthrowing seeded builds.
+Use `accepts` for preliminary word, geometry and quota checks, `checkPlacement` for
+a joint placement search, and `request` to prepare a complete board. A placement
+check does not retain reusable work: `request` repeats placement before filling.
+
 For external data, use ``Placement/init(validating:cells:)``,
 ``Board/init(validating:placements:)`` and
 ``Round/init(restoring:board:directions:seconds:introduces:hintOrder:)``. These report invalid

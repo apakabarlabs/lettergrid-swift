@@ -62,6 +62,13 @@ let request = try generator.request(
 Use `accepts(_:leadingRules:)` for the preliminary word and quota checks. As with
 `firstRule:`, accepted words may still fail the placement or fill search in `request`.
 
+When choosing among candidate word sets, `try generator.checkPlacement(for: words)`
+searches for target paths without filling the remaining cells. It also accepts the
+same `firstDirection:`, `firstRule:` or `leadingRules:` constraints as `request`.
+Success does not guarantee that filler can complete the board: call `request` for
+the selected words and handle its failure before presenting a board. This API is
+available from 0.21.0.
+
 ## Saving a game
 
 A seed alone does not keep a layout across library updates. Save the board's letters and placements together with `round.progress`, and restore them through the checking initializers:

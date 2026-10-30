@@ -6,6 +6,14 @@ struct LetterGridBenchmarks {
   @MainActor
   static func main() throws {
     let arguments = Array(CommandLine.arguments.dropFirst())
+    if arguments.first == "--preparation" {
+      try PreparationMeasurements.run(Array(arguments.dropFirst()))
+      return
+    }
+    if arguments.first == "--preparation-vocabulary" {
+      try PreparationMeasurements.vocabulary(Array(arguments.dropFirst()))
+      return
+    }
     if arguments == ["--bounded"] {
       let workload = try TurnedBoards.workload()
       try BoundedBoards.run(words: workload.words, rules: workload.rules, weights: workload.weights)

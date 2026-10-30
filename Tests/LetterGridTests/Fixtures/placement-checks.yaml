@@ -1,0 +1,96 @@
+- name: placed targets can fail to fill
+  columns: 7
+  rows: 7
+  maxRows: 7
+  directions: [right, down]
+  weights: {X: 1}
+  downWords: [1, 2]
+  words: [CAT, DOG, SUN]
+  placement: placed
+  request: unsettled
+- name: a straight direction constraint uses the same placement check
+  columns: 7
+  rows: 7
+  maxRows: 7
+  directions: [right, down]
+  firstDirection: down
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [CAT, DOG, SUN]
+  placement: placed
+  request: prepared
+- name: a legacy first rule remains supported
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}, {directions: [right, down], turns: 1}]
+  firstRule: {directions: [right, down], turns: 1}
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [PLANET, ORBIT, SUN]
+  placement: placed
+  request: prepared
+- name: every leading rule applies before any fill
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [right], turns: 0}, {directions: [down], turns: 0}]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [CAT, DOG, SUN]
+  placement: placed
+  request: prepared
+- name: too many leading rules refuse placement
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [right], turns: 0}, {directions: [down], turns: 0}]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [0, 1]
+  words: [CAT]
+  placement: noRoom
+  request: noRoom
+- name: a disabled leading rule is a configuration error
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [left], turns: 0}]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [CAT, DOG, SUN]
+  placement: invalidConfiguration
+  request: invalidConfiguration
+- name: individually fitting diagonals still need a joint placement
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [down_right, down_left], turns: 0}]
+  leadingRules: [{directions: [down_right], turns: 0}, {directions: [down_left], turns: 0}]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [0, 0]
+  words: [ABCDEFG, HIJKLMN]
+  placement: noRoom
+  request: noRoom
+- name: duplicate targets refuse placement
+  columns: 7
+  rows: 7
+  maxRows: 7
+  directions: [right, down]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [cat, CAT]
+  placement: noRoom
+  request: noRoom
+- name: dimensions are checked before placing
+  columns: 0
+  rows: 7
+  maxRows: 7
+  directions: [right, down]
+  weights: {X: 1, Q: 1, Z: 1}
+  downWords: [1, 2]
+  words: [CAT, DOG, SUN]
+  placement: invalidConfiguration
+  request: invalidConfiguration

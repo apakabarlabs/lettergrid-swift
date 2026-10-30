@@ -81,6 +81,23 @@ public struct BoardGenerator: Equatable, Sendable {
   public func request(
     for words: [String], firstDirection: Direction? = nil, firstRule: WordRule? = nil
   ) throws -> BoardRequest {
+    try finishPreparation(
+      placementRequest(for: words, firstDirection: firstDirection, firstRule: firstRule))
+  }
+
+  public func checkPlacement(
+    for words: [String], firstDirection: Direction? = nil, firstRule: WordRule? = nil
+  ) throws {
+    _ = try placementRequest(for: words, firstDirection: firstDirection, firstRule: firstRule)
+  }
+
+  public func checkPlacement(for words: [String], leadingRules: [WordRule]) throws {
+    _ = try placementRequest(for: words, leadingRules: leadingRules)
+  }
+
+  private func placementRequest(
+    for words: [String], firstDirection: Direction?, firstRule: WordRule?
+  ) throws -> BoardRequest {
     try validateConfiguration()
     let leading: [WordRule]
     if usesPathRules {
@@ -94,15 +111,21 @@ public struct BoardGenerator: Equatable, Sendable {
       }
       leading = firstDirection.map { [WordRule(startDirections: [$0])] } ?? []
     }
-    return try preparedRequest(for: words, firstDirection: firstDirection, leadingRules: leading)
+    return try checkedTargets(for: words, firstDirection: firstDirection, leadingRules: leading)
   }
 
   public func request(for words: [String], leadingRules: [WordRule]) throws -> BoardRequest {
+    try finishPreparation(placementRequest(for: words, leadingRules: leadingRules))
+  }
+
+  package func placementRequest(
+    for words: [String], leadingRules: [WordRule]
+  ) throws -> BoardRequest {
     try validateConfiguration()
     guard usesPathRules, leadingRules.allSatisfy(enables) else {
       throw Failure.invalidConfiguration
     }
-    return try preparedRequest(for: words, firstDirection: nil, leadingRules: leadingRules)
+    return try checkedTargets(for: words, firstDirection: nil, leadingRules: leadingRules)
   }
 
   func enables(_ rule: WordRule) -> Bool {
@@ -112,7 +135,7 @@ public struct BoardGenerator: Equatable, Sendable {
       }
   }
 
-  private func preparedRequest(
+  private func checkedTargets(
     for words: [String], firstDirection: Direction?, leadingRules: [WordRule]
   ) throws -> BoardRequest {
     let words = words.map(\.cellUppercased)
@@ -128,17 +151,31 @@ public struct BoardGenerator: Equatable, Sendable {
         for: words, firstDirection: firstDirection, leadingRules: leadingRules)
       throw Failure.unsettled(words: words, columns: columns, rows: maxRows ?? rows)
     }
+    return request
+  }
+
+  package func finishPreparation(
+    _ request: BoardRequest, observing: ((Duration, Duration) -> Void)? = nil
+  ) throws -> BoardRequest {
     let dictionary = preparedDictionary
     for seed in UInt64(0)..<UInt64(Generation.settings.fill.seeds) {
-      if let fallback = RunFreeFill(
-        board: request.targets(seed: seed), weights: filler, rules: rules,
+      let start = observing.map { _ in ContinuousClock.now }
+      let targets = request.targets(seed: seed)
+      let repacking = start?.duration(to: .now)
+      let fillStart = observing.map { _ in ContinuousClock.now }
+      let fallback = RunFreeFill(
+        board: targets, weights: filler, rules: rules,
         conditionalCharacters: conditionalCharacters, dictionary: dictionary.index
-      ).filled(seed: seed) {
+      ).filled(seed: seed)
+      if let repacking, let fillStart {
+        observing?(repacking, fillStart.duration(to: .now))
+      }
+      if let fallback {
         return request.avoidingRuns(
           fallback: fallback, weights: filler, symbols: conditionalCharacters)
       }
     }
-    throw Failure.unsettled(words: words, columns: columns, rows: maxRows ?? rows)
+    throw Failure.unsettled(words: request.words, columns: columns, rows: maxRows ?? rows)
   }
 
   private func targetRequest(

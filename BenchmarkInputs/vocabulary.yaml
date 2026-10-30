@@ -1,0 +1,51 @@
+- name: straight
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules: [{directions: [right, down], turns: 0}]
+  leadingRules: [{directions: [right, down], turns: 0}]
+  weights: {}
+  words: []
+  sampling:
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: random, seed: 7}
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: adjacent, seed: 7}
+  sameNeighbour: 0.2
+  downWords: [1, 2]
+- name: all straight directions
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [up_left, up_right], turns: 0}
+  leadingRules: [{directions: [up_left, up_right], turns: 0}]
+  weights: {}
+  words: []
+  sampling:
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: random, seed: 7}
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: adjacent, seed: 7}
+  sameNeighbour: 0.2
+  downWords: [1, 2]
+- name: one turn
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [up_left, up_right], turns: 0}
+  - {directions: [right, down], turns: 1}
+  - {directions: [down_right, down_left], turns: 1}
+  - {directions: [left, up], turns: 1}
+  - {directions: [up_left, up_right], turns: 1}
+  leadingRules: [{directions: [up_left, up_right], turns: 1}]
+  weights: {}
+  words: []
+  sampling:
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: random, seed: 7}
+  - {count: 8, minimumLength: 2, maximumLength: 10, order: adjacent, seed: 7}
+  sameNeighbour: 0.2
+  downWords: [1, 2]

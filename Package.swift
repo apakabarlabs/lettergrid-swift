@@ -20,6 +20,6 @@ let package = Package(
     .testTarget(
       name: "LetterGridTests", dependencies: ["LetterGrid", "Yams"], resources: [.copy("Fixtures")]),
     .executableTarget(
-      name: "LetterGridBenchmarks", dependencies: ["LetterGrid"], path: "Benchmarks"),
+      name: "LetterGridBenchmarks", dependencies: ["LetterGrid", "Yams"], path: "Benchmarks"),
   ]
 )

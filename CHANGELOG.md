@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.21.0] - 2026-10-30
+
+Existing callers need no changes. `request` and `board(seed:)` keep their 0.20.0
+behavior; no saved-game migration is needed.
+
+### Added
+
+- `BoardGenerator.checkPlacement(for:firstDirection:firstRule:)` and
+  `checkPlacement(for:leadingRules:)` tell whether a set of words fits on the board
+  together, without filling the remaining cells. Both are instance methods, as `request`
+  is, and `firstDirection:` and `firstRule:` default to `nil`. A check that returns
+  without throwing means the words fit; otherwise it throws what `request` with the
+  same arguments would throw while placing the words:
+  - `invalidConfiguration` for arguments `request` refuses: `firstDirection` on a
+    generator created with `rules:`, `firstRule` on one created with `directions:` (so
+    pass at most one of the two), a `firstRule` that is not one of the generator's
+    rules, a leading rule the generator's rules do not allow, or `leadingRules` on a
+    generator created with `directions:`;
+  - `noRoom(words:columns:rows:)` when the words cannot be placed together;
+  - `unsettled(words:columns:rows:)` when every placement found puts three equal letters
+    in a line across the hidden words themselves, before any filler is added.
+
+  The check applies everything `request` applies while placing: the same normalized
+  words, direction and turn rules, `downWords` quota and search limits. So a set that
+  `request` accepts always passes the check with the same arguments. The reverse does
+  not hold: `request` can still throw `unsettled` when no filler avoids three equal
+  letters in a row, so be ready to pick another candidate then.
+
+  Use the check to filter several candidate word sets, then call `request` for the one
+  you pick. `request` repeats the placement, because the check keeps nothing. Unlike
+  `accepts`, which runs quick checks without laying the words out, the check searches
+  for a joint placement and takes as long as that search, so run it off the main thread
+  when filtering many sets.
+
 ## [0.20.0] - 2026-10-30
 
 Existing callers need no changes. Calls that worked in 0.19.1 produce the same board with
