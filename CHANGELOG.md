@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+Existing callers need no changes. Requests, layouts and seeded boards are the same as in
+0.22.0.
+
+### Changed
+
+- `request` no longer packs its layout a second time while preparing the fill: seed 0
+  reuses the layout it has just packed. With two turns on a 7×7 board this halves the time
+  of a request.
+
 ## [0.22.0] - 2026-10-30
 
 Existing callers need no changes. Omitting the new limit, or passing `nil`, preserves
