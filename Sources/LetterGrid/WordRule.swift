@@ -8,11 +8,11 @@ public struct WordRule: Hashable, Sendable {
   }
 
   public func matches(_ cells: [Cell]) -> Bool {
-    guard isValid, let geometry = PathGeometry(cells), startDirections.contains(geometry.direction)
-    else {
-      return false
-    }
-    return geometry.turns == turns
+    PathGeometry(cells).map(matches) ?? false
+  }
+
+  func matches(_ geometry: PathGeometry) -> Bool {
+    isValid && startDirections.contains(geometry.direction) && geometry.turns == turns
   }
 
   public func matches(_ placement: Placement) -> Bool { matches(placement.cells) }

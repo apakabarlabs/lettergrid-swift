@@ -46,7 +46,8 @@ private struct LoneReading {
   }
 
   private mutating func read(_ reading: [Cell]) {
-    guard rules.contains(where: { $0.matches(reading) }) else { return }
+    guard let geometry = PathGeometry(reading), rules.contains(where: { $0.matches(geometry) })
+    else { return }
     guard let first else {
       self.first = reading
       return

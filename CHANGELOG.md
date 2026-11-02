@@ -15,6 +15,8 @@ Existing callers need no changes. Requests, layouts and seeded boards are the sa
 - Packing drops repeated path shapes before trying their positions and moves an accepted
   shape across the board without validating it again. With two turns this takes about
   another 40% off the placement time.
+- The lone reading check works out a path's geometry once and compares it with every rule,
+  instead of working it out again for each rule.
 
 ## [0.22.0] - 2026-10-30
 
