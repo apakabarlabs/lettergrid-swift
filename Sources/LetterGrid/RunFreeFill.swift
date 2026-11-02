@@ -2,26 +2,41 @@ struct RunFreeFill {
   static let completedCandidates = Generation.settings.fill.completedCandidates
   static let stepsPerChoice = Generation.settings.fill.stepsPerChoice
 
-  private enum SearchResult {
-    case filled(Board)
-    case impossible
-    case unsettled
-  }
-
   private struct Template {
     let letters: [[Character?]]
     let empty: [Cell]
     let required: Set<Character>
     let targets: WordIndex
+  }
 
-    func missing(in letters: [[Character?]], before position: Int) -> Set<Character> {
-      required.subtracting(empty.prefix(position).compactMap { letters[$0.row][$0.column] })
+  private struct CopyDemand {
+    let missing: Set<Character>
+    let remaining: Int
+    let isCopyCell: Bool
+  }
+
+  private struct FillOrder {
+    let cells: [Cell]
+    let required: Set<Character>
+
+    init(template: Template, using random: inout SeededRandom) {
+      let copyCells = Set(random.shuffled(template.empty).prefix(template.required.count))
+      cells =
+        template.empty.filter(copyCells.contains)
+        + template.empty.filter { !copyCells.contains($0) }
+      required = template.required
+    }
+
+    func demand(at position: Int, letters: [[Character?]]) -> CopyDemand {
+      CopyDemand(
+        missing: required.subtracting(
+          cells.prefix(position).compactMap { letters[$0.row][$0.column] }),
+        remaining: cells.count - position, isCopyCell: position < required.count)
     }
   }
 
   private struct Strategy {
     let avoidsPairs: Bool
-    let eliminatesNoise: Bool
 
     func frame(letters: [Character], neighbours: [Character: Int]) -> Frame {
       let separate = letters.filter { neighbours[$0] == nil }
@@ -41,22 +56,10 @@ struct RunFreeFill {
     }
   }
 
-  private struct WordChecks {
-    let targets: FillWordCheck
-    let noise: FillWordCheck?
-
-    func isClean(filling cell: Cell, letters: [[Character?]]) -> Bool {
-      guard targets.isClean(filling: cell, letters: letters) else { return false }
-      guard let noise else { return true }
-      return noise.isClean(filling: cell, letters: letters)
-    }
-  }
-
   let board: Board
   let weights: LetterWeights
   let rules: [WordRule]
   let conditionalCharacters: Set<Character>
-  let dictionary: WordIndex
 
   func filled(seed: UInt64) -> Board? {
     let symbols = conditionalCharacters.union(
@@ -67,18 +70,10 @@ struct RunFreeFill {
     let runs = LetterRuns(placements: board.placements, columns: board.columns, rows: board.rows)
     guard !runs.containsForbiddenRun(in: template.letters) else { return nil }
     var random = SeededRandom(seed: seed)
-    for avoidsPairs in [true, false] {
-      for eliminatesNoise in [true, false] {
-        let strategy = Strategy(avoidsPairs: avoidsPairs, eliminatesNoise: eliminatesNoise)
-        let result = search(
-          template, weights: ordinary, runs: runs, strategy: strategy, using: &random)
-        switch result {
-        case .filled(let board): return board
-        case .impossible: continue
-        case .unsettled:
-          if !eliminatesNoise && !avoidsPairs { return nil }
-        }
-      }
+    for strategy in [Strategy(avoidsPairs: true), Strategy(avoidsPairs: false)] {
+      let filled = search(
+        template, weights: ordinary, runs: runs, strategy: strategy, using: &random)
+      if let filled { return filled }
     }
     return nil
   }
@@ -103,27 +98,24 @@ struct RunFreeFill {
   private func search(
     _ template: Template, weights: LetterWeights, runs: LetterRuns,
     strategy: Strategy, using random: inout SeededRandom
-  ) -> SearchResult {
+  ) -> Board? {
     var letters = template.letters
-    let checks = checks(for: template, eliminatingNoise: strategy.eliminatesNoise)
-    let empty = template.empty
+    let targets = FillWordCheck(
+      board: board, index: template.targets, rules: rules, fixed: template.letters)
+    let order = FillOrder(template: template, using: &random)
+    let empty = order.cells
     var frames: [Frame] = []
     var position = 0
-    var best: Board?
-    var leastNoise = Int.max
-    var completedCandidates = 0
+    var completions = 0
     var remaining = max(1, empty.count) * (weights.letterCount + 1) * Self.stepsPerChoice
     let neighbours = LetterNeighbours(columns: board.columns, rows: board.rows)
     while remaining > 0 || position == empty.count {
       if position == empty.count {
-        guard completedCandidates < Self.completedCandidates else {
-          return best.map(SearchResult.filled) ?? .unsettled
-        }
-        completedCandidates += 1
+        guard completions < Self.completedCandidates else { return nil }
+        completions += 1
         let candidate = completed(letters)
-        consider(candidate, best: &best, leastNoise: &leastNoise)
-        if leastNoise == 0 { return .filled(candidate) }
-        guard position > 0 else { return best.map(SearchResult.filled) ?? .impossible }
+        if readsTargetsOnce(candidate) { return candidate }
+        guard position > 0 else { return nil }
         position -= 1
         let cell = empty[position]
         letters[cell.row][cell.column] = nil
@@ -133,14 +125,14 @@ struct RunFreeFill {
       if frames.count == position {
         let counts = neighbours.counts(around: cell) { letters[$0.row][$0.column] }
         let ordered = choices(
-          weights: weights, missing: template.missing(in: letters, before: position),
-          remaining: empty.count - position, neighbours: counts, using: &random)
+          for: order.demand(at: position, letters: letters), weights: weights,
+          neighbours: counts, using: &random)
         frames.append(strategy.frame(letters: ordered, neighbours: counts))
       }
       guard let letter = frames[position].take() else {
         letters[cell.row][cell.column] = nil
         frames.removeLast()
-        guard position > 0 else { return best.map(SearchResult.filled) ?? .impossible }
+        guard position > 0 else { return nil }
         position -= 1
         let previous = empty[position]
         letters[previous.row][previous.column] = nil
@@ -149,46 +141,29 @@ struct RunFreeFill {
       remaining -= 1
       letters[cell.row][cell.column] = letter
       guard !runs.hasForbiddenRun(through: cell, in: letters),
-        checks.isClean(filling: cell, letters: letters)
+        targets.isClean(filling: cell, letters: letters)
       else { continue }
       position += 1
     }
-    return best.map(SearchResult.filled) ?? .unsettled
-  }
-
-  private func checks(for template: Template, eliminatingNoise: Bool) -> WordChecks {
-    WordChecks(
-      targets: FillWordCheck(
-        board: board, index: template.targets, rules: rules, fixed: template.letters),
-      noise: eliminatingNoise
-        ? FillWordCheck(board: board, index: dictionary, rules: rules, fixed: template.letters)
-        : nil)
+    return nil
   }
 
   private func choices(
-    weights: LetterWeights, missing: Set<Character>, remaining: Int,
-    neighbours: [Character: Int], using random: inout SeededRandom
+    for demand: CopyDemand, weights: LetterWeights, neighbours: [Character: Int],
+    using random: inout SeededRandom
   ) -> [Character] {
-    guard missing.count <= remaining else { return [] }
+    let missing = demand.missing
+    guard missing.count <= demand.remaining else { return [] }
     let copies = random.shuffled(missing.sorted(by: { $0.precedesInCodePoints($1) }))
-    guard missing.count < remaining else { return copies }
+    guard missing.count < demand.remaining else { return copies }
     let ordinary = weights.orderedLetters(using: &random, neighbours: neighbours)
       .filter { !missing.contains($0) }
-    return random.nextInt(below: remaining) < missing.count
+    return demand.isCopyCell || random.nextInt(below: demand.remaining) < missing.count
       ? copies + ordinary : ordinary + copies
   }
 
-  private func consider(_ candidate: Board, best: inout Board?, leastNoise: inout Int) {
-    guard
-      candidate.placements.allSatisfy({
-        candidate.hasSingleOccurrence(of: $0.word, rules: rules)
-      })
-    else { return }
-    let noise = candidate.strayWordCount(in: dictionary, rules: rules, lessThan: leastNoise)
-    if best == nil || noise < leastNoise {
-      best = candidate
-      leastNoise = noise
-    }
+  private func readsTargetsOnce(_ candidate: Board) -> Bool {
+    candidate.placements.allSatisfy { candidate.hasSingleOccurrence(of: $0.word, rules: rules) }
   }
 
   private func completed(_ letters: [[Character?]]) -> Board {

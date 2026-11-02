@@ -26,30 +26,18 @@ public struct BoardRequest: Equatable, Sendable {
     self.layout = layout
   }
 
-  public func board(seed: UInt64, dictionary: Set<String>? = nil) -> Board {
-    board(
-      seed: seed, dictionary: dictionary.map(BoardDictionary.init) ?? generator.preparedDictionary)
-  }
-
-  public func board(seed: UInt64, dictionary: BoardDictionary) -> Board {
+  public func board(seed: UInt64) -> Board {
     guard let runFree else {
       preconditionFailure("A request leaves preparation with its run-free fallback")
     }
-    let index = dictionary.index
     guard
       let candidate = RunFreeFill(
         board: targets(seed: seed), weights: runFree.weights, rules: generator.rules,
-        conditionalCharacters: runFree.symbols, dictionary: index
+        conditionalCharacters: runFree.symbols
       ).filled(seed: seed)
     else { return runFree.board }
-    let pairs = candidate.hasAddedEqualPair
-    let fallbackPairs = runFree.board.hasAddedEqualPair
-    if pairs != fallbackPairs { return pairs ? runFree.board : candidate }
-    let noise = candidate.strayWordCount(in: index, rules: generator.rules)
-    guard noise > 0 else { return candidate }
-    let fallbackNoise = runFree.board.strayWordCount(
-      in: index, rules: generator.rules, lessThan: noise)
-    return fallbackNoise < noise ? runFree.board : candidate
+    return candidate.hasAddedEqualPair && !runFree.board.hasAddedEqualPair
+      ? runFree.board : candidate
   }
 
   func targets(seed: UInt64) -> Board {

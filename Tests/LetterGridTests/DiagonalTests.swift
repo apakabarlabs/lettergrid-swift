@@ -29,19 +29,18 @@ struct DiagonalTests {
     }
   }
 
-  @Test func aBoardCanUseEitherDiagonalWithoutAddingStrayWords() throws {
+  @Test func aBoardCanUseEitherDiagonalReadingEachWordOnce() throws {
     let words = ["CAT", "DOG", "SUN"]
     for direction in [Direction.downRight, .downLeft] {
       let generator = BoardGenerator(
         columns: 7, rows: 7, directions: [direction],
-        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), dictionary: Set(words))
+        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
       let board = try generator.board(for: words, seed: 8)
       #expect(board.placements.allSatisfy { $0.direction == direction })
       for placement in board.placements {
         #expect(board.text(along: placement.cells) == placement.word)
         #expect(board.occurrences(of: placement.word, along: [direction]) == 1)
       }
-      #expect(board.strayWords(of: Set(words), along: [direction]).isEmpty)
     }
   }
 

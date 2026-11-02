@@ -20,11 +20,10 @@ enum TurnedBoards {
   static func run() throws {
     let workload = try workload()
     let words = workload.words
-    let dictionary = BoardDictionary(words)
     let generator = BoardGenerator(
       columns: 7, rows: 7, rules: workload.rules, filler: workload.weights,
       downWords: 1...2)
-    try measure(generator: generator, words: words, dictionary: dictionary)
+    try measure(generator: generator, words: words)
     try BoundedBoards.run(
       words: words, rules: workload.rules, weights: workload.weights)
   }
@@ -54,7 +53,7 @@ enum TurnedBoards {
   }
 
   private static func measure(
-    generator: BoardGenerator, words: Set<String>, dictionary: BoardDictionary
+    generator: BoardGenerator, words: Set<String>
   ) throws {
     var accepted: [[String]] = []
     for level in levels(in: words) {
@@ -81,19 +80,19 @@ enum TurnedBoards {
     }
     let requests = try accepted.map { try generator.request(for: $0) }
     LetterGridBenchmarks.measureWorst(
-      "turned board rules=28 dictionary=7000", iterations: requests.count
+      "turned board rules=28", iterations: requests.count
     ) { index in
-      requests[index].board(seed: UInt64(index + 1), dictionary: dictionary).rows
+      requests[index].board(seed: UInt64(index + 1)).rows
     }
-    let isolated = isolatedFillCount(requests, dictionary: dictionary)
+    let isolated = isolatedFillCount(requests)
     FileHandle.standardOutput.write(
       Data("turned boards filled without target letters: \(isolated) of \(requests.count)\n".utf8))
     var seed: UInt64 = 0
     LetterGridBenchmarks.measure(
-      "turned board minimum=7x7 rules=28 dictionary=7000", iterations: requests.count
+      "turned board minimum=7x7 rules=28", iterations: requests.count
     ) {
       seed += 1
-      let board = requests[Int(seed) % requests.count].board(seed: seed, dictionary: dictionary)
+      let board = requests[Int(seed) % requests.count].board(seed: seed)
       return board.rows
     }
   }
@@ -106,11 +105,9 @@ enum TurnedBoards {
     }
   }
 
-  private static func isolatedFillCount(
-    _ requests: [BoardRequest], dictionary: BoardDictionary
-  ) -> Int {
+  private static func isolatedFillCount(_ requests: [BoardRequest]) -> Int {
     requests.enumerated().filter { offset, request in
-      let board = request.board(seed: UInt64(offset + 1), dictionary: dictionary)
+      let board = request.board(seed: UInt64(offset + 1))
       let used = Set(board.placements.flatMap(\.cells))
       let wordLetters = Set(request.words.joined())
       return (0..<board.rows).allSatisfy { row in

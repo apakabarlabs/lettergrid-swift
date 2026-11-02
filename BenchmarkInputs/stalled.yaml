@@ -1,0 +1,21 @@
+- name: words that never stand apart on a full turned board
+  columns: 7
+  rows: 7
+  maxRows: 7
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [down_right, down_left], turns: 0}
+  - {directions: [left, up], turns: 0}
+  - {directions: [up_left, up_right], turns: 0}
+  - {directions: [right, down], turns: 1}
+  - {directions: [down_right, down_left], turns: 1}
+  - {directions: [left, up], turns: 1}
+  - {directions: [up_left, up_right], turns: 1}
+  - {directions: [right, down], turns: 2}
+  - {directions: [down_right, down_left], turns: 2}
+  - {directions: [left, up], turns: 2}
+  weights: {Პ: 1, Ა: 3, Ტ: 1, Რ: 2, Კ: 1, Ე: 2, Დ: 1, Ლ: 1, Ი: 1, Მ: 2, Ო: 2, Ც: 1}
+  downWords: [0, 3]
+  maxWordsPerDirection: 2
+  words:
+  - [ᲞᲐᲢᲐᲠᲐ, ᲙᲔᲓᲔᲚᲘ, ᲛᲝᲛᲪᲠᲝ]

@@ -29,18 +29,16 @@ public struct BoardGenerator: Equatable, Sendable {
   public let directions: [Direction]
   public private(set) var filler: LetterWeights
   public let conditionalCharacters: Set<Character>
-  public let dictionary: Set<String>
   public let downWords: ClosedRange<Int>
   public let maxWordsPerDirection: Int?
   public private(set) var rules: [WordRule]
   private(set) var usesPathRules = false
   private(set) var requiresRunFreeTargets = false
-  let preparedDictionary: BoardDictionary
 
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.columns == rhs.columns && lhs.rows == rhs.rows && lhs.maxRows == rhs.maxRows
       && lhs.directions == rhs.directions
-      && lhs.filler == rhs.filler && lhs.dictionary == rhs.dictionary
+      && lhs.filler == rhs.filler
       && lhs.downWords == rhs.downWords && lhs.rules == rhs.rules
       && lhs.maxWordsPerDirection == rhs.maxWordsPerDirection
       && lhs.usesPathRules == rhs.usesPathRules
@@ -50,7 +48,7 @@ public struct BoardGenerator: Equatable, Sendable {
 
   public init(
     columns: Int, rows: Int, maxRows: Int? = nil, directions: [Direction], filler: LetterWeights,
-    dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
+    downWords: ClosedRange<Int> = 0...Int.max,
     conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
   ) {
     self.columns = columns
@@ -58,8 +56,6 @@ public struct BoardGenerator: Equatable, Sendable {
     self.maxRows = maxRows
     self.directions = directions
     self.filler = filler
-    self.dictionary = Set(dictionary.map(\.cellUppercased))
-    self.preparedDictionary = BoardDictionary(self.dictionary)
     self.downWords = downWords
     self.maxWordsPerDirection = maxWordsPerDirection
     self.rules = [WordRule(startDirections: directions)]
@@ -68,7 +64,7 @@ public struct BoardGenerator: Equatable, Sendable {
 
   public init(
     columns: Int, rows: Int, maxRows: Int? = nil, rules: [WordRule], filler: LetterWeights,
-    dictionary: Set<String> = [], downWords: ClosedRange<Int> = 0...Int.max,
+    downWords: ClosedRange<Int> = 0...Int.max,
     conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
   ) {
     self.init(
@@ -76,7 +72,7 @@ public struct BoardGenerator: Equatable, Sendable {
       directions: Direction.allCases.filter { way in
         rules.contains { $0.startDirections.contains(way) }
       },
-      filler: filler, dictionary: dictionary, downWords: downWords,
+      filler: filler, downWords: downWords,
       conditionalCharacters: conditionalCharacters, maxWordsPerDirection: maxWordsPerDirection)
     self.rules = rules
     self.usesPathRules = true
@@ -161,7 +157,6 @@ public struct BoardGenerator: Equatable, Sendable {
   package func finishPreparation(
     _ request: BoardRequest, observing: ((Duration, Duration) -> Void)? = nil
   ) throws -> BoardRequest {
-    let dictionary = preparedDictionary
     for seed in UInt64(0)..<UInt64(Generation.settings.fill.seeds) {
       let start = observing.map { _ in ContinuousClock.now }
       let targets = request.targets(seed: seed)
@@ -169,7 +164,7 @@ public struct BoardGenerator: Equatable, Sendable {
       let fillStart = observing.map { _ in ContinuousClock.now }
       let fallback = RunFreeFill(
         board: targets, weights: filler, rules: rules,
-        conditionalCharacters: conditionalCharacters, dictionary: dictionary.index
+        conditionalCharacters: conditionalCharacters
       ).filled(seed: seed)
       if let repacking, let fillStart {
         observing?(repacking, fillStart.duration(to: .now))

@@ -1,64 +1,56 @@
-baseline_revision: 5a7c1d9d986ac7d0aeb041be919d677841765f81
 seeds: [1, 7, 37]
 filler: {a: 1, d: 1, x: 1, q: 1, z: 1}
-dictionary: [AAA, AXA, ADA, DAD, XAX]
 cases:
 - name: forward
   turns: [0]
-  extra_dictionary: []
   words: [CAT, DOG, SUN]
   directions: [right, down]
   symbols: []
   boards:
-    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
-    7: CATZT/XUNOX/DOGCQ/QAXDS/SUNZG
-    37: CATZQ/QSQDN/DOGOG/ATAUD/SUNCA
+    1: CATCZ/QZSDX/DOGZA/TQDUO/SUNGN
+    7: CATZN/ZUDCG/DOGOZ/TAQXD/SUNSQ
+    37: CATGX/TSZDA/DOGON/ZQCDQ/SUNXU
 - name: every-direction
   turns: [0]
-  extra_dictionary: []
   words: [CAT, DOG, SUN]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: []
   boards:
-    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
-    7: CATZT/XUNOX/DOGCQ/QAXDS/SUNZG
-    37: CATZQ/QSQDN/DOGOG/ATAUD/SUNCA
+    1: CATCZ/QZSDX/DOGZA/TQDUO/SUNGN
+    7: CATZN/ZUDCG/DOGOZ/TAQXD/SUNSQ
+    37: CATGX/TSZDA/DOGON/ZQCDQ/SUNXU
 - name: separator
   turns: [0]
-  extra_dictionary: []
   words: [C-T, DOG, SUN]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: ['-']
   boards:
-    1: C-TOG/ASDXU/DOGZC/T-AXQ/SUNZN
-    7: C-TZT/XUNOA/DOGCQ/Q-XDS/SUNZG
-    37: C-TZA/QSQDN/DOGOG/-TAUD/SUNCA
+    1: C-TCZ/AQSAD/DOGZ-/TQDUO/SUNGN
+    7: C-TZN/ZUDCG/DOGOZ/T-QXD/SUNSQ
+    37: C-TGX/TSZA-/DOGON/ZQCDQ/SUNXU
 - name: reachable-targets
   words: [ADX, DAQ, ZAX]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: []
   turns: [0]
-  extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: ADXAD/ZZQZX/DAQXA/QQZXQ/ZAXDZ
-    7: ADXZX/XZXAD/DAQZD/DQQAX/ZAXZA
-    37: ADXAD/XZZDZ/DAQZX/ZZAZD/ZAXQX
+    1: ADXAX/QZDXD/DAQZQ/XZQAX/ZAXZQ
+    7: ADXDQ/QZQAX/DAQDQ/XQZAZ/ZAXDX
+    37: ADXDQ/QZAZA/DAQDX/XDZAZ/ZAXDQ
 - name: forward-reachable-targets
   words: [ADX, DAQ, ZAX]
   directions: [right, down]
   symbols: []
   turns: [0]
-  extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: ADXDX/XZZAZ/DAQXD/XZAZQ/ZAXDA
-    7: ADXAD/XZZXZ/DAQXA/XZZDQ/ZAXQA
-    37: ADXDX/XZDAZ/DAQXD/XZXZA/ZAXQX
+    1: ADXAX/ZADZD/DAQZA/QZDAX/ZAXZQ
+    7: ADXAZ/XZQDQ/DAQAX/QZDZQ/ZAXAX
+    37: ADXDZ/XZQAX/DAQDQ/QZAZA/ZAXQX
 - name: turns-unfillable
   words: [ADX, DAQ, ZAX]
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: []
   turns: [0, 1]
-  extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
     1: <unfilled>
     7: <unfilled>
@@ -68,8 +60,7 @@ cases:
   directions: [right, down, down_right, down_left, left, up, up_left, up_right]
   symbols: []
   turns: [0, 1]
-  extra_dictionary: [DXQ, ZAD, AQD, QDX]
   boards:
-    1: CATOG/XSDXU/DOGZC/TAQXA/SUNZN
-    7: CATZT/XUNOX/DOGCQ/ZAXDS/SUNZG
-    37: CATZQ/QSQDN/DOGAO/CTXUD/SUNGA
+    1: CATCZ/QZSDX/DOGZA/TQDUO/SUNGN
+    7: CATSN/XUDCG/DOGAQ/TZXZX/SUNOD
+    37: CATGX/TSZQA/DOGON/ZQCUQ/SUNXD

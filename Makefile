@@ -72,7 +72,7 @@ bench-preparation-vocabulary:
 	swift run -c $(BENCH_CONFIGURATION) $(BENCH_RUN_FLAGS) LetterGridBenchmarks --preparation-vocabulary \
 		'$(PREPARATION_VOCABULARY_INPUT)' '$(PREPARATION_WORDS)' $(PREPARATION_FOLD)
 
-.PHONY: profile-build profile-run profile-launch profile-record profile-record-help profile-toc profile-export
+.PHONY: profile-build profile-run profile-launch profile-preparation profile-record profile-record-help profile-toc profile-export
 profile-record-help:
 	xcrun xctrace help record
 
@@ -90,6 +90,13 @@ profile-launch: profile-build
 		--output '$(PROFILE_TRACE)' --target-stdout - --launch -- \
 		.build/release/LetterGridBenchmarks --profile '$(PROFILE_OPERATION)' \
 		'$(PROFILE_INPUT)' '$(PROFILE_REPETITIONS)'
+
+profile-preparation: profile-build
+	@test -n '$(PROFILE_TRACE)' || { echo 'PROFILE_TRACE is required'; exit 1; }
+	mkdir -p .build/profiles
+	xcrun xctrace record --template 'Time Profiler' --no-prompt --time-limit '$(PROFILE_TIME)' \
+		--output '$(PROFILE_TRACE)' --target-stdout - --launch -- \
+		.build/release/LetterGridBenchmarks --preparation '$(PREPARATION_INPUT)'
 
 profile-record:
 	@test -n '$(PROFILE_PID)' -a -n '$(PROFILE_TRACE)' || { echo 'PROFILE_PID and PROFILE_TRACE are required'; exit 1; }

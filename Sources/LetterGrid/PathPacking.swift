@@ -20,6 +20,7 @@ struct PathPacking {
     let words: [[Character]]
     let choices: [[Candidate]]
     let order: [Int]
+    let runs: PlacedRuns?
     let downWords: ClosedRange<Int>
     let maxWordsPerDirection: Int?
     let nodeLimit: Int
@@ -65,7 +66,9 @@ struct PathPacking {
         chosen[index] = candidate.placement
         vertical = counted
         countDirection(candidate, by: 1)
-        if standApart(chosen), place(at: depth + 1) { return true }
+        let formsRun =
+          runs?.formed(by: candidate.placement, letters: letters, among: chosen) ?? false
+        if !formsRun, standApart(chosen), place(at: depth + 1) { return true }
         countDirection(candidate, by: -1)
         vertical -= candidate.placement.direction.isVertical ? 1 : 0
         chosen[index] = nil
@@ -127,6 +130,7 @@ struct PathPacking {
   var maxWordsPerDirection: Int?
   var nodeLimit = Generation.settings.packing.nodeLimit
   var crossingRestarts = Generation.settings.packing.crossingRestarts
+  var forbidsRuns = false
   var completes: @Sendable ([Placement], inout Int) -> Completion = { _, _ in .fits }
 
   func pack(_ words: [String], seed: UInt64 = 0) -> Outcome {
@@ -148,9 +152,17 @@ struct PathPacking {
       columns: columns, rows: rows, rules: rules, words: words, blank: blank)
     let all = standingAlone(words, compatibility: compatibility)
     guard all.allSatisfy({ !$0.isEmpty }) else { return .impossible }
+    return restarting(words, candidates: all, compatibility: compatibility, using: &random)
+  }
+
+  private func restarting(
+    _ words: [String], candidates all: [[Candidate]], compatibility: PlacementCompatibility,
+    using random: inout SeededRandom
+  ) -> Outcome {
     let canCross = words.indices.contains { first in
       words.indices.contains { $0 > first && !Set(words[first]).isDisjoint(with: words[$0]) }
     }
+    let runs = prunesRuns(for: words) ? PlacedRuns(columns: columns, rows: rows) : nil
     var best: (placements: [Placement], shared: Int)?
     var spent = 0
     for _ in 0..<max(1, crossingRestarts) {
@@ -160,6 +172,7 @@ struct PathPacking {
         order: words.indices.sorted {
           (choices[$0].count, $0) < (choices[$1].count, $1)
         },
+        runs: runs,
         downWords: downWords, maxWordsPerDirection: maxWordsPerDirection,
         nodeLimit: nodeLimit - spent,
         standApart: compatibility.accepts, completes: completes,
@@ -179,6 +192,16 @@ struct PathPacking {
     }
     guard let best else { return .impossible }
     return .placed(best.placements)
+  }
+
+  private func prunesRuns(for words: [String]) -> Bool {
+    forbidsRuns
+      && !words.contains { word in
+        let letters = Array(word)
+        return letters.indices.dropFirst(2).contains {
+          letters[$0] == letters[$0 - 1] && letters[$0] == letters[$0 - 2]
+        }
+      }
   }
 
   private func standingAlone(

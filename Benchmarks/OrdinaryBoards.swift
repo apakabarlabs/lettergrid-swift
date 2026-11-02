@@ -13,12 +13,11 @@ enum OrdinaryBoards {
     let words = screens.flatMap { $0 }
     let weights = Dictionary(words.joined().map { (String($0), 1.0) }, uniquingKeysWith: +)
     let filler = try LetterWeights(weights)
-    let dictionary = Set(words)
     let inputs = (UInt64(1)...30).flatMap { seed in screens.map { (words: $0, seed: seed) } }
     func generate(_ input: (words: [String], seed: UInt64)) throws -> Board {
       let generator = BoardGenerator(
         columns: 7, rows: 7, directions: directions, filler: filler,
-        dictionary: dictionary, downWords: input.words.count / 2...(input.words.count + 1) / 2)
+        downWords: input.words.count / 2...(input.words.count + 1) / 2)
       return try generator.board(for: input.words, seed: input.seed)
     }
     let boards = try inputs.map(generate)
@@ -26,7 +25,6 @@ enum OrdinaryBoards {
       precondition(board.columns == 7 && board.rows == 7)
       precondition(board.placements.map(\.word) == input.words)
       precondition(input.words.allSatisfy { board.occurrences(of: $0, along: directions) == 1 })
-      precondition(board.strayWords(of: dictionary, along: directions).isEmpty)
     }
     var index = 0
     try LetterGridBenchmarks.measure("ordinary generation 7x7", iterations: inputs.count) {

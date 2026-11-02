@@ -20,6 +20,7 @@ enum PreparationMeasurements {
     var weights: [String: Double]
     let sameNeighbour: Double?
     let downWords: [Int]
+    let maxWordsPerDirection: Int?
     var words: [[String]]
     let sampling: [Sampling]?
 
@@ -31,7 +32,7 @@ enum PreparationMeasurements {
         return BoardGenerator(
           columns: columns, rows: rows, maxRows: maxRows, rules: rules.map(\.value),
           filler: try LetterWeights(weights, sameNeighbour: sameNeighbour ?? 1),
-          downWords: downWords[0]...downWords[1])
+          downWords: downWords[0]...downWords[1], maxWordsPerDirection: maxWordsPerDirection)
       }
     }
   }

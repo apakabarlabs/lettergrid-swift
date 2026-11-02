@@ -165,17 +165,6 @@ public struct Board: Equatable, Sendable {
     return found.count
   }
 
-  public func strayWords(of dictionary: Set<String>, along directions: [Direction]) -> [String] {
-    if BoardWordSearch.shouldIndex(wordCount: dictionary.count, on: self, along: directions) {
-      return strayWords(in: WordIndex(dictionary), along: directions)
-    }
-    return BoardWordSearch(board: self, dictionary: .words(dictionary)).words(along: directions)
-  }
-
-  func strayWords(in dictionary: WordIndex, along directions: [Direction]) -> [String] {
-    BoardWordSearch(board: self, dictionary: .indexed(dictionary)).words(along: directions)
-  }
-
   public func selection(from start: Cell, toward end: Cell, along ways: [Direction]) -> [Cell] {
     guard contains(start) else { return [] }
     let row = Double(end.row) - Double(start.row)

@@ -1,5 +1,65 @@
 # Changelog
 
+## [0.23.0] - 2026-11-02
+
+The generator no longer tries to stop other words of a dictionary from appearing on the
+board by chance, so callers that pass a dictionary must drop it. For every caller, with or
+without a dictionary, the board built from a given seed can differ from 0.22.2: its filler
+letters change, and for some seeds the cells of the hidden words change too. Which seeds
+are affected cannot be told in advance, so treat every seeded board as changed:
+
+- a test that compares a board recorded for a seed must record it again;
+- an app that has to show the same board after a library update should save the board's
+  `letters` and `placements` and restore them with `Board(validating:placements:)`,
+  rather than save the seed and generate the board again.
+
+### Removed
+
+- The `dictionary:` parameter of both `BoardGenerator` initializers; their other parameters
+  are unchanged. Also `BoardGenerator.dictionary`, `BoardRequest.board(seed:dictionary:)`
+  and `BoardDictionary`. Build boards with `board(seed:)`:
+
+  ```swift
+  // 0.22.2
+  let generator = BoardGenerator(
+    columns: 7, rows: 7, directions: [.right, .down], filler: filler, dictionary: words)
+  let board = request.board(seed: 7, dictionary: words)
+  // 0.23.0
+  let generator = BoardGenerator(
+    columns: 7, rows: 7, directions: [.right, .down], filler: filler)
+  let board = request.board(seed: 7)
+  ```
+
+  Any word may now read somewhere on the board by chance, across filler and hidden-word
+  letters alike. Each hidden word still reads exactly once, and the filler still never
+  completes three equal letters in a line.
+- `Board.strayWords(of:along:)` and `Board.strayWords(of:rules:)`. There is no replacement;
+  to check a list of your own words, call `occurrences(of:along:)` or
+  `occurrences(of:rules:)` for each word: they still count how often one given word reads
+  on a board.
+
+### Fixed
+
+- `BoardGenerator.request` and `BoardGenerator.checkPlacement` no longer stall on words with
+  repeated letters, such as `BANANA`, when the rules allow paths with turns. A path that
+  turns can put three equal letters of one word on three neighbouring cells of a grid row,
+  column or diagonal, for example the three `A`s of `BANANA`. A board never shows three
+  equal letters next to each other in a straight line, except when a hidden word itself has
+  three equal letters one after another. The search used to keep trying such paths for
+  minutes and then throw `unsettled`. It now skips them at once and finds a layout within
+  milliseconds. `unsettled` is still thrown for a request that has no valid layout at all.
+
+### Changed
+
+- Since 0.19.0, every character that appears only once among the hidden words also gets a
+  second copy elsewhere on the board. These copies are now placed in randomly chosen free
+  cells before the rest of the board is filled. A board with few free cells no longer
+  spends seconds trying to fit them into the last empty cells.
+- Building a board is faster. In a release build on an Apple M1 Pro, 200 boards of 7×7,
+  with rules for straight paths and for paths with one, two and three turns, took at most
+  0.15 s each. 0.22.2 with a dictionary took up to 10 s on the same boards; 0.22.2 without a
+  dictionary was not measured.
+
 ## [0.22.2] - 2026-11-02
 
 Existing callers need no changes. Requests, layouts and seeded boards are the same as in

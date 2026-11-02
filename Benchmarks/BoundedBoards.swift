@@ -18,16 +18,15 @@ enum BoundedBoards {
         Data("bounded input=\(index); words=\(sample.words.joined(separator: " "))\n".utf8))
     }
     precondition(samples.count >= 20, "Too few synthetic levels fit the bounded board")
-    let dictionary = BoardDictionary(words)
     try LetterGridBenchmarks.measureWorst(
       "bounded request 7x7 firstTurns=3 rules=28", iterations: samples.count
     ) { index in
       try generator.request(for: samples[index].words, firstRule: firstRule).words.count
     }
     LetterGridBenchmarks.measureWorst(
-      "bounded board 7x7 firstTurns=3 rules=28 dictionary=7000", iterations: samples.count
+      "bounded board 7x7 firstTurns=3 rules=28", iterations: samples.count
     ) { index in
-      samples[index].request.board(seed: UInt64(index + 1), dictionary: dictionary).rows
+      samples[index].request.board(seed: UInt64(index + 1)).rows
     }
   }
 

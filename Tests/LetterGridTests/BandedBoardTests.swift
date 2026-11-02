@@ -18,9 +18,7 @@ struct BandedBoardTests {
     weights["z"] = 0.5
     return BoardGenerator(
       columns: 7, rows: 7, maxRows: maxRows, directions: directions,
-      filler: try LetterWeights(weights),
-      dictionary: Set(alphabet.flatMap { a in alphabet.map { b in String([a, b, a]) } }),
-      downWords: downWords)
+      filler: try LetterWeights(weights), downWords: downWords)
   }
 
   private func words(using random: inout SeededRandom) -> [String] {
@@ -131,20 +129,6 @@ struct BandedBoardTests {
 
     #expect(throws: BoardGenerator.Failure.self) {
       try generator.request(for: ["AB", "BBA"])
-    }
-  }
-
-  @Test func theCleanSearchStillDecidesWhenItSucceeds() throws {
-    let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down],
-      filler: try LetterWeights(["a": 8, "e": 12, "t": 9, "s": 6, "q": 0.1]),
-      dictionary: ["SAT", "TEA", "EAT", "SEA"])
-    let request = try generator.request(for: ["house", "water", "cat"])
-
-    for seed in UInt64(1)...20 {
-      let board = request.board(seed: seed)
-      #expect(board.rows == 7)
-      #expect(board.strayWords(of: ["SAT", "TEA", "EAT", "SEA"], along: [.right, .down]).isEmpty)
     }
   }
 }

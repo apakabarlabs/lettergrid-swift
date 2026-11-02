@@ -42,54 +42,18 @@ struct BoardGeneratorTests {
     #expect(first == second)
   }
 
-  @Test func noOtherWordOfTheDictionaryReadsOnTheBoard() throws {
-    let dictionary: Set<String> = ["SAT", "TEA", "EAT", "SEA", "ATE", "TEST", "SET", "TAT"]
-    let generator = BoardGenerator(
-      columns: 6, rows: 6, directions: [.right, .down], filler: filler, dictionary: dictionary)
-
-    let prepared = try generator.request(for: words)
-    let checked = prepared.board(seed: 0)
-    #expect(checked.strayWords(of: dictionary, along: [.right, .down]).isEmpty)
-    for seed in 1...20 {
-      let board = try generator.board(for: words, seed: UInt64(seed))
-      #expect(
-        board.strayWords(of: dictionary, along: [.right, .down]).isEmpty,
-        "seed \(seed), letters \(board.letters.map { String($0) }), placements \(board.placements)")
-    }
-  }
-
-  @Test func aDictionaryWordInsideAHiddenWordIsNotStray() {
-    let board = Board(
-      letters: [Array("THERE"), Array("QQQQQ")],
-      placements: [Placement(word: "THERE", start: Cell(row: 0, column: 0), direction: .right)]
-    )
-
-    #expect(board.strayWords(of: ["HER", "THE", "THERE"], along: [.right, .down]).isEmpty)
-  }
-
-  @Test func weightedFillerAvoidsStrayWordsInsteadOfNeedingAnUnlikelyRandomGrid() throws {
+  @Test func aHeavilyWeightedFillerStillReadsEachWordOnce() throws {
     let directions: [Direction] = [.right, .down, .downRight, .downLeft]
     let generator = BoardGenerator(
       columns: 7, rows: 15, directions: directions,
-      filler: try LetterWeights(["a": 1_000, "b": 1]), dictionary: ["AAA"],
-      downWords: 1...2)
+      filler: try LetterWeights(["a": 1_000, "b": 1]), downWords: 1...2)
     let words = ["PERSPECTIVE", "SUN", "MOON"]
     let board = try generator.board(for: words, seed: 1)
 
-    #expect(board.strayWords(of: ["AAA"], along: directions).isEmpty)
     for word in words {
       #expect(board.occurrences(of: word, along: directions) == 1)
     }
     #expect(board.placements.map(\.word) == words)
-  }
-
-  @Test func aDictionaryWordAcrossTheBoardIsStray() {
-    let board = Board(
-      letters: [Array("CATQ"), Array("QQQQ")],
-      placements: []
-    )
-
-    #expect(board.strayWords(of: ["CAT"], along: [.right, .down]) == ["CAT"])
   }
 
   @Test func moreWordsWiderThanTheBoardThanMayStandDownHaveNoRoom() {

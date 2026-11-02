@@ -17,20 +17,18 @@ struct ReverseDirectionTests {
     }
   }
 
-  @Test func aBoardCanUseEachReverseDirectionWithoutStrayWords() throws {
+  @Test func aBoardCanUseEachReverseDirectionReadingEachWordOnce() throws {
     let words = ["CAT", "DOG", "SUN"]
     for direction in reverses {
       let generator = BoardGenerator(
         columns: 7, rows: 7, directions: [direction],
-        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), dictionary: Set(words),
-        downWords: 0...3)
+        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 0...3)
       let board = try generator.board(for: words, seed: 8)
       #expect(board.placements.allSatisfy { $0.direction == direction }, "\(direction)")
       for placement in board.placements {
         #expect(board.text(along: placement.cells) == placement.word)
         #expect(board.occurrences(of: placement.word, along: [direction]) == 1)
       }
-      #expect(board.strayWords(of: Set(words), along: [direction]).isEmpty)
     }
   }
 
@@ -47,12 +45,12 @@ struct ReverseDirectionTests {
   @Test func aWordThatReadsTheSameBackwardsStandsOnceWhenBothWaysAreOn() throws {
     let generator = BoardGenerator(
       columns: 7, rows: 7, directions: [.right, .left, .down, .up],
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), dictionary: ["LEVEL", "CAT", "SUN"],
-      downWords: 0...3)
+      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 0...3)
     for seed in 1...20 {
       let board = try generator.board(for: ["LEVEL", "CAT", "SUN"], seed: UInt64(seed))
-      #expect(board.occurrences(of: "LEVEL", along: generator.directions) == 1)
-      #expect(board.strayWords(of: ["LEVEL", "CAT", "SUN"], along: generator.directions).isEmpty)
+      for word in ["LEVEL", "CAT", "SUN"] {
+        #expect(board.occurrences(of: word, along: generator.directions) == 1)
+      }
     }
   }
 

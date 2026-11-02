@@ -127,6 +127,7 @@ extension BoardGenerator {
       maxWordsPerDirection: maxWordsPerDirection
     )
     if maxRows == nil { packing.nodeLimit = Self.growingHeightNodeLimit }
+    packing.forbidsRuns = requiresRunFreeTargets
     let required = requiredSymbols(in: words)
     let (columns, rules, avoidsRuns) = (columns, rules, requiresRunFreeTargets)
     packing.completes = { placements, budget in

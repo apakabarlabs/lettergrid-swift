@@ -24,50 +24,11 @@ struct LetterGridBenchmarks {
       return
     }
     guard arguments.isEmpty else { throw BoundedProfile.Failure.arguments }
-    boardScans()
-    largeDictionary()
     try smallAlphabetBoards()
     hints()
     try packedRequests()
     try OrdinaryBoards.run()
     try TurnedBoards.run()
-  }
-
-  @MainActor
-  private static func boardScans() {
-    for side in [16, 32, 64] {
-      let board = Board(
-        letters: Array(repeating: Array(repeating: Character("A"), count: side), count: side),
-        placements: [])
-      let dictionary: Set<String> = [String(repeating: "A", count: side) + "X"]
-      measure("strayWords side=\(side)", iterations: 3) {
-        board.strayWords(of: dictionary, along: Direction.allCases).count
-      }
-    }
-    let side = 16
-    let word = String(repeating: "A", count: side)
-    let board = Board(
-      letters: Array(repeating: Array(word), count: side),
-      placements: [Placement(word: word, start: Cell(row: 0, column: 0), direction: .right)])
-    measure("strayWords covered side=16", iterations: 3) {
-      board.strayWords(of: ["A", "AA", "AAA", "AAAA"], along: Direction.allCases).count
-    }
-    let row: [Character] = Array(repeating: [Character("a"), "\u{301}", "x"], count: 6).flatMap {
-      $0
-    }
-    let joined = Board(letters: Array(repeating: row, count: side), placements: [])
-    measure("strayWords joinedUnicode 18x16", iterations: 3) {
-      joined.strayWords(of: ["á", "áx", "x"], along: Direction.allCases).count
-    }
-  }
-
-  @MainActor
-  private static func largeDictionary() {
-    let dictionary = Set((0..<50_000).map { "UNRELATED\($0)" }).union(["CAT", "DOG", "SUN"])
-    let board = Board(letters: [Array("CAT"), Array("DOG"), Array("SUN")], placements: [])
-    measure("strayWords dictionary=50003 board=3x3", iterations: 100) {
-      board.strayWords(of: dictionary, along: Direction.allCases).count
-    }
   }
 
   @MainActor
@@ -126,9 +87,8 @@ struct LetterGridBenchmarks {
         try generator.request(for: words).words.count
       }
       let request = try generator.request(for: words)
-      let dictionary = BoardDictionary(Set(words))
       measureWorst("packed board \(words.joined(separator: " "))", iterations: 8) { seed in
-        request.board(seed: UInt64(seed), dictionary: dictionary).rows
+        request.board(seed: UInt64(seed)).rows
       }
     }
   }

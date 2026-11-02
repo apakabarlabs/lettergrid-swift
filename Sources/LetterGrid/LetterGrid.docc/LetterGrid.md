@@ -7,7 +7,7 @@ Build and play a word search using plain Swift.
 Pass words, allowed directions, board dimensions and weighted filler letters to
 ``BoardGenerator``. Rows are a minimum. A board can grow downwards to accommodate the words
 unless `maxRows` limits its height. Every accepted target occurs exactly once along the allowed
-directions; dictionary filtering is best effort within the configured search limits.
+directions. Other words may appear in the filler by chance; the library does not avoid them.
 
 ``Board`` and ``Placement`` describe letters and their positions. ``Round`` owns the
 selection, found words, hints and optional introduction and countdown. An application
@@ -29,8 +29,8 @@ the same board within one library version. Save letters and placements when a bo
 must retain its layout across library updates.
 
 Prepare words once using ``BoardGenerator/request(for:firstDirection:firstRule:)`` and build them
-through ``BoardRequest`` using `board(seed:dictionary:)`. The request retains its checked settings;
-an optional dictionary can be supplied at build time. Empty word lists and invalid generator
+through ``BoardRequest`` using `board(seed:)`. The request retains its checked settings.
+Empty word lists and invalid generator
 configuration are rejected before a request is returned.
 
 For candidate selection, ``BoardGenerator/checkPlacement(for:firstDirection:firstRule:)``
@@ -140,21 +140,18 @@ that leave fewer free cells than copies.
   ``WordRule/minimumTurns(toFit:startDirections:columns:maximumRows:)`` returns the fewest turns,
   0 to 3, with which such a path fits, or `nil` when none does.
 - ``Board/occurrences(of:rules:)`` counts ordered paths, folding the two readings of a palindrome
-  into one. `strayWords(of:rules:)` scans dictionary prefixes along allowed paths.
+  into one.
 - ``Placement/init(word:cells:)`` retains a full ordered path; `direction` describes its first
   segment and `turns` counts its direction changes. Save `cells`, not only `start` and
   `direction`, for turned words. Hints, introduction and selection follow cells; a drag that
   revisits an earlier cell backtracks to it.
 - Selection keeps its start-anchored direction snapping for straight rules.
-- The fill keeps targets unique and prefers fewer distinct stray words from the dictionary,
-  which is best effort. Noise scoring has a deterministic node budget and prunes already
-  counted dictionary words; an exhausted score never counts as clean, and fully scored fills
-  outrank incomplete ones.
+- The fill keeps each target reading exactly once. It places the copies of characters the
+  targets hold only once first, in randomly chosen free cells, and then fills the rest.
 - The library keeps one generation. A seed gives the same board within one library version
   only; an app that must keep a board across updates saves its letters and placements.
 - Every random choice draws from ``SeededRandom`` through its own methods, never through the
   standard library's algorithms; its page states each algorithm for a port.
-- ``BoardDictionary`` prepares a reusable dictionary index for many requests.
 - ``PathReveal`` turns elapsed time into a growing path prefix, or the complete path for reduced
   motion. The caller owns timing and presentation.
 
@@ -174,7 +171,6 @@ that leave fewer free cells than copies.
 - ``BoardGenerator``
 - ``BoardRequest``
 - ``WordRule``
-- ``BoardDictionary``
 - ``LetterWeights``
 - ``SeededRandom``
 

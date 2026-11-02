@@ -59,9 +59,8 @@ struct BoundedHeightTests {
       filler: LetterWeights(["ա": 1, "ե": 1, "ի": 1, "ո": 1, "ւ": 1, "ք": 1]),
       downWords: 1...2
     ).request(for: words, firstRule: introduced)
-    let dictionary = BoardDictionary(Set(words + ["ԳԱՀ", "ԳԵՏ", "ԱԶԳ"]))
     for seed in UInt64(0)..<16 {
-      let board = request.board(seed: seed, dictionary: dictionary)
+      let board = request.board(seed: seed)
       check(board, words: words, rules: rules, quota: 1...2)
       #expect(introduced.matches(board.placements[0]))
     }
@@ -109,33 +108,6 @@ struct BoundedHeightTests {
     for cells in paths {
       #expect(rule.matches(cells))
       #expect(cells.allSatisfy { (0..<3).contains($0.row) && (0..<5).contains($0.column) })
-    }
-  }
-
-  @Test func boundedStraightBoardsKeepNaturalFillerWhenTheDictionaryIsNoisy() throws {
-    let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    let dictionary = Set(alphabet.flatMap { first in alphabet.map { "\(first)\($0)" } })
-    let weights = try LetterWeights(
-      Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) }))
-    let words = ["PLANET", "ORBIT", "SUN"]
-    let ways: [Direction] = [.right, .down]
-    let request = try BoardGenerator(
-      columns: 7, rows: 7, maxRows: 7, directions: ways, filler: weights,
-      downWords: 1...2
-    ).request(for: words)
-    for seed in UInt64(0)..<4 {
-      let board = request.board(seed: seed, dictionary: dictionary)
-      let occupied = Set(board.placements.flatMap(\.cells))
-      let targetLetters = Set(words.joined())
-      let ordinary = (0..<board.rows).contains { row in
-        (0..<board.columns).contains { column in
-          let cell = Cell(row: row, column: column)
-          return !occupied.contains(cell) && targetLetters.contains(board[cell])
-        }
-      }
-      #expect(ordinary)
-      #expect(board.rows == 7)
-      for word in words { #expect(board.occurrences(of: word, along: ways) == 1) }
     }
   }
 

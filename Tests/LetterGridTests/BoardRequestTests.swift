@@ -28,20 +28,6 @@ struct BoardRequestTests {
     }
   }
 
-  @Test func aDictionaryCanBeSuppliedAfterPreparingTheWords() throws {
-    let filler = try LetterWeights(["a": 1000, "b": 1])
-    let generator = BoardGenerator(
-      columns: 5, rows: 5, directions: [.right, .down], filler: filler)
-    let withDictionary = BoardGenerator(
-      columns: 5, rows: 5, directions: [.right, .down], filler: filler, dictionary: ["AAA"])
-    let request = try generator.request(for: ["CAT", "DOG"])
-
-    let board = request.board(seed: 7, dictionary: ["aaa"])
-
-    #expect(board == (try withDictionary.board(for: ["CAT", "DOG"], seed: 7)))
-    #expect(board.strayWords(of: ["AAA"], along: [.right, .down]).isEmpty)
-  }
-
   @Test(arguments: [0, -1])
   func invalidDimensionsAreRejectedBeforePreparingARequest(_ dimension: Int) throws {
     let filler = try LetterWeights(["x": 1])

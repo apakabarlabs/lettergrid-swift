@@ -2,6 +2,7 @@ struct PathSearch {
   private struct Visitor {
     let visit: (Placement) -> Bool
     let skips: (Int) -> Bool
+    let codes: [Int?]
   }
   private struct AllowedTurns {
     let direction: Direction
@@ -46,14 +47,21 @@ struct PathSearch {
       return counts.isEmpty ? nil : AllowedTurns(direction: direction, counts: counts)
     }
     var trail = Trail(visited: Array(repeating: false, count: board.rows * board.columns))
-    let visitor = Visitor(visit: visit, skips: skipping)
+    var codes: [Int?] = []
+    codes.reserveCapacity(board.rows * board.columns)
+    for row in 0..<board.rows {
+      for column in 0..<board.columns {
+        codes.append(letter(at: Cell(row: row, column: column)).flatMap(index.code(of:)))
+      }
+    }
+    let visitor = Visitor(visit: visit, skips: skipping, codes: codes)
     trail.cells.reserveCapacity(min(index.longest, board.rows * board.columns))
     for rule in grouped {
       for row in 0..<board.rows {
         for column in 0..<board.columns {
           let start = Cell(row: row, column: column)
-          guard let letter = letter(at: start),
-            let node = index.next(after: 0, letter: letter), !visitor.skips(node)
+          guard let code = codes[slot(of: start)],
+            let node = index.next(after: 0, code: code), !visitor.skips(node)
           else {
             continue
           }
@@ -86,10 +94,11 @@ struct PathSearch {
     }
     guard length < index.longest, let last = trail.cells.last else { return }
     let canTurn = length > 1 && turns < rule.maximum
-    for way in [direction] + (canTurn ? direction.perpendiculars : []) {
+    for way in Self.ways(from: direction, turning: canTurn) {
       let next = last.moved(way, by: 1)
-      guard board.contains(next), !trail.visited[slot(of: next)], let letter = letter(at: next),
-        let child = index.next(after: node, letter: letter), !visitor.skips(child)
+      guard board.contains(next), !trail.visited[slot(of: next)],
+        let code = visitor.codes[slot(of: next)],
+        let child = index.next(after: node, code: code), !visitor.skips(child)
       else { continue }
       enter(next, &trail)
       walk(
@@ -98,6 +107,20 @@ struct PathSearch {
       leave(&trail)
       if trail.stopped { return }
     }
+  }
+
+  private static let turnings: [[Direction]] = (0..<9).map { position in
+    Direction.allCases.first { position == Self.position(of: $0) }.map { [$0] + $0.perpendiculars }
+      ?? []
+  }
+
+  private static func position(of direction: Direction) -> Int {
+    (direction.rowStep + 1) * 3 + direction.columnStep + 1
+  }
+
+  private static func ways(from direction: Direction, turning: Bool) -> ArraySlice<Direction> {
+    let ways = turnings[position(of: direction)]
+    return turning ? ways[...] : ways.prefix(1)
   }
 
   private func slot(of cell: Cell) -> Int { cell.row * board.columns + cell.column }
@@ -137,15 +160,6 @@ extension Board {
       paths.insert(reading.cells)
     }
     return paths.count
-  }
-
-  public func strayWords(of dictionary: Set<String>, rules: [WordRule]) -> [String] {
-    strayWords(in: WordIndex(dictionary), rules: rules)
-  }
-
-  func strayWords(in dictionary: WordIndex, rules: [WordRule]) -> [String] {
-    PathSearch(board: self, rules: rules).readings(in: dictionary).filter { !covers($0) }
-      .map(\.word).sorted()
   }
 
   func covers(_ reading: Placement) -> Bool {

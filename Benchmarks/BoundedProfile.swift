@@ -22,7 +22,6 @@ enum BoundedProfile {
     let input = inputs[index]
     let generator = workload.generator
     let request = input.request
-    let dictionary = BoardDictionary(workload.words)
     let line =
       "PROFILE_READY pid=\(ProcessInfo.processInfo.processIdentifier); "
       + "operation=\(operation.rawValue); input=\(index); "
@@ -37,7 +36,7 @@ enum BoundedProfile {
       case .request:
         return try generator.request(for: input.words, firstRule: workload.rules.last).words.count
       case .board:
-        return request.board(seed: UInt64(index + 1), dictionary: dictionary).rows
+        return request.board(seed: UInt64(index + 1)).rows
       }
     }
   }

@@ -77,20 +77,20 @@ struct TurnPathTests {
     #expect(board.occurrences(of: "AAAA", rules: [rule]) == 4)
   }
 
-  @Test func dictionarySingleLettersRemainVisibleToRuleBasedSearch() {
+  @Test func singleLettersRemainVisibleToRuleBasedSearch() {
     let board = Board(letters: [Array("AX"), Array("XA")], placements: [])
     let rules = [WordRule(startDirections: Direction.allCases)]
     #expect(board.occurrences(of: "A", rules: rules) == 2)
-    #expect(board.strayWords(of: ["A"], rules: rules) == ["A", "A"])
   }
 
-  @Test func dictionarySearchIncludesTurnsAndIgnoresTheIntendedSubpath() {
+  @Test func wordSearchIncludesTurnsAndIgnoresTheIntendedSubpath() {
     let placement = Placement(word: "ABCDE", cells: path)
     let board = Board(
       letters: [Array("ABX"), Array("XCD"), Array("XXE")],
       placements: [placement])
     let rules = (0...3).map { WordRule(startDirections: Direction.allCases, turns: $0) }
-    #expect(board.strayWords(of: ["ABCDE", "BCD", "BXD"], rules: rules) == ["BXD"])
+    #expect(board.strayWordCount(in: WordIndex(["ABCDE", "BCD", "BXD"]), rules: rules) == 1)
+    #expect(board.strayWordCount(in: WordIndex(["ABCDE", "BCD"]), rules: rules) == 0)
   }
 
   @Test func revealProgressHandlesEmptyPathsAndReducedMotion() {
@@ -136,7 +136,7 @@ struct TurnPathIntegrationTests {
     let board = Board(letters: Array(repeating: Array("ZZZZZZZ"), count: 7), placements: [])
     let dictionary = Set((0..<20_000).map { "ABC\($0)" })
     let rules = (0...3).map { WordRule(startDirections: Direction.allCases, turns: $0) }
-    #expect(board.strayWords(of: dictionary, rules: rules).isEmpty)
+    #expect(board.strayWordCount(in: WordIndex(dictionary), rules: rules) == 0)
     #expect(
       PathShapes(
         columns: 7, length: 20,
@@ -155,9 +155,7 @@ struct TurnPathIntegrationTests {
     let words = ["PLANET", "ORBIT", "LUNAR"]
     let generator = BoardGenerator(
       columns: 7, rows: 7, rules: rules,
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]),
-      dictionary: ["PLANET", "ORBIT", "LUNAR", "STAR", "MOON", "SOLAR"],
-      downWords: 1...2)
+      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 1...2)
     let board = try generator.request(for: words, firstRule: required).board(seed: 73)
     #expect(required.matches(board.placements[0]))
     #expect(board.placements.map(\.word) == words)
