@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.22.1] - 2026-11-02
 
 Existing callers need no changes. Requests, layouts and seeded boards are the same as in
 0.22.0.
