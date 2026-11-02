@@ -184,13 +184,11 @@ struct PathPacking {
   private func standingAlone(
     _ words: [String], compatibility: PlacementCompatibility
   ) -> [[Candidate]] {
-    let alone = [Placement?](repeating: nil, count: words.count)
-    return words.indices.map { index in
+    words.indices.map { index in
       let allowedRules = index < leadingRules.count ? [leadingRules[index]] : rules
-      return candidates(for: words[index], rules: allowedRules) { placement in
-        var chosen = alone
-        chosen[index] = placement
-        return compatibility.accepts(chosen)
+      let alone = compatibility.alone(at: index)
+      return candidates(for: words[index], rules: allowedRules) {
+        compatibility.accepts($0, alone: alone)
       }
     }
   }

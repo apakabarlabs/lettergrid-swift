@@ -5,14 +5,30 @@ struct PlacementCompatibility {
   let words: [String]
   let blank: Character
 
+  struct Alone {
+    let standsAlone: Bool
+    let spelled: [Int]
+  }
+
+  func alone(at index: Int) -> Alone {
+    var counts: [Character: Int] = [:]
+    for letter in words[index] { counts[letter, default: 0] += 1 }
+    return Alone(
+      standsAlone: standsAlone(words[index], among: counts),
+      spelled: words.indices.filter { $0 != index && spells(words[$0], from: counts) })
+  }
+
+  func accepts(_ placement: Placement, alone: Alone) -> Bool {
+    guard alone.standsAlone || placement.readsOnceAlone(rules: rules) else { return false }
+    guard !alone.spelled.isEmpty else { return true }
+    let board = Board(letters: letters(of: [placement]), placements: [placement])
+    let areas = [Set(placement.cells)]
+    return alone.spelled.allSatisfy { leavesRoom(for: words[$0], on: board, beside: areas) }
+  }
+
   func accepts(_ chosen: [Placement?]) -> Bool {
     let placements = chosen.compactMap { $0 }
-    var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
-    for placement in placements {
-      for (cell, letter) in zip(placement.cells, placement.word) {
-        letters[cell.row][cell.column] = letter
-      }
-    }
+    let letters = letters(of: placements)
     let areas = placements.map { Set($0.cells) }
     let nested = areas.indices.contains { inner in
       areas.indices.contains { $0 != inner && areas[inner].isSubset(of: areas[$0]) }
@@ -32,6 +48,16 @@ struct PlacementCompatibility {
       placement != nil || !spells(word, from: counts)
         || leavesRoom(for: word, on: board, beside: areas)
     }
+  }
+
+  private func letters(of placements: [Placement]) -> [[Character]] {
+    var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
+    for placement in placements {
+      for (cell, letter) in zip(placement.cells, placement.word) {
+        letters[cell.row][cell.column] = letter
+      }
+    }
+    return letters
   }
 
   private func letterCounts(_ letters: [[Character]]) -> [Character: Int] {
