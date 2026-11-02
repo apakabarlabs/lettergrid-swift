@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.22.2] - 2026-11-02
+
+Existing callers need no changes. Requests, layouts and seeded boards are the same as in
+0.22.1.
+
+### Changed
+
+- `request` places words about twice as fast when the generator's rules include
+  `WordRule(startDirections:turns: 2)`. On a 7×7 board, placing the words of eight requests
+  now takes about 27 ms instead of 55–75 ms. Filling the rest of the board takes as long as
+  before.
+
 ## [0.22.1] - 2026-11-02
 
 Existing callers need no changes. Requests, layouts and seeded boards are the same as in
