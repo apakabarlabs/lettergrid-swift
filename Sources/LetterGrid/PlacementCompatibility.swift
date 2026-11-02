@@ -20,10 +20,7 @@ struct PlacementCompatibility {
 
   func accepts(_ placement: Placement, alone: Alone) -> Bool {
     guard alone.standsAlone || placement.readsOnceAlone(rules: rules) else { return false }
-    guard !alone.spelled.isEmpty else { return true }
-    let board = Board(letters: letters(of: [placement]), placements: [placement])
-    let areas = [Set(placement.cells)]
-    return alone.spelled.allSatisfy { leavesRoom(for: words[$0], on: board, beside: areas) }
+    return !alone.spelled.contains { placement.holdsReading(of: words[$0], rules: rules) }
   }
 
   func accepts(_ chosen: [Placement?]) -> Bool {
