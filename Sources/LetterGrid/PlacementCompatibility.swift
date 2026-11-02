@@ -22,7 +22,10 @@ struct PlacementCompatibility {
     let counts = letterCounts(letters)
     guard
       placements.allSatisfy({
-        standsAlone($0.word, among: counts) || board.hasSingleOccurrence(of: $0.word, rules: rules)
+        standsAlone($0.word, among: counts)
+          || (placements.count == 1
+            ? $0.readsOnceAlone(rules: rules)
+            : board.hasSingleOccurrence(of: $0.word, rules: rules))
       })
     else { return false }
     return zip(chosen, words).allSatisfy { placement, word in

@@ -10,6 +10,8 @@ Existing callers need no changes. Requests, layouts and seeded boards are the sa
 - `request` no longer packs its layout a second time while preparing the fill: seed 0
   reuses the layout it has just packed. With two turns on a 7×7 board this halves the time
   of a request.
+- Packing checks that a word standing alone reads once by walking its own cells instead of
+  searching a whole board. With two turns this takes a quarter off the placement time.
 
 ## [0.22.0] - 2026-10-30
 
