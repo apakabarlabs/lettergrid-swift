@@ -18,6 +18,23 @@ public struct Placement: Hashable, Sendable {
     self.geometry = .straight
   }
 
+  private init(word: String, start: Cell, direction: Direction, geometry: Geometry) {
+    self.word = word
+    self.start = start
+    self.direction = direction
+    self.geometry = geometry
+  }
+
+  func shifted(rows: Int, columns: Int) -> Placement {
+    let move = { (cell: Cell) in Cell(row: cell.row + rows, column: cell.column + columns) }
+    let geometry: Geometry =
+      switch geometry {
+      case .straight: .straight
+      case .path(let cells): .path(cells.map(move))
+      }
+    return Placement(word: word, start: move(start), direction: direction, geometry: geometry)
+  }
+
   public init(word: String, cells: [Cell]) {
     do {
       try self.init(validating: word, cells: cells)

@@ -210,16 +210,16 @@ struct PathPacking {
         for shape in shapes {
           let height = (shape.map(\.row).max() ?? 0) + 1
           let width = (shape.map(\.column).max() ?? 0) + 1
-          guard height <= rows, width <= columns else { continue }
-          guard accepting(Placement(word: word, cells: shape)) else { continue }
+          guard height <= rows, width <= columns, seen.insert(shape).inserted else { continue }
+          let lone = Placement(word: word, cells: shape)
+          guard accepting(lone) else { continue }
           for row in 0...(rows - height) {
             for column in 0...(columns - width) {
-              let cells = shape.map { Cell(row: $0.row + row, column: $0.column + column) }
-              guard seen.insert(cells).inserted else { continue }
+              let placement = lone.shifted(rows: row, columns: column)
               found.append(
                 Candidate(
-                  slots: cells.map { $0.row * columns + $0.column },
-                  placement: Placement(word: word, cells: cells)))
+                  slots: placement.cells.map { $0.row * columns + $0.column },
+                  placement: placement))
             }
           }
         }

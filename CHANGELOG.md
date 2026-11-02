@@ -12,6 +12,9 @@ Existing callers need no changes. Requests, layouts and seeded boards are the sa
   of a request.
 - Packing checks that a word standing alone reads once by walking its own cells instead of
   searching a whole board. With two turns this takes a quarter off the placement time.
+- Packing drops repeated path shapes before trying their positions and moves an accepted
+  shape across the board without validating it again. With two turns this takes about
+  another 40% off the placement time.
 
 ## [0.22.0] - 2026-10-30
 
