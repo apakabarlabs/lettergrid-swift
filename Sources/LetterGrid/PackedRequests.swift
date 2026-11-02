@@ -45,7 +45,8 @@ extension BoardGenerator {
     }
     var unsettled = false
     for height in rows...maxRows {
-      switch packing(height: height, leadingRules: leadingRules, words: words).pack(words) {
+      let packing = packing(height: height, leadingRules: leadingRules, words: words)
+      switch packing.pack(words, seed: Self.layoutSeed) {
       case .placed(let placements):
         return BoardRequest(
           words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
@@ -64,7 +65,8 @@ extension BoardGenerator {
     for words: [String], firstDirection: Direction?, leadingRules: [WordRule], tallest: Int
   ) throws -> BoardRequest {
     func outcome(at height: Int) -> PathPacking.Outcome {
-      packing(height: height, leadingRules: leadingRules, words: words).pack(words)
+      packing(height: height, leadingRules: leadingRules, words: words)
+        .pack(words, seed: Self.layoutSeed)
     }
     func placed(at height: Int) -> [Placement]? {
       guard case .placed(let placements) = outcome(at: height) else { return nil }
@@ -98,8 +100,11 @@ extension BoardGenerator {
       layout: Layout(rows: found.height, placements: found.placements))
   }
 
+  static let layoutSeed: UInt64 = 0
+
   func packedLayout(for request: BoardRequest, seed: UInt64) -> Layout {
     let layout = request.layout
+    guard seed != Self.layoutSeed else { return layout }
     let outcome = packing(
       height: layout.rows, leadingRules: request.leadingRules, words: request.words
     )
