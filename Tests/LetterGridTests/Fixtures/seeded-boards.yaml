@@ -1,0 +1,56 @@
+seed: 37
+filler: {x: 1, q: 2, z: 3}
+cases:
+- name: packed-turned
+  columns: 5
+  rows: 5
+  max_rows: 5
+  directions: [right, down]
+  turns: [0, 1]
+  first_rule_turns: 1
+  down_words: [1, 2]
+  symbols: []
+  words: [PLANET, ORBIT, SUN]
+  letters: ETORO/PSNBA/LURIU/ANETL/IBSPX
+  placements:
+    PLANET: 1,0;2,0;3,0;3,1;3,2;3,3
+    ORBIT: 0,2;0,3;1,3;2,3;3,3
+    SUN: 1,1;2,1;3,1
+- name: conditional-copies
+  columns: 5
+  rows: 5
+  max_rows: 5
+  directions: [right, down]
+  down_words: [1, 2]
+  symbols: [É]
+  words: [AÉ, C-D]
+  letters: AQXDQ/XZÉZX/QAQCQ/-ÉXZX/ZQC-D
+  placements:
+    AÉ: 2,1;3,1
+    C-D: 4,2;4,3;4,4
+- name: growing-straight
+  columns: 5
+  rows: 5
+  directions: [right, down]
+  down_words: [1, 2]
+  symbols: []
+  words: [CAT, DOG, SUN]
+  letters: GQSUN/OUZCX/NCSAQ/DOGTZ/ATQXD
+  placements:
+    CAT: 1,3;2,3;3,3
+    DOG: 3,0;3,1;3,2
+    SUN: 0,2;0,3;0,4
+- name: growing-turned
+  columns: 5
+  rows: 5
+  directions: [right, down]
+  turns: [0, 1, 2]
+  first_rule_turns: 2
+  down_words: [1, 2]
+  symbols: []
+  words: [PLANET, ORBIT, SUN]
+  letters: ESXON/AUNET/SIAPI/LPLUB/RBTOR
+  placements:
+    PLANET: 3,1;3,2;2,2;1,2;1,3;1,4
+    ORBIT: 4,3;4,4;3,4;2,4;1,4
+    SUN: 0,1;1,1;1,2

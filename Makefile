@@ -17,7 +17,19 @@ PREPARATION_VOCABULARY_INPUT ?= BenchmarkInputs/vocabulary.yaml
 
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools format lint comments test-build test build docs bench
+.PHONY: install-tools format lint comments test-build test build docs bench sync-yaml
+
+KOTLIN = ../lettergrid-kotlin/core/src
+KOTLIN_FIXTURES = $(KOTLIN)/test/resources/fm/apakabar/lettergrid/fixtures
+
+# The Kotlin port keeps copies of the generation tuning and of the shared cases; its tests
+# compare each copy with this repository's main.
+sync-yaml:
+	@test -d $(KOTLIN) || { echo "the Kotlin port's core module is not at $(KOTLIN)"; exit 1; }
+	mkdir -p $(KOTLIN)/main/resources/fm/apakabar/lettergrid $(KOTLIN_FIXTURES)
+	cp Sources/LetterGrid/generation.yaml $(KOTLIN)/main/resources/fm/apakabar/lettergrid/generation.yaml
+	rm -f $(KOTLIN_FIXTURES)/*.yaml
+	cp Tests/LetterGridTests/Fixtures/*.yaml $(KOTLIN_FIXTURES)/
 
 install-tools:
 	brew install swiftlint swift-format
