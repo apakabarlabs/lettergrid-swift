@@ -3,22 +3,25 @@
 ## [0.24.0] - 2026-11-04
 
 What a game shows around the board belongs to the game, so the list of words to find
-leaves the library and `LetterBoard` is its only board view. This breaks source for apps
-that used the list; the board, the round and their data are unchanged.
+leaves the library and `LetterBoard` is its only board view. This breaks source for every
+app that passes `foundText:` to `LetterGridStyle.init`, which had no default, and for
+every app that used the list; the board, the round and their data are unchanged.
 
 ### Removed
 
-- `HiddenWordList`, which listed the round's words numbered, one per line, showing each
-  letter the round has revealed and `•` for the others, coloured a found word with
-  `foundText`, and read a hidden word to VoiceOver with the label the app's closure built
-  from its letter count.
+- `HiddenWordList` from LetterGridUI. It listed `round.board.placements` in their order,
+  one per line, numbered from 1 as `1.`. Each line showed the letters the round has
+  revealed and `•` for the others, coloured a found word with `foundText` and left the
+  rest in the default text colour. VoiceOver read a found word as `placement.word` and a
+  hidden one with the label the app's closure built from its letter count.
 - `LetterGridStyle.foundText` and the `foundText:` parameter of `LetterGridStyle.init`,
   which coloured only that list.
 
 An app that used the list draws its own from the existing `Round` API:
 `round.shownLetters(of:)` gives one `Character?` per letter, `nil` where the letter is
-still hidden, and `round.found` is the `Set<Placement>` of found words. The views observe
-the round, so the list updates as the round is played:
+still hidden, and `round.found` is the `Set<Placement>` of found words. `Round` is
+`@Observable`, so a view whose body reads it redraws as the round is played. This view
+reproduces the removed list:
 
 ```swift
 // 0.23.0
@@ -30,12 +33,25 @@ HiddenWordList(round: round, style: style) { "\($0) letters" }
 // 0.24.0
 let style = LetterGridStyle(
   found: .green, selected: .blue, rejected: .red, hinted: .orange, rejectionSeconds: 1.2)
-ForEach(Array(round.board.placements.enumerated()), id: \.offset) { index, placement in
-  let shown = round.shownLetters(of: placement)
-  let found = round.found.contains(placement)
-  Text("\(index + 1). " + shown.map { $0.map(String.init) ?? "•" }.joined())
-    .foregroundStyle(found ? Color.green : Color.primary)
-    .accessibilityLabel(found ? placement.word : "\(shown.count) letters")
+WordsToFind(round: round, foundColor: .green) { "\($0) letters" }
+
+struct WordsToFind: View {
+  let round: Round
+  let foundColor: Color
+  let hiddenWordLabel: (Int) -> String
+
+  var body: some View {
+    VStack(alignment: .leading) {
+      ForEach(Array(round.board.placements.enumerated()), id: \.offset) { index, placement in
+        let shown = round.shownLetters(of: placement)
+        let found = round.found.contains(placement)
+        let letters = shown.map { $0.map(String.init) ?? "•" }.joined()
+        Text("\(index + 1). \(letters)")
+          .foregroundStyle(found ? foundColor : Color.primary)
+          .accessibilityLabel(found ? placement.word : hiddenWordLabel(shown.count))
+      }
+    }
+  }
 }
 ```
 
