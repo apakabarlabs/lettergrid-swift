@@ -17,7 +17,19 @@ PREPARATION_VOCABULARY_INPUT ?= BenchmarkInputs/vocabulary.yaml
 
 .DEFAULT_GOAL := build
 
-.PHONY: install-tools format lint comments test-build test build docs bench sync-yaml
+.PHONY: install-tools format lint comments test-build test build docs bench sync-yaml release
+
+VERSION = $(shell sed -n 's/^\#\# \[\([0-9.]*\)\].*/\1/p' CHANGELOG.md | head -1)
+
+# A release tags the checked, pushed main with the newest CHANGELOG version, and its GitHub
+# release carries that version's CHANGELOG section as the notes.
+release: build
+	@test -z "$$(git status --porcelain)" || { echo "Commit first: the release is the tag on what is in git."; exit 1; }
+	@git fetch -q origin main
+	@test "$$(git rev-parse HEAD)" = "$$(git rev-parse origin/main)" || { echo "Release from main as pushed."; exit 1; }
+	git tag -a '$(VERSION)' -m '$(VERSION)'
+	git push origin '$(VERSION)'
+	awk '/^## \[$(VERSION)\]/{f=1;next} /^## \[/{f=0} f' CHANGELOG.md | gh release create '$(VERSION)' --title '$(VERSION)' --notes-file -
 
 KOTLIN = ../lettergrid-kotlin/core/src
 KOTLIN_FIXTURES = $(KOTLIN)/test/resources/fm/apakabar/lettergrid/fixtures
