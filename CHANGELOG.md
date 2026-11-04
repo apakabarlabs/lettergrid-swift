@@ -21,7 +21,10 @@ An app that used the list draws its own from the existing `Round` API:
 `round.shownLetters(of:)` gives one `Character?` per letter, `nil` where the letter is
 still hidden, and `round.found` is the `Set<Placement>` of found words. `Round` is
 `@Observable`, so a view whose body reads it redraws as the round is played. This view
-reproduces the removed list:
+shows each word with the same order, letters, colour and VoiceOver label as the removed
+list. The rest is now the app's to choose: the removed list used a monospaced `title3` font
+with a fixed width per letter and showed the number as a separate `.secondary` element that
+VoiceOver read on its own, while this sketch puts the number into the word's line:
 
 ```swift
 // 0.23.0
