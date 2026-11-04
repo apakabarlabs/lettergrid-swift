@@ -7,16 +7,8 @@ enum ConditionalFill {
     let used = Set(placements.map(\.word).joined())
     let required = characters.intersection(used).sorted { $0.precedesInCodePoints($1) }
     guard !required.isEmpty else { return .fits }
-    guard
-      let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
-        .first(where: { !used.contains($0) })
-    else { return .doesNotFit }
-    var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
-    for placement in placements {
-      for (cell, letter) in zip(placement.cells, placement.word) {
-        letters[cell.row][cell.column] = letter
-      }
-    }
+    guard let blank = Character.privateUse(avoiding: used) else { return .doesNotFit }
+    let letters = placements.letters(columns: columns, rows: rows, blank: blank)
     let occupied = Set(placements.flatMap(\.cells))
     var random = SeededRandom(seed: 0)
     var search = DecoySearch(

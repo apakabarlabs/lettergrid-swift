@@ -143,10 +143,7 @@ struct PathPacking {
       "Every leading rule must lie within a rule every reading is checked against.")
     guard leadingRules.count <= words.count else { return .impossible }
     var random = SeededRandom(seed: seed)
-    let used = Set(words.joined())
-    guard !words.isEmpty,
-      let blank = (0xE000...0xF8FF).lazy.compactMap(Unicode.Scalar.init).map(Character.init)
-        .first(where: { !used.contains($0) })
+    guard !words.isEmpty, let blank = Character.privateUse(avoiding: Set(words.joined()))
     else { return .impossible }
     let compatibility = PlacementCompatibility(
       columns: columns, rows: rows, rules: rules, words: words, blank: blank)

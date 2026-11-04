@@ -69,9 +69,7 @@ public struct BoardGenerator: Equatable, Sendable {
   ) {
     self.init(
       columns: columns, rows: rows, maxRows: maxRows,
-      directions: Direction.allCases.filter { way in
-        rules.contains { $0.startDirections.contains(way) }
-      },
+      directions: rules.startDirections,
       filler: filler, downWords: downWords,
       conditionalCharacters: conditionalCharacters, maxWordsPerDirection: maxWordsPerDirection)
     self.rules = rules

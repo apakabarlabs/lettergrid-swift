@@ -48,13 +48,7 @@ struct PlacementCompatibility {
   }
 
   private func letters(of placements: [Placement]) -> [[Character]] {
-    var letters = Array(repeating: Array(repeating: blank, count: columns), count: rows)
-    for placement in placements {
-      for (cell, letter) in zip(placement.cells, placement.word) {
-        letters[cell.row][cell.column] = letter
-      }
-    }
-    return letters
+    placements.letters(columns: columns, rows: rows, blank: blank)
   }
 
   private func letterCounts(_ letters: [[Character]]) -> [Character: Int] {

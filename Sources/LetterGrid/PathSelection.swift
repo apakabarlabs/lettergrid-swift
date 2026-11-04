@@ -2,10 +2,7 @@ extension Board {
   public func selection(extending cells: [Cell], toward end: Cell, rules: [WordRule]) -> [Cell] {
     guard let last = cells.last, contains(end) else { return cells }
     if rules.allSatisfy({ $0.turns == 0 }), let start = cells.first {
-      let directions = Direction.allCases.filter { way in
-        rules.contains { $0.startDirections.contains(way) }
-      }
-      return selection(from: start, toward: end, along: directions)
+      return selection(from: start, toward: end, along: rules.startDirections)
     }
     if let index = cells.firstIndex(of: end) { return Array(cells.prefix(index + 1)) }
     if let firstSegment = firstSegmentSelection(cells, toward: end, rules: rules) {
@@ -32,10 +29,7 @@ extension Board {
     guard let geometry = PathGeometry(cells), geometry.turns == 0, let start = cells.first else {
       return nil
     }
-    let starts = Direction.allCases.filter { way in
-      rules.contains { $0.startDirections.contains(way) }
-    }
-    let straight = selection(from: start, toward: end, along: starts)
+    let straight = selection(from: start, toward: end, along: rules.startDirections)
     let canTurn = rules.contains {
       $0.startDirections.contains(geometry.direction) && $0.turns > 0
     }
