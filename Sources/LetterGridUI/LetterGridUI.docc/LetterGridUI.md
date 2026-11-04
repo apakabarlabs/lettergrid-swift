@@ -4,13 +4,13 @@ Display a word search in SwiftUI using colours supplied by the application.
 
 ## Overview
 
-Create a `Round` from LetterGrid and pass it to ``LetterBoard`` and
-``HiddenWordList``. The views observe the round. Route touch, drag and release callbacks
-to the state owner so an application can enforce its own game rules before changing
-the round.
+Create a `Round` from LetterGrid and pass it to ``LetterBoard``. The view observes the
+round. Route touch, drag and release callbacks to the state owner so an application can
+enforce its own game rules before changing the round. What a game shows around the board,
+such as the words to find, is the application's own; it reads `Round.shownLetters(of:)`
+and `Round.found`.
 
 ``LetterGridStyle`` supplies semantic colours and the rejection display duration.
-The application supplies the hidden-word accessibility label in its own language.
 ``LetterHighlight`` draws the same path geometry over custom board content.
 
 ### Display options
@@ -33,7 +33,6 @@ The application supplies the hidden-word accessibility label in its own language
 ### Views
 
 - ``LetterBoard``
-- ``HiddenWordList``
 - ``LetterHighlight``
 
 ### Appearance

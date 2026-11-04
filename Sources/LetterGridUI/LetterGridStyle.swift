@@ -7,7 +7,6 @@
     public var selected: Color
     public var rejected: Color
     public var hinted: Color
-    public var foundText: Color
     private var rejectionInterval: SleepInterval
 
     public var rejectionSeconds: Double {
@@ -18,14 +17,12 @@
     var rejectionDelay: Duration { rejectionInterval.duration }
 
     public init(
-      found: Color, selected: Color, rejected: Color, hinted: Color, foundText: Color,
-      rejectionSeconds: Double
+      found: Color, selected: Color, rejected: Color, hinted: Color, rejectionSeconds: Double
     ) {
       self.found = found
       self.selected = selected
       self.rejected = rejected
       self.hinted = hinted
-      self.foundText = foundText
       self.rejectionInterval = SleepInterval(enforcing: rejectionSeconds)
     }
   }

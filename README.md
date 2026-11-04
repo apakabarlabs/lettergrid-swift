@@ -19,7 +19,8 @@ let round = Round(board: board, directions: [.right, .down])
 |---|---|
 | placement, selection, hints, optional countdown | game rules, levels, scores, persistence, colours |
 
-SwiftUI apps draw the round with `LetterBoard` and `HiddenWordList` from `LetterGridUI`.
+SwiftUI apps draw the board with `LetterBoard` from `LetterGridUI`; what a game shows around
+the board, such as the words to find, is the game's own.
 
 ## Installation
 
