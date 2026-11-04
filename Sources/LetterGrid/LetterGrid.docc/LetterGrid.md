@@ -4,8 +4,8 @@ Build and play a word search using plain Swift.
 
 ## Overview
 
-Pass words, allowed directions, board dimensions and weighted filler letters to
-``BoardGenerator``. Rows are a minimum. A board can grow downwards to accommodate the words
+Pass words, a ``BoardSize``, ``WordRule`` values and a ``Filler`` to ``BoardGenerator``;
+``PlacementLimits`` optionally bounds where targets run. Rows are a minimum. A board can grow downwards to accommodate the words
 unless `maxRows` limits its height. Every accepted target occurs exactly once along the allowed
 directions. Other words may appear in the filler by chance; the library does not avoid them.
 
@@ -16,8 +16,8 @@ control rounds on the main actor.
 
 ```swift
 let generator = BoardGenerator(
-  columns: 7, rows: 7, directions: [.right, .down],
-  filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+  size: BoardSize(columns: 7, rows: 7), rules: [.straight([.right, .down])],
+  filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])))
 let board = try generator.board(for: ["cat", "dog"], seed: 42)
 ```
 
@@ -28,12 +28,12 @@ comparing application words with board words. The same seed and configuration pr
 the same board within one library version. Save letters and placements when a board
 must retain its layout across library updates.
 
-Prepare words once using ``BoardGenerator/request(for:firstDirection:firstRule:)`` and build them
+Prepare words once using ``BoardGenerator/request(for:firstRule:)`` and build them
 through ``BoardRequest`` using `board(seed:)`. The request retains its checked settings.
 Empty word lists and invalid generator
 configuration are rejected before a request is returned.
 
-For candidate selection, ``BoardGenerator/checkPlacement(for:firstDirection:firstRule:)``
+For candidate selection, ``BoardGenerator/checkPlacement(for:firstRule:)``
 and ``BoardGenerator/checkPlacement(for:leadingRules:)`` search target paths without
 filling the remaining cells. They enforce the same word, path, quota, character-copy
 and target-run constraints as request preparation. They return no request or board.
@@ -47,14 +47,14 @@ check does not retain reusable work: `request` repeats placement before filling.
 
 For external data, use ``Placement/init(validating:cells:)``,
 ``Board/init(validating:placements:)`` and
-``Round/init(restoring:board:directions:seconds:introduces:hintOrder:)``. These report invalid
+``Round/init(restoring:board:rules:options:)``. These report invalid
 data without replacing it. Nonthrowing initializers enforce the same programmer invariants
 with preconditions. ``RoundProgress/validate(for:)`` can check a saved snapshot before its
 owner starts a game.
 
-Round directions must make every placement selectable. Empty boards are already complete;
+Round rules must make every placement selectable. Empty boards are already complete;
 a countdown restored at zero is already lost. A clock exists only when the caller supplies
-`seconds`; a saved seconds value alone does not enable one.
+``RoundOptions/seconds``; a saved seconds value alone does not enable one.
 
 ``Countdown`` runs introduction and tick callbacks while their phases remain active.
 Each callback must advance its part of the round. Cancellation ends normally, while other
@@ -67,14 +67,15 @@ a wall-clock deadline across application suspension.
   Runs contained in one target word remain, but filler cannot extend them. Filling first
   tries to avoid equal neighbours, then permits pairs when that search fails. Requests
   retain a run-free fallback and throw `unsettled` if preparation cannot find one.
-- Directions are opt-in. The vertical quota counts only `.up` and `.down`, including turned
+- Directions are opt-in: ``WordRule/straight(_:)`` enables straight words in the given
+  directions. The vertical quota in ``PlacementLimits/downWords`` counts only `.up` and `.down`, including turned
   words whose first segment runs up or down; their serialized
   names are the case names, while diagonals use `down_right`, `down_left`, `up_left` and `up_right`.
-- Both generator initializers accept ``BoardGenerator/maxWordsPerDirection``: an optional
-  positive maximum number of targets starting in each direction. Turned words count by
+- ``PlacementLimits/maxWordsPerDirection`` is an optional positive maximum number of targets
+  starting in each direction. Turned words count by
   their first segment, as reported by ``Placement/direction``; opposite directions count
-  separately. Leading words count toward the same limit. The default `nil` is unlimited
-  and preserves 0.21.0 generation. This constraint is independent of `downWords`
+  separately. Leading words count toward the same limit. The default `nil` is unlimited.
+  This constraint is independent of `downWords`
   and applies to preliminary checks, joint placement, preparation and seeded repacking.
   ``BoardRequest/maxWordsPerDirection`` retains the requested limit. A nonpositive limit
   makes `accepts` return false and throwing preparation or placement checks report
@@ -85,10 +86,10 @@ a wall-clock deadline across application suspension.
 - Requests reject empty target lists, empty words, duplicates after uppercasing and words
   contained in other targets. A one-letter word takes one cell and fits only a rule without
   turns; ``Round/release()`` finds it when the selection is that one cell, and a one-cell
-  selection that finds no word is not shown as rejected. A round accepts it with any nonempty
-  directions; the generator gives it the start direction of the rule that placed it. When
-  opposite directions are enabled, reverse containment is also rejected. Directions must
-  satisfy the vertical quota and any required first direction. Filler may consist entirely of
+  selection that finds no word is not shown as rejected. The generator gives it the start
+  direction of the rule that placed it. When opposite directions are enabled, reverse
+  containment is also rejected. Directions must satisfy the vertical quota and any required
+  first rule. Filler may consist entirely of
   letters present in the targets; preparation still checks target uniqueness, character copies
   and the rules against added runs.
 - Dimensions must be positive, rules valid and the vertical minimum nonnegative; invalid
@@ -117,7 +118,7 @@ a wall-clock deadline across application suspension.
 ### Restoring and pacing
 
 Every character of the target words, letters, nonletter characters and
-`conditionalCharacters` alike, occupies at least two cells of the board, except the letter of
+``Filler/conditionalCharacters`` alike, occupies at least two cells of the board, except the letter of
 a one-letter word: a copy would be a second occurrence of that word, so it stands once. A
 character that the target paths already hold twice gets no copy; any other gets one copy in a
 free cell.
@@ -127,8 +128,9 @@ that leave fewer free cells than copies.
 
 - ``WordRule`` enables zero to three exact 90-degree turns in either direction, without
   revisiting cells. Its directions apply to the first segment. Supply rules to both the
-  generator and round. `firstRule` requires the first word to use one particular enabled rule.
-  With a generator created using `rules:`, ``BoardGenerator/request(for:leadingRules:)``
+  generator and round. `firstRule` requires the first word to use one particular enabled rule,
+  for example `.straight([.right])` among straight rules in four directions.
+  ``BoardGenerator/request(for:leadingRules:)``
   assigns `leadingRules[i]` to `words[i]`, leaving later words free to use any enabled rule.
   A leading rule can use a subset of an enabled rule's starting directions with the same
   turn count. Invalid or disabled rules throw `invalidConfiguration`; more rules than words,
@@ -151,7 +153,8 @@ that leave fewer free cells than copies.
   segment and `turns` counts its direction changes. Save `cells`, not only `start` and
   `direction`, for turned words. Hints, introduction and selection follow cells; a drag that
   revisits an earlier cell backtracks to it.
-- Selection keeps its start-anchored direction snapping for straight rules.
+- Selection keeps its start-anchored direction snapping for straight rules. A tie goes to the
+  start direction listed first, and a drag past the edge of the board stops at the last cell.
 - The fill keeps each target reading exactly once. It places the copies of characters the
   targets hold only once first, in randomly chosen free cells, and then fills the rest.
 - The library keeps one generation. A seed gives the same board within one library version
@@ -175,6 +178,9 @@ that leave fewer free cells than copies.
 ### Building a board
 
 - ``BoardGenerator``
+- ``BoardSize``
+- ``Filler``
+- ``PlacementLimits``
 - ``BoardRequest``
 - ``WordRule``
 - ``LetterWeights``
@@ -190,6 +196,7 @@ that leave fewer free cells than copies.
 ### Playing a board
 
 - ``Round``
+- ``RoundOptions``
 - ``RoundProgress``
 - ``HintOrder``
 - ``Countdown``

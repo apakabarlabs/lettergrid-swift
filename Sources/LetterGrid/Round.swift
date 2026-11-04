@@ -27,7 +27,7 @@ public final class Round: Identifiable {
 
     public var errorDescription: String? {
       switch self {
-      case .unselectableWord(let word): "The enabled directions cannot select the word \(word)."
+      case .unselectableWord(let word): "The enabled rules cannot select the word \(word)."
       }
     }
   }
@@ -50,38 +50,52 @@ public final class Round: Identifiable {
   public private(set) var introduced: [Cell] = []
   public private(set) var selection: [Cell] = []
   public private(set) var rejected: [Cell] = []
-  private let directions: [Direction]
-  private let pathRules: [WordRule]
+  private let rules: [WordRule]
+  private let straightDirections: [Direction]?
 
-  private init(
-    board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
-    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress(),
-    pathRules: [WordRule]
+  public convenience init(
+    board: Board, rules: [WordRule], options: RoundOptions = RoundOptions(),
+    progress: RoundProgress = RoundProgress()
   ) {
-    precondition(seconds.map { $0 >= 0 } ?? true, "Round seconds must be nonnegative")
     do {
       try progress.validate(for: board)
-      if pathRules.isEmpty {
-        try Self.validateDirections(directions, for: board)
-      } else {
-        try Self.validateRules(pathRules, for: board)
-      }
+      try Self.validate(rules, for: board)
     } catch {
       preconditionFailure("Invalid round progress: \(error.localizedDescription)")
     }
+    self.init(checked: board, rules: rules, options: options, progress: progress)
+  }
+
+  public convenience init(
+    restoring progress: RoundProgress, board: Board, rules: [WordRule],
+    options: RoundOptions = RoundOptions()
+  ) throws {
+    if let seconds = options.seconds, seconds < 0 {
+      throw RoundProgress.Failure.negativeSeconds(seconds)
+    }
+    try progress.validate(for: board)
+    try Self.validate(rules, for: board)
+    self.init(checked: board, rules: rules, options: options, progress: progress)
+  }
+
+  private init(
+    checked board: Board, rules: [WordRule], options: RoundOptions, progress: RoundProgress
+  ) {
+    precondition(options.seconds.map { $0 >= 0 } ?? true, "Round seconds must be nonnegative")
     self.board = board
-    self.directions = directions
-    self.pathRules = pathRules
-    self.hintOrder = hintOrder
-    self.showsFirstWord = introduces && !board.placements.isEmpty
-    self.secondsLeft = seconds.map { progress.secondsLeft ?? $0 }
+    self.rules = rules
+    self.straightDirections = Self.straightDirections(of: rules)
+    self.hintOrder = options.hintOrder
+    self.showsFirstWord = options.introduces && !board.placements.isEmpty
+    self.secondsLeft = options.seconds.map { progress.secondsLeft ?? $0 }
     let byWord = Dictionary(
       board.placements.map { ($0.word, $0) }, uniquingKeysWith: { first, _ in first })
     self.found = Set(progress.found.compactMap { byWord[$0] })
     self.revealed = Dictionary(
       progress.revealed.compactMap { word, count in byWord[word].map { ($0, count) } },
       uniquingKeysWith: { first, _ in first })
-    let startsWithIntroduction = introduces && progress.found.isEmpty && !board.placements.isEmpty
+    let startsWithIntroduction =
+      options.introduces && progress.found.isEmpty && !board.placements.isEmpty
     self.phase = startsWithIntroduction ? .introducing : .playing
     if found.count == board.placements.count {
       phase = .won
@@ -90,56 +104,16 @@ public final class Round: Identifiable {
     }
   }
 
-  public convenience init(
-    board: Board, directions: [Direction], seconds: Int? = nil, introduces: Bool = false,
-    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
-  ) {
-    self.init(
-      board: board, directions: directions, seconds: seconds, introduces: introduces,
-      hintOrder: hintOrder, progress: progress, pathRules: [])
+  private static func straightDirections(of rules: [WordRule]) -> [Direction]? {
+    rules.allSatisfy { $0.turns == 0 } ? rules.startDirectionsInOrder : nil
   }
 
-  public convenience init(
-    board: Board, rules: [WordRule], seconds: Int? = nil, introduces: Bool = false,
-    hintOrder: HintOrder = .fromStart, progress: RoundProgress = RoundProgress()
-  ) {
-    self.init(
-      board: board, directions: Direction.allCases, seconds: seconds,
-      introduces: introduces, hintOrder: hintOrder, progress: progress, pathRules: rules)
-  }
-
-  public convenience init(
-    restoring progress: RoundProgress, board: Board, rules: [WordRule],
-    seconds: Int? = nil, introduces: Bool = false, hintOrder: HintOrder = .fromStart
-  ) throws {
-    if let seconds, seconds < 0 { throw RoundProgress.Failure.negativeSeconds(seconds) }
-    try progress.validate(for: board)
-    try Self.validateRules(rules, for: board)
-    self.init(
-      board: board, rules: rules, seconds: seconds, introduces: introduces,
-      hintOrder: hintOrder, progress: progress)
-  }
-
-  private static func validateRules(_ rules: [WordRule], for board: Board) throws {
-    for placement in board.placements {
-      guard rules.allSatisfy(\.isValid),
-        rules.contains(where: {
-          $0.matches(placement) || (placement.isPalindrome && $0.matches(placement.reversed))
-        })
-      else { throw Failure.unselectableWord(placement.word) }
+  private static func validate(_ rules: [WordRule], for board: Board) throws {
+    if let directions = straightDirections(of: rules), rules.allSatisfy(\.isValid) {
+      try validateDirections(directions, for: board)
+    } else {
+      try validateRules(rules, for: board)
     }
-  }
-
-  public convenience init(
-    restoring progress: RoundProgress, board: Board, directions: [Direction],
-    seconds: Int? = nil, introduces: Bool = false, hintOrder: HintOrder = .fromStart
-  ) throws {
-    if let seconds, seconds < 0 { throw RoundProgress.Failure.negativeSeconds(seconds) }
-    try progress.validate(for: board)
-    try Self.validateDirections(directions, for: board)
-    self.init(
-      board: board, directions: directions, seconds: seconds, introduces: introduces,
-      hintOrder: hintOrder, progress: progress)
   }
 
   private static func validateDirections(_ directions: [Direction], for board: Board) throws {
@@ -148,6 +122,16 @@ public final class Round: Identifiable {
       guard placement.turns == 0,
         directions.contains(placement.direction)
           || (placement.isPalindrome && directions.contains(placement.direction.opposite))
+      else { throw Failure.unselectableWord(placement.word) }
+    }
+  }
+
+  private static func validateRules(_ rules: [WordRule], for board: Board) throws {
+    for placement in board.placements {
+      guard rules.allSatisfy(\.isValid),
+        rules.contains(where: {
+          $0.matches(placement) || (placement.isPalindrome && $0.matches(placement.reversed))
+        })
       else { throw Failure.unselectableWord(placement.word) }
     }
   }
@@ -210,9 +194,8 @@ public final class Round: Identifiable {
   public func drag(to cell: Cell) {
     guard phase == .playing, let start = selection.first else { return }
     selection =
-      pathRules.isEmpty
-      ? board.selection(from: start, toward: cell, along: directions)
-      : board.selection(extending: selection, toward: cell, rules: pathRules)
+      straightDirections.map { board.selection(from: start, toward: cell, along: $0) }
+      ?? board.selection(extending: selection, toward: cell, rules: rules)
   }
 
   public func release() -> Placement? {

@@ -35,8 +35,11 @@ struct DirectionLimitTests {
     let words = ["PLANE", "ORBIT", "DUSKY"]
     for maximumRows: Int? in [7, nil] {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, maxRows: maximumRows, rules: rules,
-        filler: try LetterWeights(["q": 1, "w": 1]), maxWordsPerDirection: 2)
+        size: BoardSize(columns: 7, rows: 7, maxRows: maximumRows),
+        rules: rules,
+        filler: Filler(weights: try LetterWeights(["q": 1, "w": 1])),
+        limits: PlacementLimits(maxWordsPerDirection: 2)
+      )
       try generator.checkPlacement(for: words, leadingRules: leading)
       let request = try generator.placementRequest(for: words, leadingRules: leading)
       for seed in UInt64(0)...2 {
@@ -51,14 +54,17 @@ struct DirectionLimitTests {
   @Test func straightInitializerEnforcesTheSameLimit() throws {
     let filler = try LetterWeights(["q": 1, "w": 1])
     let generator = BoardGenerator(
-      columns: 7, rows: 7, maxRows: 7, directions: [.right, .down], filler: filler,
-      maxWordsPerDirection: 1)
+      size: BoardSize(columns: 7, rows: 7, maxRows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(maxWordsPerDirection: 1)
+    )
     let words = ["CAT", "DOG", "SUN"]
     #expect(!generator.accepts(words))
     #expect(throws: BoardGenerator.Failure.noRoom(words: words, columns: 7, rows: 7)) {
       try generator.checkPlacement(for: words)
     }
-    let request = try generator.request(for: ["CAT", "DOG"], firstDirection: .right)
+    let request = try generator.request(for: ["CAT", "DOG"], firstRule: .straight([.right]))
     for seed in UInt64(0)...2 {
       #expect(Set(request.board(seed: seed).placements.map(\.direction)) == [.right, .down])
     }
@@ -67,13 +73,22 @@ struct DirectionLimitTests {
   @Test func aLimitChangesRequestIdentityWithoutChangingUnlimitedDefaults() throws {
     let filler = try LetterWeights(["q": 1, "w": 1])
     let unlimited = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler)
+    )
     let explicitNil = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler,
-      maxWordsPerDirection: nil)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(maxWordsPerDirection: nil)
+    )
     let limited = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler,
-      maxWordsPerDirection: 2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(maxWordsPerDirection: 2)
+    )
     #expect(unlimited == explicitNil)
     #expect(unlimited != limited)
     let words = ["CAT", "DOG", "SUN"]

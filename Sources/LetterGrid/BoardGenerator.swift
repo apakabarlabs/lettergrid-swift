@@ -16,100 +16,60 @@ public struct BoardGenerator: Equatable, Sendable {
           + words.joined(separator: ", ")
           + ": the search ran out, or every layout found leaves three equal letters in a line."
       case .invalidConfiguration:
-        "Grid dimensions must be positive, directions nonempty, rules valid and the vertical "
+        "Grid dimensions must be positive, rules nonempty and valid, and the vertical "
           + "minimum nonnegative. A maximum height must be at least the minimum. "
-          + "A per-direction word limit must be positive."
+          + "A per-direction word limit must be positive. Leading rules must be enabled."
       }
     }
   }
 
-  public let columns: Int
-  public let rows: Int
-  public let maxRows: Int?
-  public let directions: [Direction]
-  public private(set) var filler: LetterWeights
-  public let conditionalCharacters: Set<Character>
-  public let downWords: ClosedRange<Int>
-  public let maxWordsPerDirection: Int?
-  public private(set) var rules: [WordRule]
-  private(set) var usesPathRules = false
+  public let size: BoardSize
+  public let rules: [WordRule]
+  public let filler: Filler
+  public let limits: PlacementLimits
+  private(set) var weights: LetterWeights
   private(set) var requiresRunFreeTargets = false
 
+  var columns: Int { size.columns }
+  var rows: Int { size.rows }
+  var maxRows: Int? { size.maxRows }
+  var directions: [Direction] { rules.startDirections }
+  var conditionalCharacters: Set<Character> { filler.conditionalCharacters }
+  var downWords: ClosedRange<Int> { limits.downWords }
+  var maxWordsPerDirection: Int? { limits.maxWordsPerDirection }
+
   public static func == (lhs: Self, rhs: Self) -> Bool {
-    lhs.columns == rhs.columns && lhs.rows == rhs.rows && lhs.maxRows == rhs.maxRows
-      && lhs.directions == rhs.directions
-      && lhs.filler == rhs.filler
-      && lhs.downWords == rhs.downWords && lhs.rules == rhs.rules
-      && lhs.maxWordsPerDirection == rhs.maxWordsPerDirection
-      && lhs.usesPathRules == rhs.usesPathRules
-      && lhs.conditionalCharacters == rhs.conditionalCharacters
+    lhs.size == rhs.size && lhs.rules == rhs.rules && lhs.filler == rhs.filler
+      && lhs.limits == rhs.limits && lhs.weights == rhs.weights
       && lhs.requiresRunFreeTargets == rhs.requiresRunFreeTargets
   }
 
   public init(
-    columns: Int, rows: Int, maxRows: Int? = nil, directions: [Direction], filler: LetterWeights,
-    downWords: ClosedRange<Int> = 0...Int.max,
-    conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
+    size: BoardSize, rules: [WordRule], filler: Filler, limits: PlacementLimits = PlacementLimits()
   ) {
-    self.columns = columns
-    self.rows = rows
-    self.maxRows = maxRows
-    self.directions = directions
-    self.filler = filler
-    self.downWords = downWords
-    self.maxWordsPerDirection = maxWordsPerDirection
-    self.rules = [WordRule(startDirections: directions)]
-    self.conditionalCharacters = Set(conditionalCharacters.map(\.cellUppercased))
-  }
-
-  public init(
-    columns: Int, rows: Int, maxRows: Int? = nil, rules: [WordRule], filler: LetterWeights,
-    downWords: ClosedRange<Int> = 0...Int.max,
-    conditionalCharacters: Set<Character> = [], maxWordsPerDirection: Int? = nil
-  ) {
-    self.init(
-      columns: columns, rows: rows, maxRows: maxRows,
-      directions: rules.startDirections,
-      filler: filler, downWords: downWords,
-      conditionalCharacters: conditionalCharacters, maxWordsPerDirection: maxWordsPerDirection)
+    self.size = size
     self.rules = rules
-    self.usesPathRules = true
+    self.filler = filler
+    self.limits = limits
+    self.weights = filler.weights
   }
 
-  public func request(
-    for words: [String], firstDirection: Direction? = nil, firstRule: WordRule? = nil
-  ) throws -> BoardRequest {
-    try finishPreparation(
-      placementRequest(for: words, firstDirection: firstDirection, firstRule: firstRule))
+  public func request(for words: [String], firstRule: WordRule? = nil) throws -> BoardRequest {
+    try finishPreparation(placementRequest(for: words, firstRule: firstRule))
   }
 
-  public func checkPlacement(
-    for words: [String], firstDirection: Direction? = nil, firstRule: WordRule? = nil
-  ) throws {
-    _ = try placementRequest(for: words, firstDirection: firstDirection, firstRule: firstRule)
+  public func checkPlacement(for words: [String], firstRule: WordRule? = nil) throws {
+    _ = try placementRequest(for: words, firstRule: firstRule)
   }
 
   public func checkPlacement(for words: [String], leadingRules: [WordRule]) throws {
     _ = try placementRequest(for: words, leadingRules: leadingRules)
   }
 
-  private func placementRequest(
-    for words: [String], firstDirection: Direction?, firstRule: WordRule?
-  ) throws -> BoardRequest {
+  private func placementRequest(for words: [String], firstRule: WordRule?) throws -> BoardRequest {
     try validateConfiguration()
-    let leading: [WordRule]
-    if usesPathRules {
-      guard firstDirection == nil, firstRule.map({ rules.contains($0) }) ?? true
-      else { throw Failure.invalidConfiguration }
-      leading = firstRule.map { [$0] } ?? []
-    } else {
-      guard firstRule == nil else { throw Failure.invalidConfiguration }
-      guard firstDirection.map({ directions.contains($0) }) ?? true else {
-        throw Failure.noRoom(words: words.map(\.cellUppercased), columns: columns, rows: rows)
-      }
-      leading = firstDirection.map { [WordRule(startDirections: [$0])] } ?? []
-    }
-    return try checkedTargets(for: words, firstDirection: firstDirection, leadingRules: leading)
+    guard firstRule.map(enables) ?? true else { throw Failure.invalidConfiguration }
+    return try checkedTargets(for: words, leadingRules: firstRule.map { [$0] } ?? [])
   }
 
   public func request(for words: [String], leadingRules: [WordRule]) throws -> BoardRequest {
@@ -120,10 +80,8 @@ public struct BoardGenerator: Equatable, Sendable {
     for words: [String], leadingRules: [WordRule]
   ) throws -> BoardRequest {
     try validateConfiguration()
-    guard usesPathRules, leadingRules.allSatisfy(enables) else {
-      throw Failure.invalidConfiguration
-    }
-    return try checkedTargets(for: words, firstDirection: nil, leadingRules: leadingRules)
+    guard leadingRules.allSatisfy(enables) else { throw Failure.invalidConfiguration }
+    return try checkedTargets(for: words, leadingRules: leadingRules)
   }
 
   func enables(_ rule: WordRule) -> Bool {
@@ -134,19 +92,17 @@ public struct BoardGenerator: Equatable, Sendable {
   }
 
   private func checkedTargets(
-    for words: [String], firstDirection: Direction?, leadingRules: [WordRule]
+    for words: [String], leadingRules: [WordRule]
   ) throws -> BoardRequest {
     let words = words.map(\.cellUppercased)
     var targets = self
     targets.requiresRunFreeTargets = true
     let request: BoardRequest
     do {
-      request = try targets.targetRequest(
-        for: words, firstDirection: firstDirection, leadingRules: leadingRules)
+      request = try targets.targetRequest(for: words, leadingRules: leadingRules)
     } catch Failure.noRoom {
       targets.requiresRunFreeTargets = false
-      _ = try targets.targetRequest(
-        for: words, firstDirection: firstDirection, leadingRules: leadingRules)
+      _ = try targets.targetRequest(for: words, leadingRules: leadingRules)
       throw Failure.unsettled(words: words, columns: columns, rows: maxRows ?? rows)
     }
     return request
@@ -161,7 +117,7 @@ public struct BoardGenerator: Equatable, Sendable {
       let repacking = start?.duration(to: .now)
       let fillStart = observing.map { _ in ContinuousClock.now }
       let fallback = RunFreeFill(
-        board: targets, weights: filler, rules: rules,
+        board: targets, weights: weights, rules: rules,
         conditionalCharacters: conditionalCharacters
       ).filled(seed: seed)
       if let repacking, let fillStart {
@@ -169,25 +125,25 @@ public struct BoardGenerator: Equatable, Sendable {
       }
       if let fallback {
         return request.avoidingRuns(
-          fallback: fallback, weights: filler, symbols: conditionalCharacters)
+          fallback: fallback, weights: weights, symbols: conditionalCharacters)
       }
     }
     throw Failure.unsettled(words: request.words, columns: columns, rows: maxRows ?? rows)
   }
 
   private func targetRequest(
-    for words: [String], firstDirection: Direction?, leadingRules: [WordRule]
+    for words: [String], leadingRules: [WordRule]
   ) throws -> BoardRequest {
     let symbols = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
     var generator = self
     if !symbols.isEmpty {
-      guard let ordinary = filler.letters(excluding: symbols) else {
+      guard let ordinary = weights.letters(excluding: symbols) else {
         throw Failure.noRoom(words: words, columns: columns, rows: rows)
       }
-      generator.filler = ordinary
+      generator.weights = ordinary
     }
     return try generator.packedRequest(
-      for: words, firstDirection: firstDirection, leadingRules: leadingRules,
+      for: words, leadingRules: leadingRules,
       maxRows: maxRows ?? rows + words.map(\.count).reduce(0, +))
   }
 
@@ -206,8 +162,8 @@ extension BoardGenerator {
   }
 
   public func board(
-    for words: [String], seed: UInt64, firstDirection: Direction? = nil
+    for words: [String], seed: UInt64, firstRule: WordRule? = nil
   ) throws -> Board {
-    try request(for: words, firstDirection: firstDirection).board(seed: seed)
+    try request(for: words, firstRule: firstRule).board(seed: seed)
   }
 }

@@ -14,8 +14,10 @@ struct HintCellsTests {
 
   @Test func crossingHintsKeepPlacementOrderAndRepeatedCells() {
     let round = Round(
-      board: board, directions: [.right, .down],
-      progress: RoundProgress(revealed: ["CAT": 2, "OAR": 2]))
+      board: board,
+      rules: [.straight([.right, .down])],
+      progress: RoundProgress(revealed: ["CAT": 2, "OAR": 2])
+    )
 
     #expect(
       round.hintedCells == [
@@ -26,8 +28,10 @@ struct HintCellsTests {
 
   @Test func findingAWordRemovesItsHintsButKeepsTheCrossingWordHints() {
     let round = Round(
-      board: board, directions: [.right, .down],
-      progress: RoundProgress(found: ["CAT"], revealed: ["CAT": 2, "OAR": 2]))
+      board: board,
+      rules: [.straight([.right, .down])],
+      progress: RoundProgress(found: ["CAT"], revealed: ["CAT": 2, "OAR": 2])
+    )
 
     #expect(round.hintedCells == [Cell(row: 0, column: 1), Cell(row: 1, column: 1)])
   }
@@ -36,11 +40,19 @@ struct HintCellsTests {
     let word = String(repeating: "A", count: 256)
     let placement = Placement(word: word, start: Cell(row: 0, column: 0), direction: .right)
     let board = Board(letters: [Array(word)], placements: [placement])
-    let round = Round(board: board, directions: [.right], hintOrder: .anyButFirst)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(hintOrder: .anyButFirst)
+    )
     for _ in 1..<word.count { _ = round.reveal() }
     let before = round.hintedCells
     let restored = try Round(
-      restoring: round.progress, board: board, directions: [.right], hintOrder: .anyButFirst)
+      restoring: round.progress,
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(hintOrder: .anyButFirst)
+    )
 
     #expect(before.count == 255)
     #expect(Set(before) == Set(placement.cells.dropFirst()))

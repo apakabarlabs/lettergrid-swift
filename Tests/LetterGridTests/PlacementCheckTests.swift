@@ -31,12 +31,22 @@ struct PlacementCheckTests {
       let quota = downWords[0]...downWords[1]
       if let rules {
         return BoardGenerator(
-          columns: columns, rows: rows, maxRows: maxRows, rules: rules.map(\.value),
-          filler: filler, downWords: quota)
+          size: BoardSize(columns: columns, rows: rows, maxRows: maxRows),
+          rules: rules.map(\.value),
+          filler: Filler(weights: filler),
+          limits: PlacementLimits(downWords: quota)
+        )
       }
       return BoardGenerator(
-        columns: columns, rows: rows, maxRows: maxRows, directions: try #require(directions),
-        filler: filler, downWords: quota)
+        size: BoardSize(columns: columns, rows: rows, maxRows: maxRows),
+        rules: [.straight(try #require(directions))],
+        filler: Filler(weights: filler),
+        limits: PlacementLimits(downWords: quota)
+      )
+    }
+
+    var leadingRule: WordRule? {
+      firstRule?.value ?? firstDirection.map { .straight([$0]) }
     }
 
     func check(_ generator: BoardGenerator) throws {
@@ -44,7 +54,7 @@ struct PlacementCheckTests {
         try generator.checkPlacement(for: words, leadingRules: leadingRules.map(\.value))
       } else {
         try generator.checkPlacement(
-          for: words, firstDirection: firstDirection, firstRule: firstRule?.value)
+          for: words, firstRule: leadingRule)
       }
     }
 
@@ -53,7 +63,7 @@ struct PlacementCheckTests {
         return try generator.request(for: words, leadingRules: leadingRules.map(\.value))
       }
       return try generator.request(
-        for: words, firstDirection: firstDirection, firstRule: firstRule?.value)
+        for: words, firstRule: leadingRule)
     }
 
     func failure(_ outcome: String) -> BoardGenerator.Failure {

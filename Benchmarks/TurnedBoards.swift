@@ -21,8 +21,11 @@ enum TurnedBoards {
     let workload = try workload()
     let words = workload.words
     let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: workload.rules, filler: workload.weights,
-      downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: workload.rules,
+      filler: Filler(weights: workload.weights),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     try measure(generator: generator, words: words)
     try BoundedBoards.run(
       words: words, rules: workload.rules, weights: workload.weights)

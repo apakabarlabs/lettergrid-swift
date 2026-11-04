@@ -37,6 +37,17 @@ struct PackedRequestTests {
       return try generator.request(for: words, firstRule: firstRule?.wordRule)
     }
 
+    func generator() throws -> BoardGenerator {
+      BoardGenerator(
+        size: BoardSize(columns: 7, rows: 7, maxRows: grows == true ? nil : 7),
+        rules: rules.map(\.wordRule),
+        filler: Filler(weights: try LetterWeights(["q": 1, "w": 1])),
+        limits: PlacementLimits(
+          downWords: downWords.map { $0[0]...$0[1] } ?? (words.count == 1 ? 0...1 : 1...2),
+          maxWordsPerDirection: directionCap)
+      )
+    }
+
     func legacyRequest(from generator: BoardGenerator) throws -> BoardRequest {
       return try generator.request(for: words, firstRule: leading.first)
     }
@@ -52,12 +63,7 @@ struct PackedRequestTests {
   @Test func theSolverDecidesWhetherWordsShareTheField() throws {
     for item in try Self.cases() {
       let rules = item.rules.map(\.wordRule)
-      let generator = BoardGenerator(
-        columns: 7, rows: 7, maxRows: item.grows == true ? nil : 7, rules: rules,
-        filler: try LetterWeights(["q": 1, "w": 1]),
-        downWords: item.downWords.map { $0[0]...$0[1] }
-          ?? (item.words.count == 1 ? 0...1 : 1...2),
-        maxWordsPerDirection: item.directionCap)
+      let generator = try item.generator()
       #expect(
         generator.accepts(item.words, leadingRules: item.leading)
           == (item.accepted ?? true), "\(item.name)")
@@ -84,7 +90,8 @@ struct PackedRequestTests {
         #expect(board.placements.map(\.word) == item.words, "\(item.name)")
         checkDirectionLimit(board, for: item)
         #expect(
-          generator.downWords.contains(board.placements.filter(\.direction.isVertical).count),
+          generator.limits.downWords.contains(
+            board.placements.filter(\.direction.isVertical).count),
           "\(item.name)")
         for placement in board.placements {
           #expect(rules.contains { $0.matches(placement) }, "\(item.name): \(placement.word)")

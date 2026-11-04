@@ -8,11 +8,17 @@ struct SameNeighbourTests {
 
   @Test func theDefaultWeightLeavesBoardsAsTheyWere() throws {
     let plain = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: try LetterWeights(weights),
-      downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(weights)),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     let explicit = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down],
-      filler: try LetterWeights(weights, sameNeighbour: 1), downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(weights, sameNeighbour: 1)),
+      limits: PlacementLimits(downWords: 1...2)
+    )
 
     #expect(
       try plain.request(for: words).board(seed: 3)

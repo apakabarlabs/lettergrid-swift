@@ -24,9 +24,11 @@ struct FillerAlphabetTests {
       [Case].self, from: String(contentsOf: url, encoding: .utf8))
     for item in cases {
       let generator = BoardGenerator(
-        columns: item.columns, rows: item.rows, maxRows: item.rows,
-        directions: item.directions, filler: try LetterWeights(item.weights),
-        downWords: item.vertical[0]...item.vertical[1])
+        size: BoardSize(columns: item.columns, rows: item.rows, maxRows: item.rows),
+        rules: [.straight(item.directions)],
+        filler: Filler(weights: try LetterWeights(item.weights)),
+        limits: PlacementLimits(downWords: item.vertical[0]...item.vertical[1])
+      )
       #expect(generator.accepts(item.words), "\(item.name)")
       let request = try generator.request(for: item.words)
       for seed in item.seeds {

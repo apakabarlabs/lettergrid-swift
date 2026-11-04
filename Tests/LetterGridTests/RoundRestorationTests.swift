@@ -17,7 +17,7 @@ struct RoundRestorationTests {
     let progress = RoundProgress(revealed: ["CAT": count])
 
     #expect(throws: RoundProgress.Failure.invalidRevealCount(word: "CAT", count: count)) {
-      try Round(restoring: progress, board: board, directions: [.right])
+      try Round(restoring: progress, board: board, rules: [.straight([.right])])
     }
     #expect(progress.revealed["CAT"] == count)
   }
@@ -36,25 +36,33 @@ struct RoundRestorationTests {
 
   @Test func negativeSecondsAreReported() {
     #expect(throws: RoundProgress.Failure.negativeSeconds(-1)) {
-      try Round(restoring: RoundProgress(secondsLeft: -1), board: board, directions: [.right])
+      try Round(
+        restoring: RoundProgress(secondsLeft: -1),
+        board: board,
+        rules: [.straight([.right])]
+      )
     }
   }
 
   @Test func aRoundMustAllowEveryWordToBeSelected() {
     #expect(throws: Round.Failure.unselectableWord("CAT")) {
-      try Round(restoring: RoundProgress(), board: board, directions: [.down])
+      try Round(restoring: RoundProgress(), board: board, rules: [.straight([.down])])
     }
   }
 
   @Test func anEmptyBoardIsAlreadyComplete() {
-    let round = Round(board: Board(letters: [], placements: []), directions: [])
+    let round = Round(board: Board(letters: [], placements: []), rules: [.straight([])])
     #expect(round.phase == .won)
   }
 
   @Test func validProgressRoundTripsWithoutReplayingAnIntroduction() throws {
     let progress = RoundProgress(found: ["CAT"], revealed: ["DOG": 1], secondsLeft: 7)
     let round = try Round(
-      restoring: progress, board: board, directions: [.right], seconds: 20, introduces: true)
+      restoring: progress,
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(seconds: 20, introduces: true)
+    )
 
     #expect(round.progress == progress)
     #expect(round.phase == .playing)
@@ -63,8 +71,11 @@ struct RoundRestorationTests {
 
   @Test func aRestoredExpiredClockCannotPlayBeforeTheFirstTick() throws {
     let round = try Round(
-      restoring: RoundProgress(secondsLeft: 0), board: board, directions: [.right],
-      seconds: 20, introduces: true)
+      restoring: RoundProgress(secondsLeft: 0),
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(seconds: 20, introduces: true)
+    )
 
     round.touch(Cell(row: 0, column: 0))
     round.drag(to: Cell(row: 0, column: 2))
@@ -75,7 +86,7 @@ struct RoundRestorationTests {
 
   @Test func externallyOwnedClockDoesNotStartARoundCountdown() throws {
     let progress = RoundProgress(found: ["CAT"], secondsLeft: 0)
-    let round = try Round(restoring: progress, board: board, directions: [.right])
+    let round = try Round(restoring: progress, board: board, rules: [.straight([.right])])
 
     #expect(round.phase == .playing)
     #expect(round.secondsLeft == nil)

@@ -11,7 +11,7 @@ extension BoardGenerator {
     let excluded = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
     guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ !$0.isEmpty }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
-      filler.letters(excluding: excluded) != nil
+      weights.letters(excluding: excluded) != nil
     else { return false }
     let fitting = words.indices.map { index in
       (index < leadingRules.count ? [leadingRules[index]] : rules).flatMap { rule in
@@ -34,14 +34,14 @@ extension BoardGenerator {
   }
 
   func packedRequest(
-    for words: [String], firstDirection: Direction?, leadingRules: [WordRule], maxRows: Int
+    for words: [String], leadingRules: [WordRule], maxRows: Int
   ) throws -> BoardRequest {
     guard accepts(words, leadingRules: leadingRules) else {
       throw Failure.noRoom(words: words, columns: columns, rows: rows)
     }
     if self.maxRows == nil {
       return try growingRequest(
-        for: words, firstDirection: firstDirection, leadingRules: leadingRules, tallest: maxRows)
+        for: words, leadingRules: leadingRules, tallest: maxRows)
     }
     var unsettled = false
     for height in rows...maxRows {
@@ -49,7 +49,7 @@ extension BoardGenerator {
       switch packing.pack(words, seed: Self.layoutSeed) {
       case .placed(let placements):
         return BoardRequest(
-          words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
+          words: words, generator: self, leadingRules: leadingRules,
           layout: Layout(rows: height, placements: placements))
       case .impossible:
         continue
@@ -62,7 +62,7 @@ extension BoardGenerator {
   }
 
   private func growingRequest(
-    for words: [String], firstDirection: Direction?, leadingRules: [WordRule], tallest: Int
+    for words: [String], leadingRules: [WordRule], tallest: Int
   ) throws -> BoardRequest {
     func outcome(at height: Int) -> PathPacking.Outcome {
       packing(height: height, leadingRules: leadingRules, words: words)
@@ -74,7 +74,7 @@ extension BoardGenerator {
     }
     if let placements = placed(at: rows) {
       return BoardRequest(
-        words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
+        words: words, generator: self, leadingRules: leadingRules,
         layout: Layout(rows: rows, placements: placements))
     }
     var found: (height: Int, placements: [Placement])
@@ -96,7 +96,7 @@ extension BoardGenerator {
       }
     }
     return BoardRequest(
-      words: words, firstDirection: firstDirection, generator: self, leadingRules: leadingRules,
+      words: words, generator: self, leadingRules: leadingRules,
       layout: Layout(rows: found.height, placements: found.placements))
   }
 

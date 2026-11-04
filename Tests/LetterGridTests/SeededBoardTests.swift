@@ -53,15 +53,19 @@ struct SeededBoardTests {
     let symbols = Set(try test.symbols.map { try #require($0.first) })
     guard let turns = test.turns else {
       return try BoardGenerator(
-        columns: test.columns, rows: test.rows, maxRows: test.maxRows, directions: directions,
-        filler: filler, downWords: downWords, conditionalCharacters: symbols
+        size: BoardSize(columns: test.columns, rows: test.rows, maxRows: test.maxRows),
+        rules: [.straight(directions)],
+        filler: Filler(weights: filler, conditionalCharacters: symbols),
+        limits: PlacementLimits(downWords: downWords)
       ).request(for: test.words)
     }
     let rules = turns.map { WordRule(startDirections: directions, turns: $0) }
     let first = try #require(rules.first { $0.turns == test.firstRuleTurns })
     return try BoardGenerator(
-      columns: test.columns, rows: test.rows, maxRows: test.maxRows, rules: rules,
-      filler: filler, downWords: downWords, conditionalCharacters: symbols
+      size: BoardSize(columns: test.columns, rows: test.rows, maxRows: test.maxRows),
+      rules: rules,
+      filler: Filler(weights: filler, conditionalCharacters: symbols),
+      limits: PlacementLimits(downWords: downWords)
     ).request(for: test.words, firstRule: first)
   }
 

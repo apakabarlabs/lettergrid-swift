@@ -2,34 +2,42 @@
   import LetterGrid
   import SwiftUI
 
-  public struct LetterBoard: View {
-    let round: Round
-    let missed: Placement?
-    let style: LetterGridStyle
+  public struct LetterBoardActions {
     let onTouch: (Cell) -> Void
     let onDrag: (Cell) -> Void
     let onRelease: () -> Void
     let onRejectionShown: () -> Void
+
+    public init(
+      onTouch: @escaping (Cell) -> Void, onDrag: @escaping (Cell) -> Void,
+      onRelease: @escaping () -> Void, onRejectionShown: @escaping () -> Void
+    ) {
+      self.onTouch = onTouch
+      self.onDrag = onDrag
+      self.onRelease = onRelease
+      self.onRejectionShown = onRejectionShown
+    }
+  }
+
+  public struct LetterBoard: View {
+    let round: Round
+    let missed: Placement?
+    let style: LetterGridStyle
+    let actions: LetterBoardActions
     let label: (Character) -> String
     let traceCells: [Cell]
     @State private var isDragging = false
 
     public init(
       round: Round, missed: Placement? = nil, style: LetterGridStyle, traceCells: [Cell] = [],
-      label: @escaping (Character) -> String = { String($0) },
-      onTouch: @escaping (Cell) -> Void,
-      onDrag: @escaping (Cell) -> Void, onRelease: @escaping () -> Void,
-      onRejectionShown: @escaping () -> Void
+      label: @escaping (Character) -> String = { String($0) }, actions: LetterBoardActions
     ) {
       self.round = round
       self.missed = missed
       self.style = style
       self.label = label
       self.traceCells = traceCells
-      self.onTouch = onTouch
-      self.onDrag = onDrag
-      self.onRelease = onRelease
-      self.onRejectionShown = onRejectionShown
+      self.actions = actions
     }
 
     private var board: Board { round.board }
@@ -75,7 +83,7 @@
         } catch {
           preconditionFailure("Unexpected rejection delay failure: \(error)")
         }
-        onRejectionShown()
+        actions.onRejectionShown()
       }
     }
 
@@ -108,16 +116,16 @@
           let point = isDragging ? value.location : value.startLocation
           guard let cell = cell(at: point, side: side) else { return }
           if isDragging {
-            onDrag(cell)
+            actions.onDrag(cell)
           } else {
             isDragging = true
-            onTouch(cell)
+            actions.onTouch(cell)
           }
         }
         .onEnded { _ in
           guard isDragging else { return }
           isDragging = false
-          onRelease()
+          actions.onRelease()
         }
     }
 

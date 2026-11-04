@@ -21,8 +21,11 @@ struct ReverseDirectionTests {
     let words = ["CAT", "DOG", "SUN"]
     for direction in reverses {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, directions: [direction],
-        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 0...3)
+        size: BoardSize(columns: 7, rows: 7),
+        rules: [.straight([direction])],
+        filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])),
+        limits: PlacementLimits(downWords: 0...3)
+      )
       let board = try generator.board(for: words, seed: 8)
       #expect(board.placements.allSatisfy { $0.direction == direction }, "\(direction)")
       for placement in board.placements {
@@ -34,8 +37,11 @@ struct ReverseDirectionTests {
 
   @Test func wordsRunningUpCountTowardTheVerticalQuota() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .up],
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 1...1)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .up])],
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 1...1)
+    )
     for seed in 1...20 {
       let board = try generator.board(for: ["CAT", "DOG", "SUN"], seed: UInt64(seed))
       #expect(board.placements.filter { $0.direction == .up }.count == 1)
@@ -44,8 +50,11 @@ struct ReverseDirectionTests {
 
   @Test func aWordThatReadsTheSameBackwardsStandsOnceWhenBothWaysAreOn() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .left, .down, .up],
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 0...3)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .left, .down, .up])],
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 0...3)
+    )
     for seed in 1...20 {
       let board = try generator.board(for: ["LEVEL", "CAT", "SUN"], seed: UInt64(seed))
       for word in ["LEVEL", "CAT", "SUN"] {
@@ -59,7 +68,7 @@ struct ReverseDirectionTests {
     let level = Placement(word: "LEVEL", start: Cell(row: 0, column: 0), direction: .right)
     let board = Board(letters: [Array("LEVELX"), Array("XXXXXX")], placements: [level])
     for (start, end) in [(0, 4), (4, 0)] {
-      let round = Round(board: board, directions: [.right, .left])
+      let round = Round(board: board, rules: [.straight([.right, .left])])
       round.touch(Cell(row: 0, column: start))
       round.drag(to: Cell(row: 0, column: end))
 
@@ -71,7 +80,7 @@ struct ReverseDirectionTests {
   @Test func aWordThatReadsDifferentlyBackwardsIsNotFoundFromItsEnd() {
     let cat = Placement(word: "CAT", start: Cell(row: 0, column: 0), direction: .right)
     let board = Board(letters: [Array("CATX"), Array("XXXX")], placements: [cat])
-    let round = Round(board: board, directions: [.right, .left])
+    let round = Round(board: board, rules: [.straight([.right, .left])])
     round.touch(Cell(row: 0, column: 2))
     round.drag(to: Cell(row: 0, column: 0))
 
@@ -80,8 +89,11 @@ struct ReverseDirectionTests {
 
   @Test func aWordWhoseReverseLiesInsideAnotherIsRejectedWhenBothWaysAreOn() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.down, .up], filler: try LetterWeights(["x": 1]),
-      downWords: 0...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.down, .up])],
+      filler: Filler(weights: try LetterWeights(["x": 1])),
+      limits: PlacementLimits(downWords: 0...2)
+    )
 
     #expect(throws: BoardGenerator.Failure.noRoom(words: ["TAC", "CATS"], columns: 7, rows: 7)) {
       try generator.request(for: ["TAC", "CATS"])

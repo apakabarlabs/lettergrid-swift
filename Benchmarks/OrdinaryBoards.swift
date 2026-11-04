@@ -16,8 +16,11 @@ enum OrdinaryBoards {
     let inputs = (UInt64(1)...30).flatMap { seed in screens.map { (words: $0, seed: seed) } }
     func generate(_ input: (words: [String], seed: UInt64)) throws -> Board {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, directions: directions, filler: filler,
-        downWords: input.words.count / 2...(input.words.count + 1) / 2)
+        size: BoardSize(columns: 7, rows: 7),
+        rules: [.straight(directions)],
+        filler: Filler(weights: filler),
+        limits: PlacementLimits(downWords: input.words.count / 2...(input.words.count + 1) / 2)
+      )
       return try generator.board(for: input.words, seed: input.seed)
     }
     let boards = try inputs.map(generate)
@@ -38,7 +41,11 @@ enum OrdinaryBoards {
 
   private static func measureHints(on boards: [Board]) {
     let rounds = boards.map { board in
-      let round = Round(board: board, directions: directions, hintOrder: .anyButFirst)
+      let round = Round(
+        board: board,
+        rules: [.straight(directions)],
+        options: RoundOptions(hintOrder: .anyButFirst)
+      )
       for _ in 0..<(board.placements.count * 2) {
         precondition(round.reveal() != nil)
       }
@@ -61,7 +68,11 @@ enum OrdinaryBoards {
     LetterGridBenchmarks.measure("ordinary round+select-all 7x7", iterations: 9_000) {
       let board = boards[index % boards.count]
       index += 1
-      let round = Round(board: board, directions: directions, hintOrder: .anyButFirst)
+      let round = Round(
+        board: board,
+        rules: [.straight(directions)],
+        options: RoundOptions(hintOrder: .anyButFirst)
+      )
       for placement in board.placements {
         guard let end = placement.cells.last else { preconditionFailure("Empty placement") }
         round.touch(placement.start)

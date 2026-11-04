@@ -2,11 +2,98 @@
 
 ## [Unreleased]
 
+The generator, the round and the board view now take their settings in small groups instead
+of long parameter lists, and the directions a word may take are given only as `rules:`. This
+breaks every call that creates a `BoardGenerator`, a `Round` or a `LetterBoard`. The boards
+stay the same for every seed. Selection stays the same for a round made with `directions:`;
+for one made with straight `rules:` it changes in two edge cases, described below. Every old
+parameter moved into one of the groups with the same name and default value.
+
+Before:
+
+```swift
+let generator = BoardGenerator(
+  columns: 7, rows: 7, maxRows: 9, directions: [.right, .down],
+  filler: weights, downWords: 1...2, conditionalCharacters: ["-"], maxWordsPerDirection: 2)
+let board = try generator.board(for: words, seed: 42, firstDirection: .right)
+let round = Round(board: board, directions: [.right, .down], seconds: 60, introduces: true)
+LetterBoard(
+  round: round, style: style,
+  onTouch: { round.touch($0) }, onDrag: { round.drag(to: $0) },
+  onRelease: { _ = round.release() }, onRejectionShown: { round.clearRejection() })
+```
+
+After:
+
+```swift
+let rules = [WordRule.straight([.right, .down])]
+let generator = BoardGenerator(
+  size: BoardSize(columns: 7, rows: 7, maxRows: 9), rules: rules,
+  filler: Filler(weights: weights, conditionalCharacters: ["-"]),
+  limits: PlacementLimits(downWords: 1...2, maxWordsPerDirection: 2))
+let board = try generator.board(for: words, seed: 42, firstRule: .straight([.right]))
+let round = Round(board: board, rules: rules, options: RoundOptions(seconds: 60, introduces: true))
+LetterBoard(
+  round: round, style: style,
+  actions: LetterBoardActions(
+    onTouch: { round.touch($0) }, onDrag: { round.drag(to: $0) },
+    onRelease: { _ = round.release() }, onRejectionShown: { round.clearRejection() }))
+```
+
 ### Changed
 
-- The length of a forbidden run of equal letters is now `fill.runLength` in
-  `generation.yaml`, shared by every port, instead of the number 3 written into the code. It
-  stays 3, so every board is the same as in 0.25.0 for every seed.
+- `BoardGenerator(size:rules:filler:limits:)` replaces `BoardGenerator(columns:rows:maxRows:directions:filler:...)`
+  and `BoardGenerator(columns:rows:maxRows:rules:filler:...)`:
+  - `BoardSize(columns:rows:maxRows:)` holds the size; `maxRows` defaults to `nil`, so the
+    board may grow downwards, as before;
+  - `Filler(weights:conditionalCharacters:)` holds what fills the free cells;
+    `conditionalCharacters` defaults to none;
+  - `PlacementLimits(downWords:maxWordsPerDirection:)` holds the quotas. `limits:` defaults to
+    `PlacementLimits()`, which sets none.
+- The generator's properties follow the groups:
+
+  | 0.25.0 | 0.26.0 |
+  |---|---|
+  | `generator.columns`, `rows`, `maxRows` | `generator.size.columns`, `rows`, `maxRows` |
+  | `generator.filler` | `generator.filler.weights` |
+  | `generator.conditionalCharacters` | `generator.filler.conditionalCharacters` |
+  | `generator.downWords`, `maxWordsPerDirection` | `generator.limits.downWords`, `maxWordsPerDirection` |
+  | `generator.directions` | `Set(generator.rules.flatMap(\.startDirections))` |
+
+- `directions:` is gone from the generator and the round. Pass
+  `rules: [.straight(directions)]`. `WordRule.straight(directions)` is the same rule as
+  `WordRule(startDirections: directions)`: no turns, starting in the given directions.
+- `firstDirection:` is gone from `request`, `checkPlacement` and `board(for:seed:)`. It worked
+  only with a generator made with `directions:`, so its rules have no turns: pass
+  `firstRule: .straight([direction])`. Read it back as
+  `request.firstRule?.startDirections.first` instead of `request.firstDirection`;
+  `request.firstRule` is `nil` when no first rule was passed. `accepts(_:firstRule:)` is
+  unchanged.
+- `firstRule:` is accepted when one of the generator's rules has the same number of turns and
+  its start directions include all of the first rule's, the same check `leadingRules` uses.
+  Before, a first direction that no rule allowed threw `noRoom`. Now a first rule that no rule
+  allows throws `invalidConfiguration`: update any `catch` that handles `noRoom` for this case.
+- `Round(board:rules:options:progress:)` and the throwing
+  `Round(restoring:board:rules:options:)` replace the `directions:` and `rules:` variants of
+  both. `options:` defaults to `RoundOptions()`, and `RoundOptions(seconds:introduces:hintOrder:)`
+  keeps the previous defaults: no clock, no introduction, hints from the start. `progress`
+  stays a parameter of its own, because it changes during a round and the options do not.
+  The round's public properties, such as `secondsLeft`, `hintOrder` and `showsFirstWord`, are
+  unchanged. A round made with `directions:` before selects as it did: a drag snaps to the
+  nearest allowed straight direction, a tie goes to the direction listed first, and a drag
+  past the edge of the board stops at the last cell.
+- `Board.selection(extending:toward:rules:)`, which every round now uses, selects that way for
+  rules without turns. A round made with such `rules:` in 0.25.0 broke a tie in the order of
+  `Direction.allCases` and ignored a drag past the edge; now the tie follows the order of the
+  rules' start directions, and the selection reaches the edge.
+- `LetterBoard(round:missed:style:traceCells:label:actions:)` takes its four callbacks as one
+  `LetterBoardActions(onTouch:onDrag:onRelease:onRejectionShown:)`, which has no defaults;
+  `label` stays a parameter of its own and comes before `actions`.
+- Only the message of `Round.Failure.unselectableWord` changed: it now says that the enabled
+  rules cannot select the word. The case and its word are the same.
+- The length of a forbidden run of equal letters is now `fill.runLength` in the package's own
+  `generation.yaml`, shared by every port, instead of the number 3 written into the code. An
+  app does not set it. It stays 3, so every board is the same as in 0.25.0 for every seed.
 
 ## [0.25.0] - 2026-11-04
 

@@ -37,8 +37,10 @@ struct LetterGridBenchmarks {
       let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ".prefix(count))
       let weights = Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) })
       let generator = BoardGenerator(
-        columns: 7, rows: 7, directions: [.right, .down],
-        filler: try LetterWeights(weights, sameNeighbour: 0.2))
+        size: BoardSize(columns: 7, rows: 7),
+        rules: [.straight([.right, .down])],
+        filler: Filler(weights: try LetterWeights(weights, sameNeighbour: 0.2))
+      )
       let request = try generator.request(for: ["SUN", "MOON"])
       var seed: UInt64 = 0
       measure("board alphabet=\(count)", iterations: 100) {
@@ -56,8 +58,11 @@ struct LetterGridBenchmarks {
       let placement = Placement(word: word, start: Cell(row: 0, column: 0), direction: .right)
       let board = Board(letters: [Array(word)], placements: [placement])
       let round = Round(
-        board: board, directions: [.right], hintOrder: .anyButFirst,
-        progress: RoundProgress(revealed: [word: length - 1]))
+        board: board,
+        rules: [.straight([.right])],
+        options: RoundOptions(hintOrder: .anyButFirst),
+        progress: RoundProgress(revealed: [word: length - 1])
+      )
       measure("hintedCells length=\(length)", iterations: 200) {
         round.hintedCells.reduce(0) { $0 + $1.column }
       }
@@ -80,9 +85,11 @@ struct LetterGridBenchmarks {
     ]
     for (words, allowed) in triples {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, maxRows: 7, rules: Array(rules.prefix(allowed)),
-        filler: try LetterWeights(["q": 1, "w": 1]),
-        downWords: 1...2)
+        size: BoardSize(columns: 7, rows: 7, maxRows: 7),
+        rules: Array(rules.prefix(allowed)),
+        filler: Filler(weights: try LetterWeights(["q": 1, "w": 1])),
+        limits: PlacementLimits(downWords: 1...2)
+      )
       try measureWorst("packed request \(words.joined(separator: " "))", iterations: 8) { _ in
         try generator.request(for: words).words.count
       }

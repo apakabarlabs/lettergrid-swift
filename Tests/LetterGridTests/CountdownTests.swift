@@ -16,7 +16,11 @@ struct CountdownTests {
     Double(Int64.max), .leastNonzeroMagnitude, 0, -1,
   ])
   func invalidIntervalsAreReportedBeforeSleeping(_ seconds: Double) async {
-    let round = Round(board: board, directions: [.right], introduces: true)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(introduces: true)
+    )
     await #expect(throws: Countdown.Failure.invalidInterval) {
       try await Countdown { _ in throw SleepFailure() }.run(
         round, secondsPerLetter: seconds, introduce: {}, tick: {})
@@ -24,8 +28,16 @@ struct CountdownTests {
   }
 
   @Test func callbacksThatDoNotAdvanceTheRoundFailInsteadOfLoopingForever() async {
-    let introduction = Round(board: board, directions: [.right], introduces: true)
-    let playing = Round(board: board, directions: [.right], seconds: 1)
+    let introduction = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(introduces: true)
+    )
+    let playing = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(seconds: 1)
+    )
 
     await #expect(throws: Countdown.Failure.noIntroductionProgress) {
       try await Countdown { _ in }.run(
@@ -38,7 +50,7 @@ struct CountdownTests {
   }
 
   @Test func aSleepFailureReachesTheCaller() async {
-    let round = Round(board: board, directions: [.right], seconds: 1)
+    let round = Round(board: board, rules: [.straight([.right])], options: RoundOptions(seconds: 1))
 
     await #expect(throws: SleepFailure.self) {
       try await Countdown { _ in throw SleepFailure() }.run(
@@ -49,7 +61,7 @@ struct CountdownTests {
   }
 
   @Test func cancellationDuringSleepDoesNotTickEvenIfSleepReturnsNormally() async throws {
-    let round = Round(board: board, directions: [.right], seconds: 1)
+    let round = Round(board: board, rules: [.straight([.right])], options: RoundOptions(seconds: 1))
     var ticks = 0
     let task = Task {
       try await Countdown { _ in
@@ -69,7 +81,11 @@ struct CountdownTests {
   }
 
   @Test func cancellationDuringIntroductionDoesNotRevealAnotherLetter() async throws {
-    let round = Round(board: board, directions: [.right], introduces: true)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(introduces: true)
+    )
     let task = Task {
       try await Countdown { _ in
         withUnsafeCurrentTask { $0?.cancel() }
@@ -85,7 +101,7 @@ struct CountdownTests {
   }
 
   @Test func aRoundFinishedDuringSleepDoesNotReceiveAStaleTick() async throws {
-    let round = Round(board: board, directions: [.right], seconds: 1)
+    let round = Round(board: board, rules: [.straight([.right])], options: RoundOptions(seconds: 1))
     var ticks = 0
 
     try await Countdown { _ in

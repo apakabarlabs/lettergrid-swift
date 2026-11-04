@@ -19,16 +19,21 @@ struct RepeatedLettersTests {
     let reference = try Board(validating: letters, placements: placements)
     #expect(!hasAddedRun(reference))
     let generator = BoardGenerator(
-      columns: width, rows: 3, maxRows: 3, directions: [.down],
-      filler: try LetterWeights(["X": 1]), downWords: width...width)
+      size: BoardSize(columns: width, rows: 3, maxRows: 3),
+      rules: [.straight([.down])],
+      filler: Filler(weights: try LetterWeights(["X": 1])),
+      limits: PlacementLimits(downWords: width...width)
+    )
     let board = try generator.request(for: words).board(seed: 42)
     #expect(!hasAddedRun(board))
   }
 
   @Test func anImpossibleAlphabetIsRefusedDuringPreparation() throws {
     let generator = BoardGenerator(
-      columns: 4, rows: 4, maxRows: 4, directions: [.right],
-      filler: try LetterWeights(["X": 1]))
+      size: BoardSize(columns: 4, rows: 4, maxRows: 4),
+      rules: [.straight([.right])],
+      filler: Filler(weights: try LetterWeights(["X": 1]))
+    )
     #expect(throws: BoardGenerator.Failure.unsettled(words: ["AB"], columns: 4, rows: 4)) {
       try generator.request(for: ["AB"])
     }
@@ -37,8 +42,10 @@ struct RepeatedLettersTests {
   @Test(arguments: [["TAB", "TBA", "TAA"], ["tab", "tba", "taa"]])
   func forbiddenTargetRunsAreARefillFailureRatherThanMissingGeometry(words: [String]) throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 3, maxRows: 3, directions: [.down],
-      filler: try LetterWeights(["X": 1, "Y": 1, "Z": 1]))
+      size: BoardSize(columns: 3, rows: 3, maxRows: 3),
+      rules: [.straight([.down])],
+      filler: Filler(weights: try LetterWeights(["X": 1, "Y": 1, "Z": 1]))
+    )
     #expect(
       throws: BoardGenerator.Failure.unsettled(words: ["TAB", "TBA", "TAA"], columns: 3, rows: 3)
     ) {
@@ -65,8 +72,9 @@ struct RepeatedLettersTests {
     for item in cases {
       let rules = [WordRule(startDirections: Direction.allCases, turns: item.turns)]
       let request = try BoardGenerator(
-        columns: item.columns, rows: item.rows, maxRows: item.rows, rules: rules,
-        filler: LetterWeights(item.weights)
+        size: BoardSize(columns: item.columns, rows: item.rows, maxRows: item.rows),
+        rules: rules,
+        filler: Filler(weights: LetterWeights(item.weights))
       ).request(for: item.words)
       var signatures: [String: Int] = [:]
       for seed in UInt64(100)..<164 {

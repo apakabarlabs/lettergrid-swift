@@ -25,9 +25,11 @@ struct TargetCopiesTests {
       [Case].self, from: String(contentsOf: url, encoding: .utf8))
     for item in cases {
       let generator = BoardGenerator(
-        columns: item.columns, rows: item.rows, maxRows: item.bounded ? item.rows : nil,
+        size: BoardSize(
+          columns: item.columns, rows: item.rows, maxRows: item.bounded ? item.rows : nil),
         rules: (item.turns ?? [0]).map { WordRule(startDirections: [.right, .down], turns: $0) },
-        filler: try LetterWeights(item.filler ?? ["X": 1, "Q": 1]))
+        filler: Filler(weights: try LetterWeights(item.filler ?? ["X": 1, "Q": 1]))
+      )
       if item.rejects == true {
         let failure = BoardGenerator.Failure.noRoom(
           words: item.words, columns: item.columns, rows: item.rows)

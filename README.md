@@ -8,11 +8,12 @@ Build and play word searches in Swift, with optional SwiftUI views.
 ```swift
 import LetterGrid
 
+let rules = [WordRule.straight([.right, .down])]
 let generator = BoardGenerator(
-  columns: 7, rows: 7, directions: [.right, .down],
-  filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+  size: BoardSize(columns: 7, rows: 7), rules: rules,
+  filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])))
 let board = try generator.board(for: ["cat", "dog", "sun"], seed: 42)
-let round = Round(board: board, directions: [.right, .down])
+let round = Round(board: board, rules: rules)
 ```
 
 | The library | The app |
@@ -27,7 +28,7 @@ the board, such as the words to find, is the game's own.
 Swift 6, iOS 17+ or macOS 14+. The core also builds on Linux.
 
 ```swift
-.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.22.0")
+.package(url: "https://github.com/apakabarlabs/lettergrid-swift", from: "0.26.0")
 
 .product(name: "LetterGrid", package: "lettergrid-swift"),
 .product(name: "LetterGridUI", package: "lettergrid-swift") // only for SwiftUI
@@ -41,8 +42,8 @@ Pass the same `rules:` to the generator and the round.
 let straight = WordRule(startDirections: Direction.allCases)
 let bent = WordRule(startDirections: [.right], turns: 2)
 let generator = BoardGenerator(
-  columns: 7, rows: 7, rules: [straight, bent],
-  filler: try LetterWeights(["x": 1, "q": 1]))
+  size: BoardSize(columns: 7, rows: 7), rules: [straight, bent],
+  filler: Filler(weights: try LetterWeights(["x": 1, "q": 1])))
 let request = try generator.request(for: ["planet", "star"], firstRule: bent)
 let round = Round(board: request.board(seed: 42), rules: [straight, bent])
 ```
@@ -65,18 +66,20 @@ Use `accepts(_:leadingRules:)` for the preliminary word and quota checks. As wit
 
 When choosing among candidate word sets, `try generator.checkPlacement(for: words)`
 searches for target paths without filling the remaining cells. It also accepts the
-same `firstDirection:`, `firstRule:` or `leadingRules:` constraints as `request`.
+same `firstRule:` or `leadingRules:` constraints as `request`.
 Success does not guarantee that filler can complete the board: call `request` for
-the selected words and handle its failure before presenting a board. This API is
-available from 0.21.0.
+the selected words and handle its failure before presenting a board.
 
-From 0.22.0, either generator initializer accepts `maxWordsPerDirection: 2` to limit
-how many targets start in each direction. Turned words count by their first segment;
-opposite directions count separately. The default `nil` preserves 0.21.0 generation.
-This limit also applies to leading words and every seeded build, independently of
-the existing `downWords` vertical quota. A supplied limit must be positive; otherwise
-throwing checks report `invalidConfiguration`. Insufficient direction capacity reports
-`noRoom`. As before, preliminary acceptance does not guarantee a complete board.
+## Placement limits
+
+`limits: PlacementLimits(downWords: 1...2, maxWordsPerDirection: 2)` bounds how many targets
+run vertically and how many start in each direction. Both default to no limit.
+
+- Turned words count by their first segment; opposite directions count separately.
+- Both limits apply to leading words and to every seeded build.
+- A direction limit must be positive; otherwise throwing checks report
+  `invalidConfiguration`. Too few directions for the words report `noRoom`.
+- Preliminary acceptance does not guarantee a complete board.
 
 ## Saving a game
 
@@ -86,7 +89,7 @@ A seed alone does not keep a layout across library updates. Save the board's let
 let placements = try saved.map { try Placement(validating: $0.word, cells: $0.cells) }
 let board = try Board(validating: letters, placements: placements)
 let round = try Round(
-  restoring: savedProgress, board: board, directions: [.right, .down], seconds: 60)
+  restoring: savedProgress, board: board, rules: rules, options: RoundOptions(seconds: 60))
 ```
 
 ## Documentation

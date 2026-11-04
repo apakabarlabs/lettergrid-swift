@@ -43,7 +43,7 @@ struct OneLetterWordTests {
   }
 
   @Test func aTapOnTheCellOfAOneLetterWordFindsIt() {
-    let round = Round(board: board, directions: [.right, .down])
+    let round = Round(board: board, rules: [.straight([.right, .down])])
     let word = board.placements[1]
 
     round.touch(Cell(row: 1, column: 5))
@@ -54,7 +54,7 @@ struct OneLetterWordTests {
   }
 
   @Test func aTapElsewhereFindsNothingAndShowsNoRejection() {
-    let round = Round(board: board, directions: [.right, .down])
+    let round = Round(board: board, rules: [.straight([.right, .down])])
 
     round.touch(Cell(row: 0, column: 0))
 
@@ -64,7 +64,7 @@ struct OneLetterWordTests {
   }
 
   @Test func aOneLetterWordIsFoundOnceAndThenATapOnItDoesNothing() {
-    let round = Round(board: board, directions: [.right, .down])
+    let round = Round(board: board, rules: [.straight([.right, .down])])
     round.touch(Cell(row: 1, column: 5))
     _ = round.release()
 
@@ -77,18 +77,20 @@ struct OneLetterWordTests {
   @Test func aOneLetterWordIsSelectableWhateverTheRoundDirections() throws {
     let lone = Board(
       letters: [Array("XÖ")], placements: [Placement(word: "Ö", cells: [Cell(row: 0, column: 1)])])
-    let restored = try Round(restoring: RoundProgress(), board: lone, directions: [.down])
+    let restored = try Round(restoring: RoundProgress(), board: lone, rules: [.straight([.down])])
     #expect(!restored.isOver)
 
-    let round = Round(board: lone, directions: [.down])
+    let round = Round(board: lone, rules: [.straight([.down])])
     round.touch(Cell(row: 0, column: 1))
     #expect(round.release() == lone.placements[0])
   }
 
   @Test func aOneLetterWordTakesTheDirectionOfTheRuleThatPlacedIt() throws {
     let generator = BoardGenerator(
-      columns: 5, rows: 5, rules: [WordRule(startDirections: [.down])],
-      filler: try LetterWeights(["X": 1, "Q": 1]))
+      size: BoardSize(columns: 5, rows: 5),
+      rules: [WordRule(startDirections: [.down])],
+      filler: Filler(weights: try LetterWeights(["X": 1, "Q": 1]))
+    )
     let board = try generator.request(for: ["CAT", "I"]).board(seed: 1)
 
     #expect(board.placements.map(\.direction) == [.down, .down])

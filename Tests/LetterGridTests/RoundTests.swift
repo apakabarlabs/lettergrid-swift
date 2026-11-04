@@ -16,12 +16,32 @@ struct RoundTests {
     ]
   )
 
+  @Test func aDragHalfwayBetweenTwoStraightDirectionsFollowsTheOneListedFirst() {
+    let square = Board(
+      letters: [Array("CAT"), Array("XXX"), Array("XXX")],
+      placements: [Placement(word: "CAT", start: Cell(row: 0, column: 0), direction: .right)])
+    for (ways, chosen) in [([Direction.down, .right], Direction.down), ([.right, .down], .right)] {
+      let round = Round(board: square, rules: [.straight(ways)])
+      round.touch(Cell(row: 0, column: 0))
+      round.drag(to: Cell(row: 1, column: 1))
+      let step = Cell(row: chosen.rowStep, column: chosen.columnStep)
+      #expect(round.selection == [Cell(row: 0, column: 0), step], "\(ways)")
+    }
+  }
+
+  @Test func aStraightDragPastTheEdgeStopsAtTheLastCell() {
+    let round = Round(board: board, rules: [.straight([.right, .down])])
+    round.touch(Cell(row: 0, column: 2))
+    round.drag(to: Cell(row: 0, column: 9))
+    #expect(round.selection == (2...5).map { Cell(row: 0, column: $0) })
+  }
+
   private func revealAll(_ round: Round) {
     while round.reveal() != nil {}
   }
 
   @Test func aHintFromTheStartOpensTheLettersInOrderAndKeepsTheLastHidden() {
-    let round = Round(board: board, directions: [.right, .down])
+    let round = Round(board: board, rules: [.straight([.right, .down])])
     let house = board.placements[0]
 
     revealAll(round)
@@ -31,7 +51,11 @@ struct RoundTests {
   }
 
   @Test func aHintAnywhereButTheFirstLetterOpensEveryOtherLetterAndNeverTheFirst() {
-    let round = Round(board: board, directions: [.right, .down], hintOrder: .anyButFirst)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right, .down])],
+      options: RoundOptions(hintOrder: .anyButFirst)
+    )
     let house = board.placements[0]
 
     revealAll(round)
@@ -41,8 +65,16 @@ struct RoundTests {
   }
 
   @Test func theLettersAHintOpensAreTheSameEveryTime() {
-    let first = Round(board: board, directions: [.right], hintOrder: .anyButFirst)
-    let second = Round(board: board, directions: [.right], hintOrder: .anyButFirst)
+    let first = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(hintOrder: .anyButFirst)
+    )
+    let second = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(hintOrder: .anyButFirst)
+    )
 
     _ = first.reveal()
     _ = second.reveal()
@@ -53,7 +85,7 @@ struct RoundTests {
   }
 
   @Test func aFoundWordShowsEveryLetterAndNoLongerMarksItsHints() {
-    let round = Round(board: board, directions: [.right])
+    let round = Round(board: board, rules: [.straight([.right])])
     let door = board.placements[1]
     _ = round.reveal()
     _ = round.reveal()
@@ -68,7 +100,11 @@ struct RoundTests {
   }
 
   @Test func theIntroducedWordIsFoundOnceItsLastLetterIsShown() {
-    let round = Round(board: board, directions: [.right], introduces: true)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(introduces: true)
+    )
 
     while round.phase == .introducing {
       _ = round.introduceNextLetter()
@@ -79,7 +115,11 @@ struct RoundTests {
   }
 
   @Test func theCountdownIntroducesTheFirstWordLetterByLetter() async throws {
-    let round = Round(board: board, directions: [.right], introduces: true)
+    let round = Round(
+      board: board,
+      rules: [.straight([.right])],
+      options: RoundOptions(introduces: true)
+    )
     var letters = 0
 
     try await Countdown { _ in await Task.yield() }.run(

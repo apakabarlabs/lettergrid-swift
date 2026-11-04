@@ -67,7 +67,7 @@ struct TurnPathTests {
       letters: [Array("ABX"), Array("XCD"), Array("XXE")],
       placements: [placement])
     #expect(throws: Round.Failure.unselectableWord("ABCDE")) {
-      try Round(restoring: RoundProgress(), board: board, directions: Direction.allCases)
+      try Round(restoring: RoundProgress(), board: board, rules: [.straight(Direction.allCases)])
     }
   }
 
@@ -106,8 +106,10 @@ struct TurnPathIntegrationTests {
   func generationHonoursEveryStartAndExactTurnCount(direction: Direction, turns: Int) throws {
     let rule = WordRule(startDirections: [direction], turns: turns)
     let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: [rule],
-      filler: try LetterWeights(["x": 1, "q": 1]))
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [rule],
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1]))
+    )
     let board = try generator.request(for: ["ABCDEF"], firstRule: rule).board(seed: 12)
     #expect(rule.matches(board.placements[0]))
     #expect(board.occurrences(of: "ABCDEF", rules: [rule]) == 1)
@@ -116,8 +118,10 @@ struct TurnPathIntegrationTests {
   @Test func tooShortATurnedWordIsRejectedBeforeBuilding() throws {
     let rule = WordRule(startDirections: [.right], turns: 3)
     let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: [rule],
-      filler: try LetterWeights(["x": 1]))
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [rule],
+      filler: Filler(weights: try LetterWeights(["x": 1]))
+    )
     #expect(throws: BoardGenerator.Failure.self) {
       try generator.request(for: ["ABCD"], firstRule: rule)
     }
@@ -126,8 +130,11 @@ struct TurnPathIntegrationTests {
   @Test func compactLayoutsReuseMatchingLetters() throws {
     let rule = WordRule(startDirections: [.right, .down])
     let generator = BoardGenerator(
-      columns: 4, rows: 4, rules: [rule],
-      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...1)
+      size: BoardSize(columns: 4, rows: 4),
+      rules: [rule],
+      filler: Filler(weights: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1])),
+      limits: PlacementLimits(downWords: 1...1)
+    )
     let board = try generator.request(for: ["CAT", "TAR"]).board(seed: 17)
     #expect(!Set(board.placements[0].cells).isDisjoint(with: board.placements[1].cells))
   }
@@ -154,8 +161,11 @@ struct TurnPathIntegrationTests {
     let required = WordRule(startDirections: [.upRight], turns: 3)
     let words = ["PLANET", "ORBIT", "LUNAR"]
     let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: rules,
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: rules,
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     let board = try generator.request(for: words, firstRule: required).board(seed: 73)
     #expect(required.matches(board.placements[0]))
     #expect(board.placements.map(\.word) == words)
@@ -209,13 +219,20 @@ struct TurnPathIntegrationTests {
       WordRule(startDirections: [.right, .down]), WordRule(startDirections: [.downRight]),
     ]
     let straight = BoardGenerator(
-      columns: 7, rows: 7, directions: ways, filler: filler,
-      downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight(ways)],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     let generic = BoardGenerator(
-      columns: 7, rows: 7, rules: rules, filler: filler,
-      downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: rules,
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     let words = ["PLANET", "ORBIT", "STAR"]
-    let expected = try straight.request(for: words, firstDirection: .downRight).board(seed: 19)
+    let expected = try straight.request(for: words, firstRule: .straight([.downRight])).board(
+      seed: 19)
     let actual = try generic.request(for: words, firstRule: rules[1]).board(seed: 19)
     #expect(actual == expected)
   }
@@ -241,8 +258,10 @@ struct TurnPathIntegrationTests {
   @Test func aSeedRebuildsTheSameTurnedBoard() throws {
     let rule = WordRule(startDirections: [.right], turns: 3)
     let generator = BoardGenerator(
-      columns: 7, rows: 7, rules: [rule],
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [rule],
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+    )
     for word in ["PLANET", "GALAXY", "COMETS", "NEBULA"] {
       let first = try generator.request(for: [word], firstRule: rule).board(seed: 1)
       let repeated = try generator.request(for: [word], firstRule: rule).board(seed: 1)

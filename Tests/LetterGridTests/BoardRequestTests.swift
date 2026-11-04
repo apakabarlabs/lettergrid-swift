@@ -4,7 +4,10 @@ import Testing
 struct BoardRequestTests {
   @Test func anEmptyTargetListCannotBecomeAPlayableRequest() throws {
     let generator = BoardGenerator(
-      columns: 5, rows: 5, directions: [.right], filler: try LetterWeights(["x": 1]))
+      size: BoardSize(columns: 5, rows: 5),
+      rules: [.straight([.right])],
+      filler: Filler(weights: try LetterWeights(["x": 1]))
+    )
     #expect(throws: BoardGenerator.Failure.noRoom(words: [], columns: 5, rows: 5)) {
       try generator.request(for: [])
     }
@@ -12,9 +15,10 @@ struct BoardRequestTests {
 
   @Test func aPreparedRequestRetainsItsGenerationSettings() throws {
     let request = try BoardGenerator(
-      columns: 3, rows: 4, directions: [.down],
-      filler: LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]),
-      downWords: 2...2
+      size: BoardSize(columns: 3, rows: 4),
+      rules: [.straight([.down])],
+      filler: Filler(weights: LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1])),
+      limits: PlacementLimits(downWords: 2...2)
     ).request(for: ["CAT", "DOG"])
 
     let board = request.board(seed: 42)
@@ -32,8 +36,16 @@ struct BoardRequestTests {
   func invalidDimensionsAreRejectedBeforePreparingARequest(_ dimension: Int) throws {
     let filler = try LetterWeights(["x": 1])
     let generators = [
-      BoardGenerator(columns: dimension, rows: 5, directions: [.down], filler: filler),
-      BoardGenerator(columns: 5, rows: dimension, directions: [.right], filler: filler),
+      BoardGenerator(
+        size: BoardSize(columns: dimension, rows: 5),
+        rules: [.straight([.down])],
+        filler: Filler(weights: filler)
+      ),
+      BoardGenerator(
+        size: BoardSize(columns: 5, rows: dimension),
+        rules: [.straight([.right])],
+        filler: Filler(weights: filler)
+      ),
     ]
     for generator in generators {
       #expect(throws: BoardGenerator.Failure.invalidConfiguration) {
@@ -45,8 +57,17 @@ struct BoardRequestTests {
   @Test func invalidQuotasAndDirectionsAreRejectedBeforePreparingARequest() throws {
     let filler = try LetterWeights(["x": 1])
     let generators = [
-      BoardGenerator(columns: 5, rows: 5, directions: [], filler: filler),
-      BoardGenerator(columns: 5, rows: 5, directions: [.right], filler: filler, downWords: -1...1),
+      BoardGenerator(
+        size: BoardSize(columns: 5, rows: 5),
+        rules: [.straight([])],
+        filler: Filler(weights: filler)
+      ),
+      BoardGenerator(
+        size: BoardSize(columns: 5, rows: 5),
+        rules: [.straight([.right])],
+        filler: Filler(weights: filler),
+        limits: PlacementLimits(downWords: -1...1)
+      ),
     ]
     for generator in generators {
       #expect(throws: BoardGenerator.Failure.invalidConfiguration) {

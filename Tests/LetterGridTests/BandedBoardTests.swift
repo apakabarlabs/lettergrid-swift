@@ -17,8 +17,11 @@ struct BandedBoardTests {
     var weights = Dictionary(uniqueKeysWithValues: alphabet.map { (String($0), 1.0) })
     weights["z"] = 0.5
     return BoardGenerator(
-      columns: 7, rows: 7, maxRows: maxRows, directions: directions,
-      filler: try LetterWeights(weights), downWords: downWords)
+      size: BoardSize(columns: 7, rows: 7, maxRows: maxRows),
+      rules: [.straight(directions)],
+      filler: Filler(weights: try LetterWeights(weights)),
+      limits: PlacementLimits(downWords: downWords)
+    )
   }
 
   private func words(using random: inout SeededRandom) -> [String] {
@@ -42,7 +45,7 @@ struct BandedBoardTests {
             Bool.random(using: &random) ? nil : directions.randomElement(using: &random)
           let request: BoardRequest
           do {
-            request = try generator.request(for: words, firstDirection: first)
+            request = try generator.request(for: words, firstRule: first.map { .straight([$0]) })
           } catch {
             continue
           }
@@ -79,7 +82,7 @@ struct BandedBoardTests {
           let first = directions.randomElement(using: &random)
           let request: BoardRequest
           do {
-            request = try generator.request(for: words, firstDirection: first)
+            request = try generator.request(for: words, firstRule: first.map { .straight([$0]) })
           } catch BoardGenerator.Failure.noRoom(_, _, _) {
             continue
           }
@@ -103,7 +106,7 @@ struct BandedBoardTests {
     let directions: [Direction] = [.right, .down, .downRight]
     let generator = try generator(directions: directions, downWords: 2...2)
     let request = try generator.request(
-      for: ["ABCDEF", "BADCFE", "CAFEBD"], firstDirection: .downRight)
+      for: ["ABCDEF", "BADCFE", "CAFEBD"], firstRule: .straight([.downRight]))
 
     let board = request.board(seed: 7)
 
@@ -124,8 +127,10 @@ struct BandedBoardTests {
 
   @Test func wordsThatUseEveryFillerLetterAreRejected() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down],
-      filler: try LetterWeights(["a": 1, "b": 1]))
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(["a": 1, "b": 1]))
+    )
 
     #expect(throws: BoardGenerator.Failure.self) {
       try generator.request(for: ["AB", "BBA"])

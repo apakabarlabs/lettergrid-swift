@@ -5,8 +5,11 @@ import Testing
 struct LayoutTests {
   @Test func crossingWordsStayCrossedOnTheCompletedBoard() throws {
     let generator = BoardGenerator(
-      columns: 5, rows: 5, directions: [.right, .down],
-      filler: try LetterWeights(["x": 1, "y": 1, "z": 1]), downWords: 1...1)
+      size: BoardSize(columns: 5, rows: 5),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(["x": 1, "y": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 1...1)
+    )
     let words = ["CAT", "TAP", "DOG"]
     let board = try generator.board(for: words, seed: 3)
     let cells = board.placements.flatMap(\.cells)
@@ -20,8 +23,10 @@ struct LayoutTests {
 
   @Test func everySeedOfCatTapDogSharesLettersWithoutExtraRows() throws {
     let request = try BoardGenerator(
-      columns: 5, rows: 5, directions: [.right, .down],
-      filler: try LetterWeights(["x": 1, "y": 1, "z": 1]), downWords: 1...1
+      size: BoardSize(columns: 5, rows: 5),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(["x": 1, "y": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 1...1)
     ).request(for: ["CAT", "TAP", "DOG"])
     for seed: UInt64 in 1...100 {
       let board = request.board(seed: seed)

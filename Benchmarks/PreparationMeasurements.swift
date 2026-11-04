@@ -30,9 +30,12 @@ enum PreparationMeasurements {
           throw Failure.quota(name)
         }
         return BoardGenerator(
-          columns: columns, rows: rows, maxRows: maxRows, rules: rules.map(\.value),
-          filler: try LetterWeights(weights, sameNeighbour: sameNeighbour ?? 1),
-          downWords: downWords[0]...downWords[1], maxWordsPerDirection: maxWordsPerDirection)
+          size: BoardSize(columns: columns, rows: rows, maxRows: maxRows),
+          rules: rules.map(\.value),
+          filler: Filler(weights: try LetterWeights(weights, sameNeighbour: sameNeighbour ?? 1)),
+          limits: PlacementLimits(
+            downWords: downWords[0]...downWords[1], maxWordsPerDirection: maxWordsPerDirection)
+        )
       }
     }
   }

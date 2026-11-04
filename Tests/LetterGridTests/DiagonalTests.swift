@@ -5,12 +5,15 @@ import Testing
 struct DiagonalTests {
   @Test func aRequiredFirstDirectionKeepsWordOrderAndVerticalQuota() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down, .downRight, .downLeft],
-      filler: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1]), downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down, .downRight, .downLeft])],
+      filler: Filler(weights: try LetterWeights(["x": 1, "y": 1, "z": 1, "q": 1])),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     for direction in [Direction.right, .down, .downRight, .downLeft] {
       for seed in 1...10 {
         let board = try generator.board(
-          for: ["CAT", "DOG", "SUN"], seed: UInt64(seed), firstDirection: direction)
+          for: ["CAT", "DOG", "SUN"], seed: UInt64(seed), firstRule: .straight([direction]))
         #expect(board.placements.map(\.word) == ["CAT", "DOG", "SUN"])
         #expect(board.placements.first?.direction == direction)
         #expect((1...2).contains(board.placements.filter { $0.direction == .down }.count))
@@ -20,11 +23,14 @@ struct DiagonalTests {
 
   @Test func anImpossibleRequiredDirectionIsRefused() throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 3, directions: [.right, .down, .downRight],
-      filler: try LetterWeights(["x": 1]), downWords: 1...1)
+      size: BoardSize(columns: 3, rows: 3),
+      rules: [.straight([.right, .down, .downRight])],
+      filler: Filler(weights: try LetterWeights(["x": 1])),
+      limits: PlacementLimits(downWords: 1...1)
+    )
     for direction in [Direction.downRight, .downLeft] {
       #expect(throws: BoardGenerator.Failure.self) {
-        try generator.board(for: ["ELEPHANT", "CAT"], seed: 1, firstDirection: direction)
+        try generator.board(for: ["ELEPHANT", "CAT"], seed: 1, firstRule: .straight([direction]))
       }
     }
   }
@@ -33,8 +39,10 @@ struct DiagonalTests {
     let words = ["CAT", "DOG", "SUN"]
     for direction in [Direction.downRight, .downLeft] {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, directions: [direction],
-        filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+        size: BoardSize(columns: 7, rows: 7),
+        rules: [.straight([direction])],
+        filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1]))
+      )
       let board = try generator.board(for: words, seed: 8)
       #expect(board.placements.allSatisfy { $0.direction == direction })
       for placement in board.placements {
@@ -47,8 +55,11 @@ struct DiagonalTests {
   @Test func mixedDirectionsKeepTheVerticalQuotaAndPermitBothDiagonals() throws {
     let ways: [Direction] = [.right, .down, .downRight, .downLeft]
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: ways,
-      filler: try LetterWeights(["x": 1, "q": 1, "z": 1]), downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight(ways)],
+      filler: Filler(weights: try LetterWeights(["x": 1, "q": 1, "z": 1])),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     var seen: Set<Direction> = []
     for seed in 1...30 {
       let board = try generator.board(for: ["CAT", "DOG", "SUN"], seed: UInt64(seed))
@@ -61,7 +72,10 @@ struct DiagonalTests {
 
   @Test func aWordTooWideForADiagonalFailsInsteadOfGrowingForever() throws {
     let generator = BoardGenerator(
-      columns: 3, rows: 3, directions: [.downLeft], filler: try LetterWeights(["x": 1]))
+      size: BoardSize(columns: 3, rows: 3),
+      rules: [.straight([.downLeft])],
+      filler: Filler(weights: try LetterWeights(["x": 1]))
+    )
     #expect(throws: BoardGenerator.Failure.self) {
       try generator.board(for: ["ELEPHANT"], seed: 1)
     }

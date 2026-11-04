@@ -11,7 +11,11 @@ struct BoardGeneratorTests {
   }
 
   private func generator(columns: Int = 7, rows: Int = 7) -> BoardGenerator {
-    BoardGenerator(columns: columns, rows: rows, directions: [.right, .down], filler: filler)
+    BoardGenerator(
+      size: BoardSize(columns: columns, rows: rows),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler)
+    )
   }
 
   @Test func placesEveryWordExactlyOnce() throws {
@@ -45,8 +49,11 @@ struct BoardGeneratorTests {
   @Test func aHeavilyWeightedFillerStillReadsEachWordOnce() throws {
     let directions: [Direction] = [.right, .down, .downRight, .downLeft]
     let generator = BoardGenerator(
-      columns: 7, rows: 15, directions: directions,
-      filler: try LetterWeights(["a": 1_000, "b": 1]), downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 15),
+      rules: [.straight(directions)],
+      filler: Filler(weights: try LetterWeights(["a": 1_000, "b": 1])),
+      limits: PlacementLimits(downWords: 1...2)
+    )
     let words = ["PERSPECTIVE", "SUN", "MOON"]
     let board = try generator.board(for: words, seed: 1)
 
@@ -58,7 +65,11 @@ struct BoardGeneratorTests {
 
   @Test func moreWordsWiderThanTheBoardThanMayStandDownHaveNoRoom() {
     let generator = BoardGenerator(
-      columns: 4, rows: 4, directions: [.right, .down], filler: filler, downWords: 0...1)
+      size: BoardSize(columns: 4, rows: 4),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(downWords: 0...1)
+    )
 
     #expect(throws: BoardGenerator.Failure.self) {
       try generator.board(for: ["elephant", "umbrella"], seed: 1)
@@ -68,7 +79,11 @@ struct BoardGeneratorTests {
   @Test func theWordsStandingDownStayWithinTheirRange() throws {
     for range in [0...1, 2...3, 3...5] {
       let generator = BoardGenerator(
-        columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: range)
+        size: BoardSize(columns: 7, rows: 7),
+        rules: [.straight([.right, .down])],
+        filler: Filler(weights: filler),
+        limits: PlacementLimits(downWords: range)
+      )
       for seed in UInt64(1)...20 {
         let board = try generator.board(for: ["cat", "dog", "sun", "pen", "map"], seed: seed)
         #expect(range.contains(board.placements.filter { $0.direction == .down }.count))
@@ -77,21 +92,24 @@ struct BoardGeneratorTests {
   }
 
   @Test func anImpossibleMinimumVerticalQuotaFails() throws {
-    for firstDirection: Direction? in [nil, .right] {
+    for firstRule: WordRule? in [nil, .straight([.right])] {
       let generator = BoardGenerator(
-        columns: 3, rows: 3, directions: [.right, .down], filler: filler,
-        downWords: 2...2)
+        size: BoardSize(columns: 3, rows: 3),
+        rules: [.straight([.right, .down])],
+        filler: Filler(weights: filler),
+        limits: PlacementLimits(downWords: 2...2)
+      )
 
       #expect(throws: BoardGenerator.Failure.self) {
-        try generator.board(for: ["CAT"], seed: 1, firstDirection: firstDirection)
+        try generator.board(for: ["CAT"], seed: 1, firstRule: firstRule)
       }
     }
   }
 
   @Test func repeatedTargetsAreRejectedAfterCaseNormalization() {
-    for firstDirection: Direction? in [nil, .right] {
+    for firstRule: WordRule? in [nil, .straight([.right])] {
       #expect(throws: BoardGenerator.Failure.self) {
-        try generator().board(for: ["cat", "CAT"], seed: 1, firstDirection: firstDirection)
+        try generator().board(for: ["cat", "CAT"], seed: 1, firstRule: firstRule)
       }
     }
   }
@@ -115,7 +133,11 @@ struct BoardGeneratorTests {
 
   @Test func wordsTooWideToLieBesideTheStandingOnesGetRowsOfTheirOwn() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: 2...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(downWords: 2...2)
+    )
     let words = ["breakfast", "telephone", "kitchen", "freedom", "weather"]
 
     for seed in UInt64(1)...10 {
@@ -127,7 +149,11 @@ struct BoardGeneratorTests {
 
   @Test func aWordLyingAcrossOftenCrossesOneStandingDown() throws {
     let generator = BoardGenerator(
-      columns: 7, rows: 7, directions: [.right, .down], filler: filler, downWords: 2...2)
+      size: BoardSize(columns: 7, rows: 7),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: filler),
+      limits: PlacementLimits(downWords: 2...2)
+    )
     let crossed = try (UInt64(1)...20).filter { seed in
       let cells = try generator.board(for: ["stone", "notes", "tones", "onset"], seed: seed)
         .placements.flatMap(\.cells)

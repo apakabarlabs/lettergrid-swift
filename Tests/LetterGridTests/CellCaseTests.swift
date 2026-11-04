@@ -19,8 +19,10 @@ struct CellCaseTests {
 
   @Test func aWordWithALongerCapitalTakesOneCellPerLetter() throws {
     let generator = BoardGenerator(
-      columns: 6, rows: 6, directions: [.right, .down],
-      filler: try LetterWeights(["ա": 1, "ն": 1, "ս": 1, "տ": 1, "կ": 1]))
+      size: BoardSize(columns: 6, rows: 6),
+      rules: [.straight([.right, .down])],
+      filler: Filler(weights: try LetterWeights(["ա": 1, "ն": 1, "ս": 1, "տ": 1, "կ": 1]))
+    )
     let request = try generator.request(for: ["երևան", "ևս"])
     let board = request.board(seed: 7)
 

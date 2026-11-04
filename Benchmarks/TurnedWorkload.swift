@@ -7,7 +7,10 @@ struct TurnedWorkload {
 
   var generator: BoardGenerator {
     BoardGenerator(
-      columns: 7, rows: 7, maxRows: 7, rules: rules, filler: weights,
-      downWords: 1...2)
+      size: BoardSize(columns: 7, rows: 7, maxRows: 7),
+      rules: rules,
+      filler: Filler(weights: weights),
+      limits: PlacementLimits(downWords: 1...2)
+    )
   }
 }

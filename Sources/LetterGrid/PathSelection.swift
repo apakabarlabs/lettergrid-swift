@@ -1,9 +1,9 @@
 extension Board {
   public func selection(extending cells: [Cell], toward end: Cell, rules: [WordRule]) -> [Cell] {
-    guard let last = cells.last, contains(end) else { return cells }
     if rules.allSatisfy({ $0.turns == 0 }), let start = cells.first {
-      return selection(from: start, toward: end, along: rules.startDirections)
+      return selection(from: start, toward: end, along: rules.startDirectionsInOrder)
     }
+    guard let last = cells.last, contains(end) else { return cells }
     if let index = cells.firstIndex(of: end) { return Array(cells.prefix(index + 1)) }
     if let firstSegment = firstSegmentSelection(cells, toward: end, rules: rules) {
       return firstSegment

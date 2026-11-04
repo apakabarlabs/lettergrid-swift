@@ -31,4 +31,12 @@ extension [WordRule] {
   var startDirections: [Direction] {
     Direction.allCases.filter { way in contains { $0.startDirections.contains(way) } }
   }
+
+  var startDirectionsInOrder: [Direction] {
+    var ordered: [Direction] = []
+    for rule in self {
+      for way in rule.startDirections where !ordered.contains(way) { ordered.append(way) }
+    }
+    return ordered
+  }
 }

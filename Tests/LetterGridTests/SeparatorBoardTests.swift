@@ -31,10 +31,14 @@ struct SeparatorBoardTests {
     let rule = WordRule(startDirections: [.right, .down], turns: example.turns)
     let conditional = Set((example.conditional ?? []).map { Character($0).cellUppercased })
     let generator = BoardGenerator(
-      columns: example.columns ?? 7, rows: example.rows ?? 7,
-      maxRows: example.bounded ? example.rows ?? 7 : nil,
-      rules: [rule], filler: try LetterWeights(example.weights ?? ["x": 1, "q": 1]),
-      conditionalCharacters: conditional)
+      size: BoardSize(
+        columns: example.columns ?? 7, rows: example.rows ?? 7,
+        maxRows: example.bounded ? example.rows ?? 7 : nil),
+      rules: [rule],
+      filler: Filler(
+        weights: try LetterWeights(example.weights ?? ["x": 1, "q": 1]),
+        conditionalCharacters: conditional)
+    )
     if example.rejects == true {
       #expect(throws: BoardGenerator.Failure.self) { try generator.request(for: example.words) }
       return
