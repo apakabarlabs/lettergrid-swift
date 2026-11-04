@@ -31,8 +31,8 @@ synthetic input `a placed layout need not admit a run-free fill` in
   `make bench-preparation-vocabulary BENCH_RUN_FLAGS=--skip-build PREPARATION_WORDS=<file>`
   per vocabulary, with `PREPARATION_FOLD=--fold` for Latin only. Stages and sampling are in
   `BenchmarkInputs/vocabulary.yaml`; filler weights are the vocabulary's letter counts.
-- Vocabularies are Lexling's word lists for its English, Latin, Georgian, Armenian and
-  Hungarian editions as of 2026-10-30, not part of this repository.
+- Vocabularies are real word lists in English, Latin, Georgian, Armenian and Hungarian as of
+  2026-10-30, not part of this repository.
 - Every request is timed once, without warm-up or repetition. The first request of a run
   includes start-up cost: the first `straight random` row of each vocabulary spends 6–23 ms
   on placement against about 1 ms for the others.
