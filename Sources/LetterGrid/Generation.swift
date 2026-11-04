@@ -18,6 +18,7 @@ struct Generation: Decodable {
   }
 
   struct Fill: Decodable {
+    let runLength: Int
     let seeds: Int
     let stepsPerChoice: Int
     let completedCandidates: Int
@@ -48,6 +49,7 @@ struct Generation: Decodable {
       let text = try String(contentsOf: url, encoding: .utf8)
       let settings = try YAMLDecoder().decode(Generation.self, from: text)
       precondition(settings.supportedTurns.count == 2, "supportedTurns names a first and last")
+      precondition(settings.fill.runLength >= 2, "fill.runLength names a run of two or more")
       return settings
     } catch {
       preconditionFailure("generation.yaml cannot be read: \(error)")

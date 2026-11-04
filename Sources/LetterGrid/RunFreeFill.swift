@@ -176,51 +176,49 @@ struct RunFreeFill {
 }
 
 struct LetterRuns {
-  private struct Triple {
-    let first: Cell
-    let second: Cell
-    let third: Cell
+  private struct Run {
+    let cells: [Cell]
 
     func matches(_ letters: [[Character?]]) -> Bool {
-      guard let letter = letters[first.row][first.column] else { return false }
-      return letters[second.row][second.column] == letter
-        && letters[third.row][third.column] == letter
+      guard let letter = letters[cells[0].row][cells[0].column] else { return false }
+      return cells.dropFirst().allSatisfy { letters[$0.row][$0.column] == letter }
     }
   }
 
   let columns: Int
   let rows: Int
-  private let triplesByCell: [Cell: [Triple]]
+  private let runsByCell: [Cell: [Run]]
 
   init(placements: [Placement], columns: Int, rows: Int) {
     self.columns = columns
     self.rows = rows
-    var triples: Set<[Cell]> = []
-    for placement in placements where placement.cells.count >= 3 {
-      for start in 0...(placement.cells.count - 3) {
-        let cells = Array(placement.cells[start..<(start + 3)])
-        triples.insert(cells)
-        triples.insert(Array(cells.reversed()))
+    let length = Generation.settings.fill.runLength
+    var inTargets: Set<[Cell]> = []
+    for placement in placements where placement.cells.count >= length {
+      for start in 0...(placement.cells.count - length) {
+        let cells = Array(placement.cells[start..<(start + length)])
+        inTargets.insert(cells)
+        inTargets.insert(Array(cells.reversed()))
       }
     }
-    var indexed: [Cell: [Triple]] = [:]
+    var indexed: [Cell: [Run]] = [:]
     let axes = Direction.lineAxes
     for row in 0..<rows {
       for column in 0..<columns {
         let start = Cell(row: row, column: column)
         for direction in axes {
-          let cells = (0..<3).map { start.moved(direction, by: $0) }
+          let cells = (0..<length).map { start.moved(direction, by: $0) }
           guard
             cells.allSatisfy({
               (0..<rows).contains($0.row) && (0..<columns).contains($0.column)
-            }), !triples.contains(cells)
+            }), !inTargets.contains(cells)
           else { continue }
-          let triple = Triple(first: cells[0], second: cells[1], third: cells[2])
-          for cell in cells { indexed[cell, default: []].append(triple) }
+          let run = Run(cells: cells)
+          for cell in cells { indexed[cell, default: []].append(run) }
         }
       }
     }
-    triplesByCell = indexed
+    runsByCell = indexed
   }
 
   func containsForbiddenRun(in letters: [[Character?]]) -> Bool {
@@ -232,7 +230,7 @@ struct LetterRuns {
   }
 
   func hasForbiddenRun(through cell: Cell, in letters: [[Character?]]) -> Bool {
-    triplesByCell[cell, default: []].contains { $0.matches(letters) }
+    runsByCell[cell, default: []].contains { $0.matches(letters) }
   }
 }
 

@@ -2,7 +2,7 @@ import Testing
 
 @testable import LetterGrid
 
-struct NoiseScoreTests {
+struct StrayWordsTests {
   private let rules = (0...3).map { WordRule(startDirections: Direction.allCases, turns: $0) }
 
   @Test func repeatedReadingsAreScoredOnceAndTheirSubtreesArePruned() {

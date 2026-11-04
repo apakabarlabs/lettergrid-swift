@@ -9,6 +9,7 @@ shapes:
 noise:
   visitLimit: 100000
 fill:
+  runLength: 3
   seeds: 8
   stepsPerChoice: 32
   completedCandidates: 20

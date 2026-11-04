@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- The length of a forbidden run of equal letters is now `fill.runLength` in
+  `generation.yaml`, shared by every port, instead of the number 3 written into the code. It
+  stays 3, so every board is the same as in 0.25.0 for every seed.
+
 ## [0.25.0] - 2026-11-04
 
 A word may now be one letter long, such as Hungarian `ó` or Swedish `ö`. Before, the

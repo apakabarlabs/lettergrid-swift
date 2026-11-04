@@ -5,10 +5,11 @@ struct PlacedRuns {
   func formed(
     by placement: Placement, letters: [Character?], among chosen: [Placement?]
   ) -> Bool {
-    placement.cells.contains { cell in
+    let length = Generation.settings.fill.runLength
+    return placement.cells.contains { cell in
       Direction.lineAxes.contains { axis in
-        (0..<3).contains { offset in
-          let run = (0..<3).map { cell.moved(axis, by: $0 - offset) }
+        (0..<length).contains { offset in
+          let run = (0..<length).map { cell.moved(axis, by: $0 - offset) }
           guard run.allSatisfy(isOnBoard), let letter = letters[slot(of: run[0])],
             run.allSatisfy({ letters[slot(of: $0)] == letter })
           else { return false }
