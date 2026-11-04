@@ -209,3 +209,18 @@
   words: [PLANET, ORBIT, SUN]
   legacyEquivalent: true
   fits: true
+- name: a one-letter word takes one cell and its letter appears nowhere else
+  rules: [{directions: [right, down], turns: 0}]
+  words: [CAT, DOG, I]
+  fits: true
+- name: a one-letter word shares the field with turned words when a straight rule is enabled
+  rules:
+  - {directions: [right, down], turns: 0}
+  - {directions: [right, down], turns: 1}
+  words: [PLANET, COMET, I]
+  fits: true
+- name: a one-letter word has no path when every rule turns
+  rules: [{directions: [right, down], turns: 1}]
+  words: [PLANET, COMET, I]
+  accepted: false
+  fits: false

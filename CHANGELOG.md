@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.25.0] - 2026-11-04
+
+A word may now be one letter long, such as Hungarian `ó` or Swedish `ö`. Before, the
+generator refused such a word and no selection could find one; now it takes one cell and the
+player finds it with a tap. Boards of words that all have two letters or more are the same as
+in 0.24.0 for every seed. If your app relied on the library to refuse one-letter words, filter
+them out yourself before the request.
+
+### Changed
+
+- `BoardGenerator.accepts` and every request accept a one-letter word. It fits only a rule
+  without turns: `WordRule.minimumLength` is now 1 for a rule without turns (it was 2) and
+  stays `turns + 2` for a turned rule, and `WordRule.minimumTurns(toFit: 1, ...)` is 0 where
+  it was `nil`.
+- The letter of a one-letter word stands on the board once. Every other target character
+  still stands at least twice, but a copy of this letter would be a second occurrence of the
+  word, so the board gets none.
+- `Round.release()` finds a one-letter word when the selection is its one cell: a `touch`
+  followed by `release` with no `drag`. A one-cell selection that finds no word returns `nil`
+  and leaves `rejected` empty, as before, so a stray tap is not shown as a wrong word.
+- `Placement(validating:cells:)` and `Board(validating:placements:)` accept a placement of one
+  cell; its `direction` is `.right` and means nothing.
+
+```swift
+let generator = BoardGenerator(
+  columns: 7, rows: 7, directions: [.right, .down], filler: try LetterWeights(["x": 1]))
+let board = try generator.board(for: ["cat", "dog", "ó"], seed: 1)
+let round = Round(board: board, directions: [.right, .down])
+let island = board.placements[2].cells[0]
+round.touch(island)
+round.release()  // the placement of "Ó"
+```
+
 ## [0.24.0] - 2026-11-04
 
 What a game shows around the board belongs to the game, so the list of words to find

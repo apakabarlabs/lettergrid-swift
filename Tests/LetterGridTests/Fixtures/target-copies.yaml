@@ -30,3 +30,9 @@
   rows: 1
   bounded: false
   grows: true
+- name: the letter of a one-letter word gets no copy, so the word stands once
+  words: [CAT, DOG, I]
+  columns: 7
+  rows: 7
+  bounded: true
+  alone: [I]

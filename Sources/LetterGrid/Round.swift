@@ -217,10 +217,13 @@ public final class Round: Identifiable {
   public func release() -> Placement? {
     let released = selection
     selection = []
-    guard phase == .playing, released.count > 1 else { return nil }
-    guard let placement = board.placements.first(where: { $0.reads(released) }),
-      !found.contains(placement)
-    else {
+    guard phase == .playing, !released.isEmpty else { return nil }
+    let placement = board.placements.first { $0.reads(released) }
+    if released.count == 1 {
+      guard let placement, !found.contains(placement) else { return nil }
+      return record(placement)
+    }
+    guard let placement, !found.contains(placement) else {
       rejected = released
       return nil
     }

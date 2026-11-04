@@ -8,7 +8,8 @@ public struct WordRule: Hashable, Sendable {
   }
 
   public func matches(_ cells: [Cell]) -> Bool {
-    PathGeometry(cells).map(matches) ?? false
+    if cells.count == 1 { return isValid && turns == 0 }
+    return PathGeometry(cells).map(matches) ?? false
   }
 
   func matches(_ geometry: PathGeometry) -> Bool {
@@ -41,7 +42,10 @@ public struct WordRule: Hashable, Sendable {
     Generation.settings.supportedTurns[0]...Generation.settings.supportedTurns[1]
 
   public var isValid: Bool { !startDirections.isEmpty && Self.supportedTurns.contains(turns) }
-  public var minimumLength: Int { isValid ? turns + 2 : Int.max }
+  public var minimumLength: Int {
+    guard isValid else { return Int.max }
+    return turns == 0 ? 1 : turns + 2
+  }
 }
 
 struct PathGeometry {

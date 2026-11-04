@@ -82,8 +82,10 @@ a wall-clock deadline across application suspension.
 - A palindrome occurs once even when both directions of its line are enabled, and can be
   selected from either end. Selection snaps to the nearest allowed direction. With diagonals
   enabled, a gesture must be within 22.5 degrees of an allowed direction.
-- Requests reject empty target lists, words shorter than two letters, duplicates after
-  uppercasing and words contained in other targets. When opposite directions are enabled,
+- Requests reject empty target lists, empty words, duplicates after uppercasing and words
+  contained in other targets. A one-letter word takes one cell and fits only a rule without
+  turns; ``Round/release()`` finds it when the selection is that one cell, and a one-cell
+  selection that finds no word is not shown as rejected. When opposite directions are enabled,
   reverse containment is also rejected. Directions must satisfy the vertical quota and any
   required first direction. Filler may consist entirely of letters present in the targets;
   preparation still checks target uniqueness, character copies and the rules against added runs.
@@ -113,8 +115,10 @@ a wall-clock deadline across application suspension.
 ### Restoring and pacing
 
 Every character of the target words, letters, nonletter characters and
-`conditionalCharacters` alike, occupies at least two cells of the board. A character that
-the target paths already hold twice gets no copy; any other gets one copy in a free cell.
+`conditionalCharacters` alike, occupies at least two cells of the board, except the letter of
+a one-letter word: a copy would be a second occurrence of that word, so it stands once. A
+character that the target paths already hold twice gets no copy; any other gets one copy in a
+free cell.
 Ordinary weighted fill excludes nonletter and conditional characters, so a conditional
 character absent from the targets never appears on the board. Requests reject layouts
 that leave fewer free cells than copies.

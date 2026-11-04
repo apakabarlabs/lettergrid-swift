@@ -96,12 +96,13 @@ struct BoardGeneratorTests {
     }
   }
 
-  @Test func targetsTooShortForASelectionAreRejected() {
-    for word in ["", "A"] {
-      #expect(throws: BoardGenerator.Failure.self) {
-        try generator().board(for: [word], seed: 1)
-      }
+  @Test func anEmptyTargetIsRejectedAndAOneLetterTargetTakesOneCell() throws {
+    #expect(throws: BoardGenerator.Failure.self) {
+      try generator().board(for: [""], seed: 1)
     }
+    let board = try generator().board(for: ["A"], seed: 1)
+    #expect(board.placements.map(\.cells.count) == [1])
+    #expect(board.letters.joined().filter { $0 == "A" }.count == 1)
   }
 
   @Test func aWordWiderThanTheBoardStandsDownAndStretchesIt() throws {

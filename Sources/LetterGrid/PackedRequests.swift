@@ -9,7 +9,7 @@ extension BoardGenerator {
     else { return false }
     let words = words.map(\.cellUppercased)
     let excluded = conditionalCharacters.union(words.joined().filter { !$0.isLetter })
-    guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ $0.count > 1 }),
+    guard !words.isEmpty, Set(words).count == words.count, words.allSatisfy({ !$0.isEmpty }),
       !words.contains(where: { word in words.contains { $0 != word && $0.contains(word) } }),
       filler.letters(excluding: excluded) != nil
     else { return false }

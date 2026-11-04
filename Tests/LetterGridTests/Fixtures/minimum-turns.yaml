@@ -21,9 +21,9 @@
   maximumRows: 2
   turns: {2: 0, 3: 1, 4: 2}
   unfit: [5]
-- name: too short a word fits no rule
+- name: an empty word fits no rule, and one letter fits without turns
   directions: [right]
   columns: 7
   maximumRows: 7
-  turns: {}
-  unfit: [0, 1]
+  turns: {1: 0}
+  unfit: [0]

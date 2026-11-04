@@ -87,11 +87,9 @@ struct RunFreeFill {
         if letters[row][column] == nil { empty.append(cell) }
       }
     }
-    var counts: [Character: Int] = [:]
-    for letter in letters.joined().compactMap({ $0 }) { counts[letter, default: 0] += 1 }
     return Template(
       letters: letters, empty: empty,
-      required: Set(counts.filter { $0.value < 2 }.keys),
+      required: board.placements.lettersNeedingCopies(letters.joined().compactMap { $0 }),
       targets: WordIndex(Set(board.placements.map(\.word))))
   }
 
@@ -286,9 +284,16 @@ extension Layout {
     for placement in placements {
       for (cell, letter) in zip(placement.cells, placement.word) { letters[cell] = letter }
     }
-    var counts: [Character: Int] = [:]
-    for letter in letters.values { counts[letter, default: 0] += 1 }
-    let needing = Set(counts.filter { $0.value < 2 }.keys)
+    let needing = placements.lettersNeedingCopies(Array(letters.values))
     return needing.count <= rows * columns - letters.count ? needing : nil
+  }
+}
+
+extension [Placement] {
+  func lettersNeedingCopies(_ placed: [Character]) -> Set<Character> {
+    var counts: [Character: Int] = [:]
+    for letter in placed { counts[letter, default: 0] += 1 }
+    let oneLetterWords = Set(compactMap { $0.word.count == 1 ? $0.word.first : nil })
+    return Set(counts.filter { $0.value < 2 }.keys).subtracting(oneLetterWords)
   }
 }

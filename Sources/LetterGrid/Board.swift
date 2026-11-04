@@ -44,13 +44,17 @@ public struct Placement: Hashable, Sendable {
   }
 
   public init(validating word: String, cells: [Cell]) throws {
-    guard cells.count == word.count, cells.count > 1, PathGeometry(cells) != nil,
+    guard cells.count == word.count, !cells.isEmpty else {
+      throw Board.Failure.invalidPlacement(word)
+    }
+    if cells.count == 1 {
+      self.init(word: word, start: cells[0], direction: .right)
+      return
+    }
+    guard PathGeometry(cells) != nil,
       let direction = Direction.between(cells[0], cells[1])
     else { throw Board.Failure.invalidPlacement(word) }
-    self.word = word
-    self.geometry = .path(cells)
-    self.start = cells[0]
-    self.direction = direction
+    self.init(word: word, start: cells[0], direction: direction, geometry: .path(cells))
   }
 
   public var turns: Int { PathGeometry(cells)?.turns ?? 0 }
@@ -93,7 +97,7 @@ public struct Board: Equatable, Sendable {
       case .irregularRows: "A board must have equally wide, nonempty rows."
       case .duplicateWord(let word): "The board contains more than one placement of \(word)."
       case .invalidPlacement(let word):
-        "The placement of \(word) must contain at least two letters and match its board cells."
+        "The placement of \(word) must follow a path of its letters and match its board cells."
       }
     }
   }
@@ -130,9 +134,10 @@ public struct Board: Equatable, Sendable {
   }
 
   private func fits(_ placement: Placement) -> Bool {
-    placement.word.count > 1 && contains(placement.start)
+    !placement.word.isEmpty && contains(placement.start)
       && placement.cells.count == placement.word.count
-      && placement.cells.allSatisfy(contains) && PathGeometry(placement.cells) != nil
+      && placement.cells.allSatisfy(contains)
+      && (placement.cells.count == 1 || PathGeometry(placement.cells) != nil)
   }
 
   public subscript(cell: Cell) -> Character {

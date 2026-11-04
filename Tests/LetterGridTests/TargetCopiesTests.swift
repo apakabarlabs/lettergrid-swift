@@ -12,9 +12,10 @@ struct TargetCopiesTests {
     let bounded: Bool
     let rejects: Bool?
     let grows: Bool?
+    let alone: [String]?
   }
 
-  @Test func everyTargetCharacterStandsOnTheBoardAtLeastTwice() throws {
+  @Test func everyTargetCharacterButAOneLetterWordStandsOnTheBoardAtLeastTwice() throws {
     let url = try #require(
       Bundle.module.url(
         forResource: "target-copies", withExtension: "yaml", subdirectory: "Fixtures"))
@@ -41,7 +42,9 @@ struct TargetCopiesTests {
         }
         for (character, count) in onTargets {
           let onBoard = board.letters.joined().filter { $0 == character }.count
-          #expect(onBoard == max(2, count), "\(item.name), seed \(seed): \(character)")
+          let alone = item.alone?.contains(String(character)) == true
+          #expect(
+            onBoard == (alone ? count : max(2, count)), "\(item.name), seed \(seed): \(character)")
         }
       }
     }
