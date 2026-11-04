@@ -31,7 +31,9 @@ them out yourself before the request.
 - The generator gives a one-letter placement the start direction of the rule that placed it,
   and `maxWordsPerDirection` and `downWords` count it by that direction.
   `Placement(validating:cells:)` and `Board(validating:placements:)` accept a placement of one
-  cell and give it `.right`.
+  cell and give it `.right`, so a restored one-letter word reads `.right` whichever rule
+  placed it. One cell has no direction of its own, and a round accepts it under any
+  directions, so after generation nothing depends on the value.
 
 ```swift
 let generator = BoardGenerator(
@@ -41,7 +43,7 @@ let board = try generator.board(for: ["cat", "dog", "ó"], seed: 1)
 let round = Round(board: board, directions: [.right, .down])
 let island = board.placements[2].cells[0]  // placements follow the order of the words
 round.touch(island)
-round.release()  // the placement of "Ó"
+round.release()  // the placement of "Ó": placements keep words uppercased, as for any word
 ```
 
 ## [0.24.0] - 2026-11-04
