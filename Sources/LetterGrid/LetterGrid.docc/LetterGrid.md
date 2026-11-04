@@ -86,10 +86,11 @@ a wall-clock deadline across application suspension.
   contained in other targets. A one-letter word takes one cell and fits only a rule without
   turns; ``Round/release()`` finds it when the selection is that one cell, and a one-cell
   selection that finds no word is not shown as rejected. A round accepts it with any nonempty
-  directions; the generator gives it the start direction of the rule that placed it. When opposite directions are enabled,
-  reverse containment is also rejected. Directions must satisfy the vertical quota and any
-  required first direction. Filler may consist entirely of letters present in the targets;
-  preparation still checks target uniqueness, character copies and the rules against added runs.
+  directions; the generator gives it the start direction of the rule that placed it. When
+  opposite directions are enabled, reverse containment is also rejected. Directions must
+  satisfy the vertical quota and any required first direction. Filler may consist entirely of
+  letters present in the targets; preparation still checks target uniqueness, character copies
+  and the rules against added runs.
 - Dimensions must be positive, rules valid and the vertical minimum nonnegative; invalid
   settings throw ``BoardGenerator/Failure/invalidConfiguration``. Incompatible words throw
   ``BoardGenerator/Failure/noRoom(words:columns:rows:)``.
