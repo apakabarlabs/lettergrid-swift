@@ -14,21 +14,32 @@ them out yourself before the request.
   without turns: `WordRule.minimumLength` is now 1 for a rule without turns (it was 2) and
   stays `turns + 2` for a turned rule, and `WordRule.minimumTurns(toFit: 1, ...)` is 0 where
   it was `nil`.
-- The letter of a one-letter word stands on the board once. Every other target character
-  still stands at least twice, but a copy of this letter would be a second occurrence of the
-  word, so the board gets none.
+- As for any target, a request refuses a one-letter word together with a word that contains
+  its letter: `["ó", "hó"]` is refused, because the longer word would hold a second reading
+  of `ó`.
+- The letter of a one-letter word stands on the board once, even when the filler weights
+  include it. Every other target character still stands at least twice, but a copy of this
+  letter would be a second occurrence of the word, so the board gets none. A player who knows
+  the word can therefore spot it by its letter alone.
 - `Round.release()` finds a one-letter word when the selection is its one cell: a `touch`
-  followed by `release` with no `drag`. A one-cell selection that finds no word returns `nil`
-  and leaves `rejected` empty, as before, so a stray tap is not shown as a wrong word.
-- `Placement(validating:cells:)` and `Board(validating:placements:)` accept a placement of one
-  cell; its `direction` is `.right` and means nothing.
+  followed by `release` with no `drag`. `LetterBoard` already reports a tap that way. A
+  one-cell selection that finds no word returns `nil` and leaves `rejected` empty, as before,
+  so a stray tap is not shown as a wrong word.
+- A one-letter placement is selectable whatever the round's directions, so
+  `Round(board:directions:)` and `Round(restoring:board:directions:)` accept it with any
+  nonempty list.
+- The generator gives a one-letter placement the start direction of the rule that placed it,
+  and `maxWordsPerDirection` and `downWords` count it by that direction.
+  `Placement(validating:cells:)` and `Board(validating:placements:)` accept a placement of one
+  cell and give it `.right`.
 
 ```swift
 let generator = BoardGenerator(
-  columns: 7, rows: 7, directions: [.right, .down], filler: try LetterWeights(["x": 1]))
+  columns: 7, rows: 7, directions: [.right, .down],
+  filler: try LetterWeights(["x": 1, "q": 1, "z": 1]))
 let board = try generator.board(for: ["cat", "dog", "ó"], seed: 1)
 let round = Round(board: board, directions: [.right, .down])
-let island = board.placements[2].cells[0]
+let island = board.placements[2].cells[0]  // placements follow the order of the words
 round.touch(island)
 round.release()  // the placement of "Ó"
 ```

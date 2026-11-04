@@ -13,6 +13,8 @@ struct TargetCopiesTests {
     let rejects: Bool?
     let grows: Bool?
     let alone: [String]?
+    let turns: [Int]?
+    let filler: [String: Double]?
   }
 
   @Test func everyTargetCharacterButAOneLetterWordStandsOnTheBoardAtLeastTwice() throws {
@@ -24,8 +26,8 @@ struct TargetCopiesTests {
     for item in cases {
       let generator = BoardGenerator(
         columns: item.columns, rows: item.rows, maxRows: item.bounded ? item.rows : nil,
-        rules: [WordRule(startDirections: [.right, .down])],
-        filler: try LetterWeights(["X": 1, "Q": 1]))
+        rules: (item.turns ?? [0]).map { WordRule(startDirections: [.right, .down], turns: $0) },
+        filler: try LetterWeights(item.filler ?? ["X": 1, "Q": 1]))
       if item.rejects == true {
         let failure = BoardGenerator.Failure.noRoom(
           words: item.words, columns: item.columns, rows: item.rows)

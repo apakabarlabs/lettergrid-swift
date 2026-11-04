@@ -217,6 +217,7 @@ struct PathPacking {
     for word: String, rules: [WordRule], accepting: (Placement) -> Bool
   ) -> [Candidate] {
     var seen: Set<[Cell]> = []
+    var oneCellDirections: Set<Direction> = []
     var found: [Candidate] = []
     for rule in rules {
       for direction in rule.startDirections {
@@ -228,8 +229,15 @@ struct PathPacking {
         for shape in shapes {
           let height = (shape.map(\.row).max() ?? 0) + 1
           let width = (shape.map(\.column).max() ?? 0) + 1
-          guard height <= rows, width <= columns, seen.insert(shape).inserted else { continue }
-          let lone = Placement(word: word, cells: shape)
+          guard height <= rows, width <= columns else { continue }
+          let lone: Placement
+          if shape.count == 1 {
+            guard oneCellDirections.insert(direction).inserted else { continue }
+            lone = Placement(word: word, start: shape[0], direction: direction)
+          } else {
+            guard seen.insert(shape).inserted else { continue }
+            lone = Placement(word: word, cells: shape)
+          }
           guard accepting(lone) else { continue }
           for row in 0...(rows - height) {
             for column in 0...(columns - width) {

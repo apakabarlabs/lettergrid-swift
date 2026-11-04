@@ -209,7 +209,7 @@
   words: [PLANET, ORBIT, SUN]
   legacyEquivalent: true
   fits: true
-- name: a one-letter word takes one cell and its letter appears nowhere else
+- name: a one-letter word fits beside longer straight words
   rules: [{directions: [right, down], turns: 0}]
   words: [CAT, DOG, I]
   fits: true

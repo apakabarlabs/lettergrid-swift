@@ -144,6 +144,7 @@ public final class Round: Identifiable {
 
   private static func validateDirections(_ directions: [Direction], for board: Board) throws {
     for placement in board.placements {
+      if placement.cells.count == 1, !directions.isEmpty { continue }
       guard placement.turns == 0,
         directions.contains(placement.direction)
           || (placement.isPalindrome && directions.contains(placement.direction.opposite))

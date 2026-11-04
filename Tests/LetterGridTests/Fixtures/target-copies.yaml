@@ -36,3 +36,18 @@
   rows: 7
   bounded: true
   alone: [I]
+- name: filler that weights the letter of a one-letter word heavily still leaves the word once
+  words: [CAT, DOG, I]
+  columns: 7
+  rows: 7
+  bounded: true
+  filler: {X: 1, Q: 1, I: 20}
+  alone: [I]
+- name: with turned words enabled filler still leaves a one-letter word once
+  words: [PLANET, COMET, I]
+  columns: 7
+  rows: 7
+  bounded: true
+  turns: [0, 1]
+  filler: {X: 1, Q: 1, I: 20}
+  alone: [I]
