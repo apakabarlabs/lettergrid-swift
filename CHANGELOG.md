@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.26.0] - 2026-11-04
 
 The generator, the round and the board view now take their settings in small groups instead
 of long parameter lists, and the directions a word may take are given only as `rules:`. This
