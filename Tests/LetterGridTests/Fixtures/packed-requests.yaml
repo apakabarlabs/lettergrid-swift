@@ -76,7 +76,7 @@
 - name: the largest positive cap does not overflow capacity checks
   rules: [{directions: [right, down], turns: 0}]
   words: [CAT, DOG, SUN]
-  maxWordsPerDirection: 9223372036854775807
+  largestDirectionCap: true
   fits: true
 - name: five words share one field
   rules:

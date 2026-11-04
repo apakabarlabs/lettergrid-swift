@@ -20,10 +20,13 @@ struct PackedRequestTests {
     let failure: String?
     let downWords: [Int]?
     let maxWordsPerDirection: Int?
+    let largestDirectionCap: Bool?
     let legacyEquivalent: Bool?
     let words: [String]
     let accepted: Bool?
     let fits: Bool
+
+    var directionCap: Int? { largestDirectionCap == true ? .max : maxWordsPerDirection }
 
     var leading: [WordRule] {
       leadingRules?.map(\.wordRule) ?? firstRule.map { [$0.wordRule] } ?? []
@@ -54,7 +57,7 @@ struct PackedRequestTests {
         filler: try LetterWeights(["q": 1, "w": 1]),
         downWords: item.downWords.map { $0[0]...$0[1] }
           ?? (item.words.count == 1 ? 0...1 : 1...2),
-        maxWordsPerDirection: item.maxWordsPerDirection)
+        maxWordsPerDirection: item.directionCap)
       #expect(
         generator.accepts(item.words, leadingRules: item.leading)
           == (item.accepted ?? true), "\(item.name)")
@@ -69,7 +72,7 @@ struct PackedRequestTests {
       }
       let request = try item.request(from: generator)
       #expect(request.leadingRules == item.leading)
-      #expect(request.maxWordsPerDirection == item.maxWordsPerDirection)
+      #expect(request.maxWordsPerDirection == item.directionCap)
       if item.legacyEquivalent == true {
         let legacy = try item.legacyRequest(from: generator)
         #expect(request == legacy, "\(item.name)")
@@ -98,7 +101,7 @@ struct PackedRequestTests {
   }
 
   private func checkDirectionLimit(_ board: Board, for item: Case) {
-    if let maximum = item.maxWordsPerDirection {
+    if let maximum = item.directionCap {
       let counts = Dictionary(grouping: board.placements, by: \.direction)
       #expect(counts.values.allSatisfy { $0.count <= maximum }, "\(item.name)")
     }
