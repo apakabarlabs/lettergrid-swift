@@ -1,7 +1,3 @@
-enum NoiseSearch {
-  static let maximumVisits = Generation.settings.noise.visitLimit
-}
-
 extension Board {
   func strayWordCount(
     in dictionary: WordIndex, rules: [WordRule], lessThan limit: Int = Int.max,
