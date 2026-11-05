@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.26.1] - 2026-11-05
+
+### Changed
+
+- Internal refactor, drop-in: the API and the boards for every seed stay the same.
+
 ## [0.26.0] - 2026-11-04
 
 The generator, the round and the board view now take their settings in small groups instead
