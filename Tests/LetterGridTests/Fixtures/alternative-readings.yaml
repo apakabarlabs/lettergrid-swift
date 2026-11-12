@@ -1,0 +1,38 @@
+- name: a check mark the open rules allow reads the word and is accepted where it was drawn
+  letters:
+    - WENLDSE
+    - FTIOMGD
+    - RUDUDOE
+    - GISNTSC
+    - HETLAEF
+    - DLSROIA
+    - EFINEWP
+  word: SLOW
+  generated: [[3, 2], [4, 3], [5, 4], [6, 5]]
+  rules: [{directions: [down_right], turns: 0}, {directions: [up_right], turns: 1}]
+  drawn: [[5, 2], [4, 3], [5, 4], [6, 5]]
+  accepted: true
+- name: the same check mark is not even selected while its rule is closed
+  letters:
+    - WENLDSE
+    - FTIOMGD
+    - RUDUDOE
+    - GISNTSC
+    - HETLAEF
+    - DLSROIA
+    - EFINEWP
+  word: SLOW
+  generated: [[3, 2], [4, 3], [5, 4], [6, 5]]
+  rules: [{directions: [down_right], turns: 0}]
+  drawn: [[5, 2], [4, 3], [5, 4], [6, 5]]
+  accepted: false
+- name: a one-letter word is accepted at any cell with its letter
+  letters:
+    - XAX
+    - XXX
+    - XXA
+  word: A
+  generated: [[0, 1]]
+  rules: [{directions: [right], turns: 0}]
+  drawn: [[2, 2]]
+  accepted: true

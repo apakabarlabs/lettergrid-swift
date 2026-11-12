@@ -40,7 +40,7 @@ public final class Round: Identifiable {
   }
 
   public nonisolated let id = UUID()
-  public let board: Board
+  public private(set) var board: Board
   public let showsFirstWord: Bool
   public let hintOrder: HintOrder
   public private(set) var phase: Phase
@@ -202,16 +202,26 @@ public final class Round: Identifiable {
     let released = selection
     selection = []
     guard phase == .playing, !released.isEmpty else { return nil }
-    let placement = board.placements.first { $0.reads(released) }
-    if released.count == 1 {
-      guard let placement, !found.contains(placement) else { return nil }
-      return record(placement)
-    }
-    guard let placement, !found.contains(placement) else {
-      rejected = released
+    guard let placement = acceptedPlacement(along: released) else {
+      if released.count > 1 { rejected = released }
       return nil
     }
     return record(placement)
+  }
+
+  private func acceptedPlacement(along path: [Cell]) -> Placement? {
+    let open = board.placements.filter { !found.contains($0) }
+    if let generated = open.first(where: { $0.reads(path) }) { return generated }
+    let text = board.text(along: path)
+    guard let target = open.first(where: { $0.word == text }),
+      rules.contains(where: { $0.matches(path) })
+    else { return nil }
+    let drawn = Placement(word: target.word, cells: path)
+    board = Board(
+      letters: board.letters,
+      placements: board.placements.map { $0 == target ? drawn : $0 })
+    if let hints = revealed.removeValue(forKey: target) { revealed[drawn] = hints }
+    return drawn
   }
 
   public func reveal() -> Placement? {

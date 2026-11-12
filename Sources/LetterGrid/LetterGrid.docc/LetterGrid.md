@@ -10,7 +10,10 @@ unless `maxRows` limits its height. Every accepted target occurs exactly once al
 directions. Other words may appear in the filler by chance; the library does not avoid them.
 
 ``Board`` and ``Placement`` describe letters and their positions. ``Round`` owns the
-selection, found words, hints and optional introduction and countdown. An application
+selection, found words, hints and optional introduction and countdown. ``Round/release()``
+accepts an unfound target along its placement and along any other path that reads it and
+matches one of the round's rules; a word accepted along another path takes that path as its
+placement in ``Round/board``, so it is shown where it was drawn. An application
 owns scores, levels, persistence and any deadline that must survive suspension. Create and
 control rounds on the main actor.
 
@@ -85,8 +88,8 @@ a wall-clock deadline across application suspension.
   enabled, a gesture must be within 22.5 degrees of an allowed direction.
 - Requests reject empty target lists, empty words, duplicates after uppercasing and words
   contained in other targets. A one-letter word takes one cell and fits only a rule without
-  turns; ``Round/release()`` finds it when the selection is that one cell, and a one-cell
-  selection that finds no word is not shown as rejected. The generator gives it the start
+  turns; ``Round/release()`` finds it when the selection is any one cell with its letter, and
+  a one-cell selection that finds no word is not shown as rejected. The generator gives it the start
   direction of the rule that placed it. When opposite directions are enabled, reverse
   containment is also rejected. Directions must satisfy the vertical quota and any required
   first rule. Filler may consist entirely of

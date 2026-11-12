@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.0] - 2026-11-13
+
+### Changed
+
+- `Round.release()` accepts a word drawn along any path that reads it and matches one of the
+  round's rules, not only along the cells it was placed on. A player who drew a word another
+  allowed way saw it selected and then refused. The word accepted this way takes the drawn
+  path as its placement, so `Round.board` shows it where it was drawn. A one-letter word is
+  accepted at any cell with its letter.
+
 ## [0.26.1] - 2026-11-05
 
 ### Changed
